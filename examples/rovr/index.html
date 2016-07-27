@@ -15,7 +15,7 @@
       #container{
         width: 100vw;
         height: 100vh;
-        background-image: url("../_images/bkgd.jpg");
+        background-image: url("images/bkgd.jpg");
       }
 
       #rotator{
@@ -31,11 +31,11 @@
       }
 
       #rotator:hover {
-        cursor: url("../_images/BearClaw_Cursor.png") 25 25, auto;
+        cursor: url("images/BearClaw_Cursor.png") 25 25, auto;
       }
 
       #rotator:active{
-        cursor: url("../_images/BearClawGrab_Cursor.png") 25 25, auto;
+        cursor: url("images/BearClawGrab_Cursor.png") 25 25, auto;
       }
 
       .features{
@@ -84,7 +84,7 @@
      //setup audio ///////////
 
     var bearAudio = new Howl({
-      urls: ['../_images/bear.mp3'],
+      urls: ['audio/bear.mp3'],
       volume: 0.5,
       sprite: {
         roar_one: [0, 1000],
@@ -240,8 +240,8 @@
         // model
 
         var mtlLoader = new THREE.MTLLoader();
-        mtlLoader.setTexturePath('../_images/');
-        mtlLoader.setPath('../_images/');
+        mtlLoader.setTexturePath('models/');
+        mtlLoader.setPath('models/');
         mtlLoader.load('rovr-cooler-decimated01.mtl', function (materials) {
 
             materials.preload();
@@ -251,7 +251,7 @@
 
             var objLoader = new THREE.OBJLoader();
             objLoader.setMaterials(materials);
-            objLoader.setPath('../_images/');
+            objLoader.setPath('models/');
             objLoader.load('rovr-cooler-decimated01.obj', function (object) {
 
 
