@@ -1,14 +1,14 @@
 {
-  "name": "three-bas",
+  "name": "machinecode",
   "authors": [
-    "szenia <s.zadvornykh@gmail.com>"
+    "dlittle <dlittle42@gmail.com>"
   ],
-  "description": "THREE.js extension for shader animation.",
+  "description": "Experiments & stuff",
   "moduleType": [
     "globals"
   ],
-  "homepage": "https://github.com/zadvorsky/three.bas",
-  "repository": "https://github.com/zadvorsky/three.bas",
+  "homepage": "https://github.com/dlittle42/machinecode",
+  "repository": "https://github.com/dlittle42/machinecode",
   "license": "MIT",
   "ignore": [
     "**/.*",

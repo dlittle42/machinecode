@@ -1,7 +1,7 @@
 {
-  "name": "three_bas",
+  "name": "machinecode",
   "version": "1.0.0",
-  "description": "THREE.js Buffer Animation System",
+  "description": "Experiments & stuff",
   "main": "index.js",
   "directories": {
     "example": "examples"
