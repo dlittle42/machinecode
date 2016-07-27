@@ -9,7 +9,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Szenia Zadvornykh",
+  "author": "Derek Little",
   "license": "MIT",
   "dependencies": {
     "del": "^2.0.2",
