@@ -1,0 +1,116 @@
+<!doctype html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>ThreeJS Project</title>
+        <meta name="description" content="">
+        <!-- This assumes your project will be responsive -->
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
+        <link rel="stylesheet" href="css/main.css">
+
+        <script src="https://use.typekit.net/rdx0qfy.js"></script>
+        <script>try{Typekit.load({ async: true });}catch(e){}</script>
+    </head>
+    <body>
+        <!--[if lt IE 10]>
+            <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+
+        <video id="video" autoplay="true" loop muted style="display:none">
+            <source src="videos/01_Battlegym.mp4" type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"'>
+</video>
+        <p id="direction" style="color:#ffffff; position: absolute; left:20px; top:20px; width: 250px;"> Click to Morph</p>
+<p id="morphText" style="color:#00cc00; position: absolute; left:20px; top:40px; width: 250px;"> READY </p>
+<div id="output"></div>
+
+        <div id="nav">
+            <div id="logo">RTO+P</div>
+            <div>
+                <ul id="menu">
+                    <li>WORK</li>
+                    <li>ABOUT</li>
+                    <li>CONTACT</li>
+                </ul>
+            </div>
+        </div>
+
+
+        <article class="fadeable">
+ 
+                
+                <div class="animate-text" data-lining data-auto-resize >
+           <!-- <h1>Welcome to our homepage.</h1> -->
+            <p id="story">
+                We’re a full-service advertising agency. We believe in being unforgettable. We’re relentless. We have homes on the East and West coast. We have a “No shitheads” policy. We punch above our weight, according to Forbes. We’re an Ad Age Small Agency of the Year. And we love to overdeliver.
+            </p>
+            <p>Here are some things we’ve been up to over the last week or so.</p>
+            <h1></h1>
+            <p>
+                It’s something your grandparents drank. And maybe even your parents. But not so much anymore. So they brought us on board to help shake some of the dust off the brand. Our first step is digging into their social media presence. Here’s a recent post. If you want to see more, follow them on Facebook. And if you’re getting thirsty, try making a Rusty Nail.
+            </p>
+            <h1>What are we going to eat today?</h1>
+        
+              
+            <p>
+              We were on set this week shooting a campaign of spots to help T. Rowe Price promote their 529 College Savings Plans. There were adorable kids. Excellent directors. And a happy client. Of course, we’ll share the work when it’s ready in a couple of weeks.
+            </p>
+            <h1>Regular folk. Irregular passion.</h1>
+          
+            <p>
+                Ancho Reyes is a delicious chile liquor from Puebla, Mexico. So naturally, during a recent event, we built out a Luchador Thumb Wrestling tournament. Special props goes to our maker department who, when we asked if they could build us 6 thumb wrestling rings, didn’t bat an eye, went straight to work and crushed the build. 
+
+            </p>
+            <h1>Launched iSEPTAPhilly.com</h1>
+
+           
+            <p>
+                If you’re not from the same neck of the woods as our Philly office, then you’ve never heard of SEPTA. But if you are, then you most certainly have. We recently just launched a new website for the regional, public transpiration system. Aside from it just looking pretty, it’s also quite useful. Check it out here. 
+            </p>
+            <h1>Meanwhile, In England</h1>
+            <p>
+                We just launched a campaign for hi-tech protection company D30. After protecting soldiers on the battlefields and the brains of snowboarders, they partnered with GearBox to launch a line of cellphones cases that offer some insane protection for phones. The campaign launched in Carphone Warehouse, which apparently is as big in England as Haselhoff is in Germany. Seriously. Here’s a look at some of the work.
+            </p>
+            <h1>SXSW BOUND.</h1>
+            <p>
+                Next month we’ll be heading to SXSW to help GOOD with their event celebrating the GOOD 100. Our Makers will be helping them build out an interactive piece on the experience. It should be a pretty great time. We’ll keep you posted.
+            </p>
+            <h1>LET’S GET CRAZY</h1>
+            <p>Just this week, for the second year in a row, we signed up a team from our agency to run in the Cape Cod Ragnar Rally in May. 12 people. 2 days. 200 miles. Damn.
+            </p>
+            <p>When we get closer, we’ll share some sights and sounds on our Facebook and Instagram pages. Oh, btw, if you don’t follow us there, you totally should.
+            </p>
+            <p>
+                One other thing.
+            </p>
+            
+
+            </div>
+            </article>
+         
+        <div id="WebGL-output"></div>
+
+        <script src="js/vendor/jquery.min.js"></script>
+        <script src="../../bower_components/three.js/build/three.js"></script>
+        <script src="js/vendor/OrbitControls.js"></script>
+        <script src="js/vendor/AxisHelper.js"></script>
+        <script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
+        <script src="js/main.js"></script>
+
+        <!-- Google Analytics: change UA-XXXXX-X to be your site's ID.
+        <script>
+            (function(b,o,i,l,e,r){b.GoogleAnalyticsObject=l;b[l]||(b[l]=
+            function(){(b[l].q=b[l].q||[]).push(arguments)});b[l].l=+new Date;
+            e=o.createElement(i);r=o.getElementsByTagName(i)[0];
+            e.src='//www.google-analytics.com/analytics.js';
+            r.parentNode.insertBefore(e,r)}(window,document,'script','ga'));
+            ga('create','UA-XXXXX-X');ga('send','pageview');
+        </script>
+         -->
+    </body>
+</html>
+
