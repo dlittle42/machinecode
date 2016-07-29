@@ -119,6 +119,9 @@
      var wsize, hsize;
     var windowHalfX, windowHalfY;
 
+    var model = "rovr-cooler5b";
+
+
     init();
     animate();
 
@@ -132,13 +135,13 @@
         windowHalfY = hsize / 2;
 
         camera = new THREE.PerspectiveCamera(20, wsize / hsize, 1, 20000);
-        camera.position.z = 18;
+        camera.position.z =120;
     //    camera.aspect = wsize / hsize;
      //   camera.updateProjectionMatrix();
-        camera.position.y = 5;
+        camera.position.y = 30;
 
 
-        renderer = new THREE.WebGLRenderer({ alpha: true });
+        renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setPixelRatio( window.devicePixelRatio );
         renderer.setSize( wsize, hsize);
         container.appendChild( renderer.domElement );
@@ -155,7 +158,7 @@
         var grid = new THREE.GridHelper(100, 10);
         scene.add(grid);
 
-/*
+
         var ambient = new THREE.AmbientLight( 0x101030 );
         scene.add( ambient );
 
@@ -170,7 +173,7 @@
         var directionalLight3 = new THREE.DirectionalLight( 0xffeedd );
         directionalLight3.position.set( 0, 100, 0 );
         scene.add( directionalLight3 );
-        */
+    /*
          var hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 0.6 );
            // hemiLight.color.setHSV( 0.6, 0.75, 0.5 );
            // hemiLight.groundColor.setHSV( 0.095, 0.5, 0.5 );
@@ -184,7 +187,7 @@
             // dirLight.shadowCameraVisible = true;
 
             scene.add( dirLight );
-/*
+
             dirLight.castShadow = true;
             dirLight.shadowMapWidth = dirLight.shadowMapHeight = 1024*2;
 
@@ -242,7 +245,7 @@
         var mtlLoader = new THREE.MTLLoader();
         mtlLoader.setTexturePath('models/');
         mtlLoader.setPath('models/');
-        mtlLoader.load('rovr-cooler-decimated01.mtl', function (materials) {
+        mtlLoader.load(model +'.mtl', function (materials) {
 
             materials.preload();
 
@@ -252,7 +255,7 @@
             var objLoader = new THREE.OBJLoader();
             objLoader.setMaterials(materials);
             objLoader.setPath('models/');
-            objLoader.load('rovr-cooler-decimated01.obj', function (object) {
+            objLoader.load(model +'.obj', function (object) {
 
 
                 cooler = object;
@@ -413,7 +416,7 @@
 
         targetRotation += 0.001;
         if (cooler) cooler.rotation.y += ( targetRotation - cooler.rotation.y ) * 0.05;
-        camera.lookAt( new THREE.Vector3(0,1,0) );
+        camera.lookAt( new THREE.Vector3(0,10,0) );
         renderer.clear();
         renderer.render( scene, camera );
 
