@@ -62,6 +62,7 @@ var mouseSphereCoords = null;
 var mouseSphere=[];
 
 init();
+addPanels();
 animate();
 
 // FUNCTIONS 		
@@ -131,6 +132,53 @@ function init()
 	document.addEventListener( 'mousedown', onDocumentMouseDown, false );
 	document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 }
+
+
+function addPanels(){
+	var geometry = new THREE.PlaneGeometry( 10, 10, 5 );//new THREE.BoxGeometry( 20, 20, 20 );
+				
+	for ( var i = 0; i < numPanels; i ++ ) {
+
+		
+
+		
+	//	console.log(i+ "----loop-----");
+		
+		for (var j = 0; j < maxCol; j++) {
+	         // document.write("RowNum: " + i + " " + "ColNum: " + j + "</br>");
+	          //	object.position.x = i*100-50;
+			//	object.position.y = j* 100 - 50;
+				//object.position.z = -100;
+			//	console.log("--"+j);
+				var value = Math.random() * 0xFF | 0;
+				var grayscale = (value << 16) | (value << 8) | value;
+				var graycolor = '#' + grayscale.toString(16);
+				//var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
+				var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: graycolor} ) );
+				
+				//object.position.x = (i * 10)-5;
+				object.position.x = (i * 10)-50;
+				object.position.z = -100;
+				object.position.y = (j * 10) -50;
+				object.opacity = 100-i;
+
+				objlibrary.push(object);
+
+				scene.add( object );
+		/*
+				 TweenMax.to(object.position ,Math.random()*200,{
+					x:0,
+					y:0,
+					ease:"Power3.easeOut",
+					onUpdate:function(){
+                  //  console.log('tweened');
+                }});
+	      }
+	      */
+		}
+}
+
+
 function addOcta()
 {
 	var position = new Array();
