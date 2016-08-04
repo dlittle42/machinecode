@@ -75,10 +75,10 @@
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				container.appendChild(renderer.domElement);
 
-
 				//camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
 				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 1000 );
 				camera.position.z = 100;
+				camera.position.y = 20;
 
 				// CONTROLS
 				controls = new THREE.OrbitControls( camera, renderer.domElement );
@@ -92,9 +92,9 @@
 				light.position.set( 1, 1, 1 ).normalize();
 				scene.add( light );
 				*/
+
 				var grid = new THREE.GridHelper(100, 10);
 		        scene.add(grid);
-
 
 		        var ambient = new THREE.AmbientLight( 0xffffff);
 		        scene.add( ambient );
@@ -111,36 +111,40 @@
 		        directionalLight3.position.set( 0, 100, 0 );
 		        scene.add( directionalLight3 );
 
-
 				//var geometry = new THREE.BoxBufferGeometry( 20, 20, 20 );
 				//var geometry = new THREE.PlaneBufferGeometry( 10, 10, 5 );
 				var geometry = new THREE.PlaneGeometry( 10, 10, 5 );
 
+				var objWidth = 10;
 				var maxRow = 10;
 				var maxCol = 20;
 				var hspacing = 12.5;
 				var vspacing = 12.5;
-				  for (var i = 0; i < maxRow; i++) {
-				      for (var j = 0; j < maxCol; j++) {
+				var xoffset = ((objWidth + hspacing)* maxRow)/2;
+
+				for (var i = 0; i < maxRow; i++) {
+				     for (var j = 0; j < maxCol; j++) {
 				      	var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
 				      	object.doubleSided = true;
 				      	object.geometry.computeBoundingSphere(); // this isn't calculated automatically
-                                       // you need to call it
-
 						object.geometry.boundingSphere.center;
-						object.position.x = (hspacing * j) - 6.25;
-						object.position.y = (vspacing  * i)  - (6.25*maxRow);
-						object.position.z = Math.random() * 400 - 200;
 
+						var xpos = ((hspacing * j) - hspacing/2) - xoffset;
+						var ypos = (vspacing  * i)  - ((vspacing/2)*maxRow);
+						var zpos = Math.random() * 400 - 200;
+
+						object.position.x = xpos;
+						object.position.y = ypos;
+						object.position.z = 0;
+						object.origin = [xpos, ypos];
 						scene.add( object );
-
 						objects.push( object );
-				         
-				      }
-				  }
+				     }
+				 }
 
-				   particleMaterial = new THREE.SpriteMaterial( { color: 0x0f0f0f, fog: true } );
-/*
+				 particleMaterial = new THREE.SpriteMaterial( { color: 0x0f0f0f, fog: true } );
+
+				/*
 				for ( var i = 0; i < 2000; i ++ ) {
 
 					var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
@@ -168,14 +172,9 @@
                     }});
 
 				}
-*/
-
-
-
+				*/
 
 				raycaster = new THREE.Raycaster();
-
-				
 
 				stats = new Stats();
 				container.appendChild( stats.dom );
@@ -183,8 +182,6 @@
 				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 				document.addEventListener( 'mousedown', onDocumentMouseDown, false );
 				document.addEventListener( 'mouseup', onDocumentMouseUp, false );
-
-				//
 
 				window.addEventListener( 'resize', onWindowResize, false );
 
@@ -221,11 +218,12 @@
 
 				vector = new THREE.Vector3( 0, 0, -1 );
 				vector.applyQuaternion( camera.quaternion ).add( camera.position );
-				console.log(vector);
-				scaledVector=vector.clone().multiplyScalar(0.95);
-				
-				console.log("scaled:"+scaledVector.y);
 
+				console.log(vector);
+
+				scaledVector=vector.clone().multiplyScalar(0.95);
+
+				console.log("scaled:"+scaledVector.y);
 
 				var intersects = raycaster.intersectObjects( objects );
 
@@ -233,9 +231,9 @@
 
 					if (activePanel == intersects[ 0 ].object){
 						activePanel = null;
-						/*TweenMax.to(intersects[0].object.position, 1, {
-							x:0,
-							y:0,
+						TweenMax.to(intersects[0].object.position, 1, {
+							x:intersects[0].object.origin[0],
+							y:intersects[0].object.origin[1],
 							z:0,
 							delay: 0,
 							//ease:"Power3.easeOut",
@@ -244,17 +242,25 @@
 	                      //  console.log('tweened');
 
 	                    	}
-						});*/
+						});
 
-					//	intersects[0].object.translateOnAxis(intersects[0].object.worldToLocal(new THREE.Vector3(0,0,25)),50);
+						TweenMax.to(intersects[0].object.rotation, 1, {
+							x:0,
+							y:0,
+							z:0,
+							delay: 0,
+							//ease:"Power3.easeOut",
+							ease: Back.easeInOut.config(.5),
+							onUpdate:function(){
+	                      //  console.log('tweened');
+	                    	}
+						});
+
 					}else{
 						activePanel = intersects[ 0 ].object;
 					}
 
-					
-
 					intersects[ 0 ].object.material.color.setHex( 0xe02323 );
-
 
 					var newSphereGeom= new THREE.SphereGeometry(.5,.5,.5);
 					var sphere= new THREE.Mesh(newSphereGeom, new THREE.MeshBasicMaterial({ color: 0x2266dd }));
@@ -315,7 +321,7 @@
 						onComplete:function(){
                       //  console.log('tweened');
                       		console.log("x:"+activePanel.position.x+", y:"+ activePanel.position.y+ ", z:"+ activePanel.position.z);
-                      		activePanel=null;
+                      		
 
                     	}
 					});
