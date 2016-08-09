@@ -57,6 +57,25 @@
 			var viewHeight = window.innerHeight;
 			var vector, scaledVector;
 
+				var materialOne;
+			var materialArr = [];
+			var imgArrIdx = 0;
+			var textureLoader;
+
+			var imgArr = [
+				"century21.png",
+				"dialformen.png",
+				"dockers_dadjam.png",
+				"mitchellness.png",
+				"msf_trailer.png",
+				"Peach_Street.png",
+				"pf_battlegym.png",
+				"reyka.png",
+				"speck.png",
+				"stetson.png",
+				"swarovski.png"
+			]
+
 			init();
 			animate();
 
@@ -68,7 +87,8 @@
 				scene = new THREE.Scene();
 				scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
 
-				renderer = new THREE.WebGLRenderer();
+				//renderer = new THREE.WebGLRenderer();
+				renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
 				renderer.setClearColor( scene.fog.color );
 				//renderer.setClearColor( 0xf0f0f0 );
 				renderer.setPixelRatio( window.devicePixelRatio );
@@ -91,7 +111,7 @@
 				var light = new THREE.DirectionalLight( 0xffffff, 1 );
 				light.position.set( 1, 1, 1 ).normalize();
 				scene.add( light );
-				*/
+				
 
 				var grid = new THREE.GridHelper(100, 10);
 		        scene.add(grid);
@@ -110,39 +130,69 @@
 		        var directionalLight3 = new THREE.DirectionalLight( 0xffffff );
 		        directionalLight3.position.set( 0, 100, 0 );
 		        scene.add( directionalLight3 );
+*/
 
-				//var geometry = new THREE.BoxBufferGeometry( 20, 20, 20 );
-				//var geometry = new THREE.PlaneBufferGeometry( 10, 10, 5 );
-				var geometry = new THREE.PlaneGeometry( 10, 10, 5 );
+// so many lights
+var light = new THREE.DirectionalLight( 0xffffff, 1 );
+light.position.set( 0, 1, 0 );
+scene.add( light );
 
-				var objWidth = 10;
-				var maxRow = 10;
-				var maxCol = 20;
-				var hspacing = 12.5;
-				var vspacing = 12.5;
-				var xoffset = ((objWidth + hspacing)* maxRow)/2;
+var light = new THREE.DirectionalLight( 0xffffff, 0.5 );
+light.position.set( 0, -1, 0 );
+scene.add( light );
 
-				for (var i = 0; i < maxRow; i++) {
-				     for (var j = 0; j < maxCol; j++) {
-				      	var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
-				      	object.doubleSided = true;
-				      	object.geometry.computeBoundingSphere(); // this isn't calculated automatically
-						object.geometry.boundingSphere.center;
+var light = new THREE.DirectionalLight( 0xffffff, 1 );
+light.position.set( 1, 0, 0 );
+scene.add( light );
 
-						var xpos = ((hspacing * j) - hspacing/2) - xoffset;
-						var ypos = (vspacing  * i)  - ((vspacing/2)*maxRow);
-						var zpos = Math.random() * 400 - 200;
+var light = new THREE.DirectionalLight( 0xffffff, 0.5 );
+light.position.set( 0, 0, 1 );
+scene.add( light );
 
-						object.position.x = xpos;
-						object.position.y = ypos;
-						object.position.z = 0;
-						object.origin = [xpos, ypos];
-						scene.add( object );
-						objects.push( object );
-				     }
-				 }
+var light = new THREE.DirectionalLight( 0xffffff, 1 );
+light.position.set( 0, 0, -1 );
+scene.add( light );
 
-				 particleMaterial = new THREE.SpriteMaterial( { color: 0x0f0f0f, fog: true } );
+var light = new THREE.DirectionalLight( 0xffffff, 0.5 );
+light.position.set( -1, 0, 0 );
+scene.add( light );
+
+
+
+		        //load textures 
+
+			
+				var manager = new THREE.LoadingManager();
+				manager.onProgress = function ( item, loaded, total ) {
+				 // progressBar.style.width = (loaded / total * 100) + '%';
+				 	console.log(item, loaded, total);
+				};
+
+				manager.onLoad = function (){
+					console.log('all items loaded');
+					if (imgArrIdx < imgArr.length) {
+						loadImages();
+					}else{
+						createGridWall();
+					}
+				}
+
+				manager.onError = function (){
+					console.log('loading error');
+				}
+
+
+			//	new THREE.MeshBasicMaterial( { map: videoTexture, overdraw: true, side:THREE.DoubleSide } );
+
+				// create a loader to get an image from a URL
+				textureLoader = new THREE.TextureLoader(manager);
+				// we've gotta set this to use cross-origin images
+				textureLoader.crossOrigin = true;
+
+				// load in the image
+				
+				loadImages();
+
 
 				/*
 				for ( var i = 0; i < 2000; i ++ ) {
@@ -186,6 +236,69 @@
 				window.addEventListener( 'resize', onWindowResize, false );
 
 			}
+
+			function loadImages(){
+				
+				textureLoader.load("images/"+imgArr[imgArrIdx], function(texture) {
+				  // this code makes the texture repeat
+				//  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+				//  texture.repeat.set( 10, 10 );
+				  // set the texture as the map for the material
+				//  materialOne = texture;//new THREE.MeshLambertMaterial( {map: texture, side:THREE.DoubleSide } );
+				  materialArr.push(texture);
+				  console.log("materialArr="+materialArr);
+				  imgArrIdx++;
+				
+
+
+				
+				 })
+
+
+
+
+			}
+
+
+
+			function createGridWall(){
+				//var geometry = new THREE.BoxBufferGeometry( 20, 20, 20 );
+					//var geometry = new THREE.PlaneBufferGeometry( 10, 10, 5 );
+					var geometry = new THREE.PlaneGeometry( 10, 10, 5 );
+
+					var objWidth = 10;
+					var maxRow = 10;
+					var maxCol = 20;
+					var hspacing = 12.5;
+					var vspacing = 12.5;
+					var xoffset = ((objWidth + hspacing)* maxRow)/2;
+
+					for (var i = 0; i < maxRow; i++) {
+					     for (var j = 0; j < maxCol; j++) {
+					      	//var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
+					      	var object = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {map: materialArr[(i+j)%imgArr.length], side:THREE.DoubleSide } ));
+
+					      	object.doubleSided = true;
+					      	object.geometry.computeBoundingSphere(); // this isn't calculated automatically
+							object.geometry.boundingSphere.center;
+
+							var xpos = ((hspacing * j) - hspacing/2) - xoffset;
+							var ypos = (vspacing  * i)  - ((vspacing/2)*maxRow);
+							var zpos = Math.random() * 400 - 200;
+
+							object.position.x = xpos;
+							object.position.y = ypos;
+							object.position.z = 0;
+							object.origin = [xpos, ypos];
+							scene.add( object );
+							objects.push( object );
+					     }
+					 }
+
+
+					 particleMaterial = new THREE.SpriteMaterial( { color: 0x0f0f0f, fog: true } );
+			}
+
 
 			function onWindowResize() {
 
@@ -315,7 +428,7 @@
 						x:scaledVector.x,
 						y:scaledVector.y,
 						z:scaledVector.z,
-						delay: 1,
+						delay: 0,
 						ease:"Power3.easeOut",
 						//ease: Back.easeInOut.config(.5),
 						onComplete:function(){
