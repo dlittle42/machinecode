@@ -36,7 +36,7 @@
 <script src="../../bower_components/three.js/build/three.js"></script>
 <script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
 <script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
-<script src="../../bower_components/Oimo.js/build/Oimo.rev.js"></script>
+<script src="../../bower_components/Oimo.js/build/Oimo.js"></script>
 
 </head>
 <body>
@@ -75,6 +75,8 @@
     var ToRad = Math.PI / 180;
     var ToDeg = 180 / Math.PI;
     var rotTest;
+    var max;
+    var contactCheck;
 
     //oimo var
     var world = null;
@@ -104,6 +106,9 @@
         mouse = new THREE.Vector2();
 
         scene = new THREE.Scene();
+
+        var grid = new THREE.GridHelper(100, 10);
+                scene.add(grid);
 
         renderer = new THREE.WebGLRenderer({ canvas:canvas, precision: "mediump", antialias:antialias });
         renderer.setSize( window.innerWidth, window.innerHeight );
@@ -200,6 +205,7 @@
         grounds.push(mesh);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
+
     }
 
     function clearMesh(){
@@ -216,10 +222,11 @@
     //----------------------------------
 
     function initOimoPhysics(){
-
+        console.log('init');
         world = new OIMO.World(1/60, 2, 8);
         populate(1);
         setInterval(updateOimoPhysics, 1000/60);
+
     };
 
     function populate(n) {
@@ -230,7 +237,7 @@
         var group3 = 1 << 2;  // 00000000 00000000 00000000 00000100
         var all = 0xffffffff; // 11111111 11111111 11111111 11111111
 
-        var max = document.getElementById("MaxNumber").value;
+        max = document.getElementById("MaxNumber").value;
 
         //type = 3;
         if(n===1) type = 1
@@ -291,23 +298,40 @@
             } else if(t===2){
                 config[3] = group3;
                 bodys[i] = new OIMO.Body({type:'box', size:[w,h,d], pos:[x,y,z], move:true, world:world, config:config, name:'box'});
+                
                // bodys[i] = new OIMO.Body({type:'box', size:[w,h,d], pos:[x,y,z], move:true, config:config, name:'box'});
                 meshs[i] = new THREE.Mesh( buffgeoBox, matBox );
                 meshs[i].scale.set( w, h, d );
+
+
+                
             }
 
             meshs[i].castShadow = true;
             meshs[i].receiveShadow = true;
 
+            
+           
             scene.add( meshs[i] );
         }
 
         config[3] = 1;
         config[4] = all;
-        bodys[max] = new OIMO.Body({size:[20, 40, 60], pos:[-150,20,0], rot:[0,0,0], move:true, noSleep:true, world:world, config:config, name:'paddle'});
+        bodys[max] = new OIMO.Body({size:[20, 40, 60], pos:[-150,20,0], rot:[0,0,0], move:false, noSleep:false, world:world, config:config, name:'paddle'});
         meshs[max] = new THREE.Mesh( buffgeoBox, matBox );
         meshs[max].scale.set( 20, 40, 60 );
+        meshs[max].needsUpdate=true;
         scene.add( meshs[max] );
+
+        console.dir(bodys[max]);
+/*
+        contactCheck = new OIMO.Contact();
+        contactCheck.attach('paddle', 'sphere');
+       console.dir(contactCheck);
+       */
+      //  world.addContact('paddle', 'sphere');
+        console.dir(world);
+      //  console.log(world.contacts);
     }
 
 
@@ -315,20 +339,38 @@
     function updateOimoPhysics() {
 
         //if(world == null) return;
+       // console.log('update');
 
         world.step();
 
+        var pmtx = new THREE.Matrix4();
 
+       // pmtx.fromArray(paddel.getMatrix());
+       
+       // bodys[max].body.setPosition(paddel.position);
+       bodys[max].body.setPosition(paddel.position.x, paddel.position.y, paddel.position.z);
+     
+       
 
+        paddel.lookAt(new THREE.Vector3(100,paddel.position.y, 0));
+        paddel.rotation.y += 90*ToRad;
+
+       //  console.dir(paddel);
+       bodys[max].body.setOrientation(paddel.rotation.x, paddel.rotation.y, paddel.rotation.z);
+      
+         bodys[max].body.updatePosition();
+
+/*
         // apply new position on last rigidbody
         bodys[bodys.length-1].setPosition(paddel.position);
+        console.log('paddel='+paddel.position+'bodys= '+bodys[bodys.length-1].position);
 
         paddel.lookAt(new THREE.Vector3(100,paddel.position.y, 0));
         paddel.rotation.y += 90*ToRad;
 
         // apply new rotation on last rigidbody
         bodys[bodys.length-1].setQuaternion(paddel.quaternion);
-
+*/
         
         
 
@@ -341,6 +383,8 @@
         while (i--){
             var body = bodys[i].body;
             mesh = meshs[i];
+
+            
             
             if(!body.sleeping){
 
@@ -361,6 +405,7 @@
                     body.setPosition(x,y,z);
                 }
            } else {
+                console.log('sleeping');
                 if(mesh.material.name === 'box') mesh.material = matBoxSleep;
                 if(mesh.material.name === 'sph') mesh.material = matSphereSleep;
             }
@@ -368,15 +413,44 @@
            
         }
 
+
+       // console.log(bodys[max].sleeping);
+
+      //  console.dir(world.contacts);
+      /*
+        console.log(world.shapes[max].numContacts);
+        if (world.shapes[max].numContacts<=1){
+            meshs[max].material = matBoxSleep;
+        }else{
+            meshs[max].material = matSphere;
+        }
+        */
+     
+      //  console.dir(world.shapes[max].collidesWith);
+
+      /*
+
         // contact test
-        if(world.checkContact('paddle', 'sphere')) meshs[bodys.length-1].material = matSphere;
-        else if(world.checkContact('paddle', 'box')) meshs[bodys.length-1].material = matBox;
+        if(world.Contact('paddle', 'sphere')) meshs[bodys.length-1].material = matSphere;
+        else if(world.Contact('paddle', 'box')) meshs[bodys.length-1].material = matBox;
         else meshs[bodys.length-1].material = matBoxSleep;
 
-        infos.innerHTML = world.performance.show();
+
+        console.log("list="+bodys[bodys.length-1].contactList);
+        console.dir(bodys[bodys.length-1]);
+        if (bodys[bodys.length-1].contactList){
+            meshs[bodys.length-1].material = matSphere;
+        }else{
+            meshs[bodys.length-1].material = matBoxSleep;
+        }
+        */
+     //   meshs[max].material = matSphere;
+      //  meshs[max].geometry.uvsNeedUpdate = true;
+      //  meshs[max].needsUpdate=true;
+        infos.innerHTML = "x:"+Math.floor(paddel.position.x) +", z:"+Math.floor(paddel.position.z);// world.performance.fps;
     }
     
-
+/*
     function updateOimoPhysics() {
         world.step();
 
@@ -415,7 +489,7 @@
             
         }
     }
-
+*/
     function gravity(g){
         nG = document.getElementById("gravity").value
         world.gravity = new OIMO.Vec3(0, nG, 0);
@@ -483,14 +557,32 @@
     //----------------------------------
 
     function rayTest(e) {
+
         mouse.x = ( e.clientX / window.innerWidth ) * 2 - 1;
         mouse.y = - ( e.clientY / window.innerHeight ) * 2 + 1;
 
         
+
+
         ray.setFromCamera( mouse, camera );
         var intersects = ray.intersectObjects( content.children, true );
+
+        
+
         if ( intersects.length) {
+            var newSphereGeom= new THREE.SphereGeometry(.5,.5,.5);
+                    var sphere= new THREE.Mesh(newSphereGeom, new THREE.MeshBasicMaterial({ color: 0x2266dd }));
+/*
+                    sphere.position.copy( intersects[ 0 ].point );
+                    sphere.scale.x = sphere.scale.y = 1;
+                    scene.add( sphere );
+*/
+                 //   console.log(paddel.position.x)
+
+                 //   paddel.position.x= 1000;
             paddel.position.copy( intersects[0].point.add(new THREE.Vector3( 0, 20, 0 )) );
+
+           // console.log(paddel.position.x)
         }
     }
 

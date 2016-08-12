@@ -942,9 +942,9 @@ OIMO.RigidBody.prototype = {
         this.angularVelocity.init();
     },
     setRotation:function(x,y,z){
-        /*this.position.init(x*OIMO.INV_SCALE,y*OIMO.INV_SCALE,z*OIMO.INV_SCALE);
+        this.rotation.init(x*OIMO.INV_SCALE,y*OIMO.INV_SCALE,z*OIMO.INV_SCALE);
         this.linearVelocity.init();
-        this.angularVelocity.init();*/
+        this.angularVelocity.init();
     },
     getMatrix:function(){
         var m = this.matrix.elements;
