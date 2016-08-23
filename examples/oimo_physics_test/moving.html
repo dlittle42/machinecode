@@ -2,11 +2,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>Oimo.js Moving</title>
+<title>Falling Blocks</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 <meta http-equiv="X-UA-Compatible" content="IE=11" />
 <link rel="shortcut icon" href="favicon.ico">
+
 <style>
     * {  margin: 0; padding: 0; border: 0;}
     html {
@@ -61,6 +62,14 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
     a:hover {color: #11BBFF; text-decoration: none;}
     a:active {color: #11BBFF; text-decoration: none;}
 
+    #scores{
+            position: absolute;
+    top: 80px;
+    margin: 10px 20px;
+    font-size: 3em;
+    border-bottom: 3px solid white;
+    }
+
 </style>
 
 
@@ -98,13 +107,15 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
 -->
 <div id='info'></div>
 
+<div id='scores'></div>
+
  
 <script>
     var isMobile = false;
     var antialias = true;
 
     // three var
-    var camera, scene, light, renderer, canvas, controls, content, composer, controller, paddleGroup;
+    var camera, scene, light, renderer, canvas, controls, content, composer, controller, paddleGroup, stats;
     var meshs = [];
     var grounds = [];
     var bodys = [];
@@ -121,6 +132,7 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
     var fps=0, time, time_prev=0, fpsint = 0;
     var cContact = 0;
     var debug = false;
+    var collideArr = [];
 
     //oimo var
     var world = null;
@@ -155,6 +167,12 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
 
         var grid = new THREE.GridHelper(200, 10, 0xffffff , 0xffffff );
         scene.add(grid);
+
+        stats = new Stats();
+        infos.appendChild( stats.dom );
+
+        
+
 
 
         renderer = new THREE.WebGLRenderer({ canvas:canvas, alpha: true, antialias: true, precision: "mediump" });
@@ -279,6 +297,28 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
         // physics
 
         initOimoPhysics();
+
+        var blockControl = function() {
+          this.gravity = -2;
+          this.displayOutline = false;
+         // this.explode = function() { console.log('explode')};
+          // Define render logic ...
+        };
+
+
+      var panel = new blockControl();
+      var gui = new dat.GUI();
+      
+      var slider = gui.add(panel, 'gravity', -10, 0);
+      gui.add(panel, 'displayOutline');
+     // gui.add(panel, 'explode');
+
+      // Listen to changes within the GUI
+        slider.onChange(function(newValue) {
+            console.log("Value changed to:  ", newValue);
+            gravity(newValue);
+        });
+
     }
 
     function loop() {
@@ -293,7 +333,7 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
             renderer.render( scene, camera );
         }
 
-
+        stats.update();
         displayInfo();
         
     }
@@ -418,7 +458,7 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
                 meshs[i].scale.set( w*0.5, w*0.5, w*0.5 );
             } else if(t===2){
                 config[3] = group3;
-                bodys[i] = new OIMO.Body({type:'box', size:[w,h,d], pos:[x,y,z], move:true, world:world, sleep: false, config:config, name:'box'});
+                bodys[i] = new OIMO.Body({type:'box', size:[w,h,d], pos:[x,y,z], move:true, world:world, sleep: false, config:config, name:'box'+i});
                 
                // bodys[i] = new OIMO.Body({type:'box', size:[w,h,d], pos:[x,y,z], move:true, config:config, name:'box'});
                matBox = new THREE.MeshLambertMaterial( {  color: Math.random() * 0xffffff, name:'box' } );
@@ -463,14 +503,15 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
         scene.add( meshs[max] );
 
 
-        console.dir(bodys[max]);
+       
 /*
         contactCheck = new OIMO.Contact();
         contactCheck.attach('paddle', 'sphere');
        console.dir(contactCheck);
        */
       //  world.addContact('paddle', 'sphere');
-        console.dir(world);
+      //  console.dir(world);
+        
       //  console.log(world.contacts);
     }
 
@@ -482,6 +523,8 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
        // console.log('update');
 
         world.step();
+
+        
 
         var pmtx = new THREE.Matrix4();
 
@@ -525,11 +568,34 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
 
         while (i--){
             var body = bodys[i].body;
+            
+
             mesh = meshs[i];
 
             
             
             if(!body.sleeping){
+
+                if (body.numContacts >0) {
+                  //  console.dir(body);
+                  //  console.log("^ "+body.name +" contacts="+body.numContacts);
+                     mesh.material = matBox;
+                  //   console.log(collideArr);
+                     
+
+                     
+                    if (collideArr.contains(body.name)) {
+                       // do something special
+                       
+                    }else{
+                        
+                        highlightPaddle();
+                        updateScore();
+                        if (body.name!="paddle") {
+                            collideArr.push(body.name );
+                        }
+                    }
+                }
                 
                 mtx.fromArray(body.getMatrix());
                 mesh.position.setFromMatrixPosition( mtx );
@@ -543,6 +609,8 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
 
                 // reset position
                 if(mesh.position.y<-500){
+                    bodys[i].body.awake();
+                  //  if(mesh.material.name === 'box') mesh.material = matBox;
                      x = -100 + Math.random()*200;
                     z = -100 + Math.random()*200;
                     y = 100 + Math.random()*1000;
@@ -583,7 +651,7 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
         else meshs[bodys.length-1].material = matBoxSleep;
 
 
-       // console.log("list="+bodys[max].body.contactList);
+       
       //  console.dir(bodys[bodys.length-1]);
       //  hitCount++;
         if (bodys[max].contactList){
@@ -594,6 +662,15 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
 
         }
      */
+    /* 
+     if (world.numContactPoints >0) {
+        console.log(world.numContactPoints);
+        console.dir(world);
+        console.log(world.rigidBodies.next)
+        world.rigidBodies.next.sleeping=true;
+
+    }
+    */
      //   meshs[max].material = matSphere;
       //  meshs[max].geometry.uvsNeedUpdate = true;
         meshs[max].needsUpdate=true;
@@ -602,8 +679,8 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
     }
     
     function gravity(g){
-        nG = document.getElementById("gravity").value
-        world.gravity = new OIMO.Vec3(0, nG, 0);
+        //nG = document.getElementById("gravity").value
+        world.gravity = new OIMO.Vec3(0, g, 0);
     }
 
     var unwrapDegrees = function (r) {
@@ -714,35 +791,10 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
         }
 
         if (cContact < world.numContactPoints){
-            hitCount++;
-             console.log(hitCount);
+          //  hitCount++;
+            
             // outlinePaddle.scale.set(1.2,1.2,1.2);
-             TweenMax.fromTo(outlinePaddle.scale, .2, {
-                        x:1.0,
-                        y:1.0,
-                        z:1.0,
-                        ease:"Power3.easeOut",
-                        //ease: Back.easeInOut.config(.5),
-                       // repeat:1,
-                        onUpdate:function(){
-                      //  console.log('tweened');
-                        }
-
-                    },
-                    {
-                        x:1.2,
-                        y:1.2,
-                        z:1.2,
-                        ease:"Power3.easeOut",
-                        //ease: Back.easeInOut.config(.5),
-                        yoyo:true,
-                        repeat:1,
-                        onUpdate:function(){
-                      //  console.log('tweened');
-                        }
-
-                    }
-                    );
+            // highlightPaddle();
             // meshs[max].material = matSphere;
         } else{
             //meshs[max].material = matBoxSleep;
@@ -764,6 +816,46 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
         cContact = world.numContactPoints;
        
 
+    }
+
+    function highlightPaddle(){
+        TweenMax.fromTo(outlinePaddle.scale, .2, {
+                        x:1.0,
+                        y:1.0,
+                        z:1.0,
+                        ease:"Power3.easeOut",
+                        //ease: Back.easeInOut.config(.5),
+                       // repeat:1,
+                        
+
+                    },
+                    {
+                        x:1.2,
+                        y:1.2,
+                        z:1.2,
+                        ease:"Power3.easeOut",
+                        //ease: Back.easeInOut.config(.5),
+                        yoyo:true,
+                        repeat:1,
+                        onComplete:function(){
+                      //  console.log('tweened');
+                            hitCount++;
+                        }
+
+                    }
+        );
+    }
+
+    function updateScore(){
+       // hitCount++;
+        document.getElementById("scores").innerHTML = hitCount;
+    }
+
+    Array.prototype.contains = function ( needle ) {
+       for (i in this) {
+           if (this[i] == needle) return true;
+       }
+       return false;
     }
 
 </script>
