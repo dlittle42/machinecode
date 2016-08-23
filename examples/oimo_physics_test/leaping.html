@@ -79,6 +79,7 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
 <script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
 <script src="../../bower_components/dat.gui/dat.gui.js"></script>
 <script src="../../bower_components/Oimo.js/build/Oimo.js"></script>
+<script src="../../bower_components/howler.js/dist/howler.min.js"></script>
 
 
 <script src="../../bower_components/three.js/examples/js/shaders/CopyShader.js"></script>
@@ -137,13 +138,10 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
     var cContact = 0;
     var debug = false;
     var collideArr = [];
+    var sound;
 
     var controller, leap_left, leap_right, leap_top, leap_bottom, ib;
-    var percent_width = 0;
-    var percent_height = 0;
-    var percent_depth = 0;
-    var rot_x = 0;
-    var rot_y = 0;
+
 
 
     //oimo var
@@ -340,6 +338,7 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
         controller = new Leap.Controller();
         controller.connect();
         setupLeap();
+        loadSound();
 
     }
 
@@ -849,6 +848,8 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
                         ease:"Power3.easeOut",
                         //ease: Back.easeInOut.config(.5),
                        // repeat:1,
+
+                     
                         
 
                     },
@@ -860,9 +861,13 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
                         //ease: Back.easeInOut.config(.5),
                         yoyo:true,
                         repeat:1,
+                        onStart: function(){
+                            playSound();
+                        },
                         onComplete:function(){
                       //  console.log('tweened');
                             hitCount++;
+                            
                         }
 
                     }
@@ -955,7 +960,7 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
                // leapToScene(frame.hands[i].palmPosition);
              
             //  paddel.position.copy(leapToScene(frame.hands[i].palmPosition));
-              console.log(frame.hands[i].palmPosition +" + pos="+paddel.position.x);
+         //     console.log(frame.hands[i].palmPosition +" + pos="+paddel.position.x);
               /*for(var j = 0; j <5; j++){
                 if(frame.hands[i].fingers[j]){
                   hands[i].fingers[j].position = leapToScene(frame.hands[i].fingers[j].tipPosition)   
@@ -979,6 +984,18 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
         var z = (leapPosition[2]/300)*SCENE_SIZE
         var toReturn = new THREE.Vector3(x,y,z)
         return toReturn
+      }
+
+      function loadSound(){
+        sound = new Howl({
+          src: ['../_audio/boing.mp3']
+        });
+        sound.play();
+
+      }
+
+      function playSound(){
+        sound.play();
       }
 
    
