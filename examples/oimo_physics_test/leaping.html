@@ -603,19 +603,24 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
                   //  console.dir(body);
                   //  console.log("^ "+body.name +" contacts="+body.numContacts);
                      mesh.material = matBox;
-                  //   console.log(collideArr);
+                     console.log(collideArr);
+                     console.log(collideArr.contains(body.name));
                      
 
                      
                     if (collideArr.contains(body.name)) {
                        // do something special
+                       console.log(collideArr);
+                     console.log(collideArr.contains(body.name));
+
                        
                     }else{
                         
-                        highlightPaddle();
-                        updateScore();
+                        
                         if (body.name!="paddle") {
                             collideArr.push(body.name );
+                            highlightPaddle();
+                        updateScore();
                         }
                     }
                 }
@@ -634,6 +639,22 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
                 if(mesh.position.y<-500){
                     bodys[i].body.awake();
                   //  if(mesh.material.name === 'box') mesh.material = matBox;
+                    /*
+                    if (collideArr.contains(body.name)) {
+                        var n = collideArr.indexOf(body.name);
+                        if(n != -1) {
+                            collideArr.splice(i, 1);
+                        }
+                        
+                        
+                    }
+                    */
+
+                    for(var n = collideArr.length-1; n--;){
+                            if (collideArr[n] === body.name) collideArr.splice(n, 1);
+                        }
+
+
                      x = -100 + Math.random()*200;
                     z = -100 + Math.random()*200;
                     y = 100 + Math.random()*1000;
