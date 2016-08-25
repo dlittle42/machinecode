@@ -153,6 +153,7 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
 
     var collideArr = [];
     var sound;
+    var gui;
 
     var controller, leap_left, leap_right, leap_top, leap_bottom, ib;
 
@@ -330,7 +331,7 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
         setupDatgui();
         //loadSound();
 
-        setGameMode();
+        setGameMode('mouse');
         initOimoPhysics();
 
        // loadSound();
@@ -344,15 +345,15 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
 
     }
 
-    function setGameMode(){
+    function setGameMode(nval){
         console.log('setGameMode');
-        if (datPanel.mode == "mouse"){
+        if (nval == "mouse"){
             if (controller) controller.disconnect();
             canvas.addEventListener( 'mousemove', moveTarget, false);
             console.dir(camera.position);
             moveCamera(-300,250,300,1);
 
-        }else if (datPanel.mode == "leapMotion"){
+        }else if (nval == "leapMotion"){
             moveCamera(0,450,400,1);
             canvas.removeEventListener( 'mousemove', moveTarget);
             //start LeapMotion
@@ -439,7 +440,7 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
 
 
         datPanel = new datControl();
-        var gui = new dat.GUI();
+        gui = new dat.GUI();
         gui.add(datPanel, 'audio');
         gui.add(datPanel, 'debug');
         gui.add(datPanel, 'restart');
@@ -451,7 +452,7 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
         // Listen to changes within the GUI
         setMode.onChange(function(newValue) {
             console.log("Value changed to:  ", newValue);
-            setGameMode();
+            setGameMode(newValue);
         });
 
         var setGravity = gui.add(datPanel, 'gravity', -10, 0);
@@ -1161,7 +1162,23 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
 
 //    setInterval(updateGradient,300);
 
-   
+   document.body.onkeyup = function(e){
+        if(e.keyCode == 32){
+            console.log('spacebar' + datPanel.mode);
+
+            if(datPanel.mode=="mouse"){
+                var nval = "leapMotion"
+            }else{
+                var nval = "mouse"
+            }
+
+            datPanel.mode = nval;
+            setGameMode(nval)
+            for (var i in gui.__controllers) {
+                gui.__controllers[i].updateDisplay();
+              }
+        }
+    }
 
 </script>
 </body>
