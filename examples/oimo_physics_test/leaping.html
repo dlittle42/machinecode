@@ -64,10 +64,17 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
 
     #scores{
             position: absolute;
-    top: 80px;
-    margin: 10px 20px;
-    font-size: 3em;
-    border-bottom: 3px solid white;
+            top: 80px;
+            margin: 10px 20px;
+            font-size: 3em;
+            border-bottom: 3px solid white;
+    }
+
+    #debug{
+        position: absolute;
+        top: 150px;
+        margin: 10px 20px;
+       
     }
 
 </style>
@@ -114,6 +121,8 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
 
 <div id='scores'></div>
 
+<div id='debug'></div>
+
  
 <script>
     var isMobile = false;
@@ -135,9 +144,13 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
     var max =10;
     var contactCheck;
     var hitCount = 0;
+
     var fps=0, time, time_prev=0, fpsint = 0;
-    var cContact = 0;
-    var debug = false;
+
+    var datControl, datPanel;
+//var debug = false;
+
+
     var collideArr = [];
     var sound;
 
@@ -152,6 +165,7 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
     var type = 1;
     var applyEffects = false;
  
+    loadSound();
     init();
     loop();
 
@@ -166,12 +180,15 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
       //  camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 5000 );
       //  camera.position.set( -400, 160, 0 );
 
-        camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, SCENE_SIZE/1000, SCENE_SIZE*5 );
-        camera.position.set( 0, 400, SCENE_SIZE/4 );
+     //   camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, SCENE_SIZE/1000, SCENE_SIZE*5 );
+    //    camera.position.set( 0, 400, SCENE_SIZE/4 );
        // camera.position.z = SCENE_SIZE/2;
 
+        camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 5000 );
+        camera.position.set( -400, 160, 0 );
+
         controls = new THREE.OrbitControls( camera, canvas );
-       // controls.target.set(0, 20, 0);
+        controls.target.set(0, 20, 0);
         controls.update();
 
         ray = new THREE.Raycaster();
@@ -310,37 +327,40 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
         //canvas.onmousemove = rayTest;
 
         // physics
+        setupDatgui();
+        //loadSound();
 
+        setGameMode();
         initOimoPhysics();
 
-        var blockControl = function() {
-          this.gravity = -2;
-          this.displayOutline = false;
-         // this.explode = function() { console.log('explode')};
-          // Define render logic ...
-        };
-
-
-      var panel = new blockControl();
-      var gui = new dat.GUI();
-      
-      var slider = gui.add(panel, 'gravity', -10, 0);
-      gui.add(panel, 'displayOutline');
-     // gui.add(panel, 'explode');
-
-      // Listen to changes within the GUI
-        slider.onChange(function(newValue) {
-            console.log("Value changed to:  ", newValue);
-            gravity(newValue);
-        });
-
-
+       // loadSound();
+/*
         //start LeapMotion
         controller = new Leap.Controller();
         controller.connect();
         setupLeap();
         loadSound();
+        */
 
+    }
+
+    function setGameMode(){
+        console.log('setGameMode');
+        if (datPanel.mode == "mouse"){
+            if (controller) controller.disconnect();
+            canvas.addEventListener( 'mousemove', moveTarget, false);
+            console.dir(camera.position);
+            moveCamera(-300,250,300,1);
+
+        }else if (datPanel.mode == "leapMotion"){
+            moveCamera(0,450,400,1);
+            canvas.removeEventListener( 'mousemove', moveTarget);
+            //start LeapMotion
+            if (!controller) controller = new Leap.Controller();
+            controller.connect();
+            setupLeap();
+            populate(2);
+        }
     }
 
     function loop() {
@@ -399,6 +419,70 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
         meshs = [];
     }
 
+    function setupDatgui(){
+
+        var datControl = function() {
+          this.gravity = -8;
+          this.mode = "mouse";
+          this.audio = false;
+          this.debug = false;
+          this.restart = function(){ console.log('restart'); populate(2);};
+          this.bkgd = function(){ console.log('background change');updateGradient()};
+          this.cameraPos = function(){
+            console.log(camera.position);
+                //moveCamera(0,400,200,.5);
+
+            
+          }
+
+        };
+
+
+        datPanel = new datControl();
+        var gui = new dat.GUI();
+        gui.add(datPanel, 'audio');
+        gui.add(datPanel, 'debug');
+        gui.add(datPanel, 'restart');
+        gui.add(datPanel, 'bkgd');
+        gui.add(datPanel, 'cameraPos');
+
+        
+        var setMode = gui.add(datPanel, 'mode', [ 'mouse', 'leapMotion']);//, 'vr' ] );
+        // Listen to changes within the GUI
+        setMode.onChange(function(newValue) {
+            console.log("Value changed to:  ", newValue);
+            setGameMode();
+        });
+
+        var setGravity = gui.add(datPanel, 'gravity', -10, 0);
+        // Listen to changes within the GUI
+        setGravity.onChange(function(newValue) {
+            console.log("Value changed to:  ", newValue);
+            world.gravity = new OIMO.Vec3(0, newValue, 0);
+        });
+       
+    }
+
+    function moveCamera(xpos,ypos,zpos, sec){
+        TweenMax.to(camera.position, sec, {
+                    x:xpos,
+                    y:ypos,
+                    z:zpos,
+                    ease:"Power3.easeOut",
+                    onStart: function(){
+                    },
+                    onUpdate: function(){
+                        camera.updateProjectionMatrix();
+                        camera.lookAt(scene.position);
+                    },
+                    onComplete:function(){
+
+                    }
+
+                }
+            );
+    }
+
     //----------------------------------
     //  OIMO PHYSICS
     //----------------------------------
@@ -406,6 +490,8 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
     function initOimoPhysics(){
         console.log('init');
         world = new OIMO.World(1/60, 2, 8);
+        world.gravity = new OIMO.Vec3(0, -8, 0);
+        addStaticBox([400, 40, 400], [0,-20,0], [0,0,0]);
         populate(2);
         setInterval(updateOimoPhysics, 1000/60);
 
@@ -428,6 +514,7 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
 
         // reset old
         clearMesh();
+        resetScore();
         world.clear();
 
         // Is all the physics setting for rigidbody
@@ -443,7 +530,7 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
 
         //add ground
      //   var ground = new OIMO.Body({size:[400, 40, 400], pos:[0,-20,0], world:world, config:config});
-        addStaticBox([400, 40, 400], [0,-20,0], [0,0,0]);
+      //  addStaticBox([400, 40, 400], [0,-20,0], [0,0,0]);
 
 
 
@@ -603,15 +690,15 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
                   //  console.dir(body);
                   //  console.log("^ "+body.name +" contacts="+body.numContacts);
                      mesh.material = matBox;
-                     console.log(collideArr);
-                     console.log(collideArr.contains(body.name));
+                   //  console.log(collideArr);
+                    // console.log(collideArr.contains(body.name));
                      
 
                      
                     if (collideArr.contains(body.name)) {
                        // do something special
-                       console.log(collideArr);
-                     console.log(collideArr.contains(body.name));
+                      // console.log(collideArr);
+                    // console.log(collideArr.contains(body.name));
 
                        
                     }else{
@@ -639,21 +726,21 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
                 if(mesh.position.y<-500){
                     bodys[i].body.awake();
                   //  if(mesh.material.name === 'box') mesh.material = matBox;
-                    /*
+                    
                     if (collideArr.contains(body.name)) {
                         var n = collideArr.indexOf(body.name);
                         if(n != -1) {
-                            collideArr.splice(i, 1);
+                            collideArr.splice(n, 1);
                         }
                         
                         
                     }
-                    */
-
+                    
+                    /*
                     for(var n = collideArr.length-1; n--;){
                             if (collideArr[n] === body.name) collideArr.splice(n, 1);
                         }
-
+                    */
 
                      x = -100 + Math.random()*200;
                     z = -100 + Math.random()*200;
@@ -811,7 +898,7 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
 
     function displayInfo(){
         
-        if (debug){
+        if (datPanel.debug){
             time = Date.now();
             if (time - 1000 > time_prev) {
                 time_prev = time; fpsint = fps; fps = 0;
@@ -829,35 +916,13 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
                 "Narrow-Phase Time: " + world.performance.narrowPhaseTime + " ms<br>",
                 "Solving Time: " + world.performance.solvingTime + " ms<br>",
                 "Updating Time: " + world.performance.updatingTime + " ms<br>",
-                "Total Time: " + world.performance.totalTime + " ms "
+                "Total Time: " + world.performance.totalTime + " ms<br> ",
+                "collideArr: " + collideArr
             ].join("\n");
-            document.getElementById("info").innerHTML = info;
+            document.getElementById("debug").innerHTML = info;
         }
 
-        if (cContact < world.numContactPoints){
-          //  hitCount++;
-            
-            // outlinePaddle.scale.set(1.2,1.2,1.2);
-            // highlightPaddle();
-            // meshs[max].material = matSphere;
-        } else{
-            //meshs[max].material = matBoxSleep;
-          //  outlinePaddle.scale.set(0,0,0);
-         /* TweenMax.to(outlinePaddle.scale, .2, {
-                        x:1.0,
-                        y:1.0,
-                        z:1.0,
-                        ease:"Power3.easeOut",
-                        //ease: Back.easeInOut.config(.5),
-                        yoyo:true,
-                       // repeat:1,
-                        onUpdate:function(){
-                      //  console.log('tweened');
-                        }
-                    });
-                    */
-        }
-        cContact = world.numContactPoints;
+
        
 
     }
@@ -884,11 +949,12 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
                         yoyo:true,
                         repeat:1,
                         onStart: function(){
-                            playSound();
+                           if (datPanel.audio) playSound();
+                           hitCount++;
                         },
                         onComplete:function(){
                       //  console.log('tweened');
-                            hitCount++;
+                            
                             
                         }
 
@@ -899,6 +965,11 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
     function updateScore(){
        // hitCount++;
         document.getElementById("scores").innerHTML = hitCount;
+    }
+
+    function resetScore(){
+        hitCount = 0;
+        updateScore();
     }
 
     Array.prototype.contains = function ( needle ) {
@@ -957,9 +1028,10 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
 */
 
     function setupLeap(){
+        console.dir(controller);
   
         controller.on('animationFrame',function(frame){
-            if (!frame || !frame.valid) {
+            if (!frame || !frame.valid || datPanel.mode!="leapMotion") {
                 return;
             }
             if (frame.hands[0]){
@@ -972,13 +1044,10 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
                 paddel.position.x = xpos;
                 paddel.position.z = zpos;
                
-            }else{
-                paddel.position.x = 0;
-                paddel.position.z = 0;
             }
 
-          for(var i = 0; i <2; i++){
-            if(frame.hands[i]){
+       //   for(var i = 0; i <2; i++){
+          //  if(frame.hands[i]){
                // leapToScene(frame.hands[i].palmPosition);
              
             //  paddel.position.copy(leapToScene(frame.hands[i].palmPosition));
@@ -991,12 +1060,16 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
                 }
               }
               */
-            }else{
+          //  }else{
             //  paddel.position.x = 0;//SCENE_SIZE *1000;
 
-            }
-          } 
+           // }
+          //} 
         });
+    }
+
+    function turnOffLeap(){
+
     }
 
 
@@ -1008,6 +1081,8 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
         return toReturn
       }
 
+
+
       function loadSound(){
         sound = new Howl({
           src: ['../_audio/boing.mp3']
@@ -1018,6 +1093,10 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
 
       function playSound(){
         sound.play();
+      }
+
+      function muteAll(){
+        howler.mute();
       }
 
 
@@ -1080,7 +1159,7 @@ background: linear-gradient(to left, #c2e59c , #64b3f4); /* W3C, IE 10+/ Edge, F
       }
     }
 
-    setInterval(updateGradient,300);
+//    setInterval(updateGradient,300);
 
    
 
