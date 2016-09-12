@@ -72,8 +72,10 @@ gulp.task('deploy', ['build-glsl', 'build-js'], shell.task([
 ]));
 
 gulp.task('local', shell.task([
-  'live-server'
-]));
+  'live-server --host=0.0.0.0'
+])
+
+);
 
 gulp.task('doc', function(){
   gulp.src(['./src/**/*.js'], {})
