@@ -128,8 +128,43 @@
 			    background-clip:text;
 			    -webkit-text-fill-color:transparent;
 			    margin:0;
-			    
-			}
+			    /*
+			-moz-animation:BackgroundAnimated 15s linear infinite;
+    -ms-animation:BackgroundAnimated 15s linear infinite;
+    -o-animation:BackgroundAnimated 15s linear infinite;
+    animation:BackgroundAnimated 15s linear infinite;
+    */
+}
+    @keyframes BackgroundAnimated {
+    from {
+        background-position:0 50%
+    }
+    to {
+        background-position:100% 50%
+    }
+}
+    @-webkit-keyframes BackgroundAnimated {
+    from {
+        background-position:0 50%
+    }
+    to {
+        background-position:100% 50%
+    }
+}
+    @-ms-keyframes BackgroundAnimated {<     from {
+        background-position:0 50%
+    }
+    to {
+        background-position:100% 50%
+    }
+}
+    @-moz-keyframes BackgroundAnimated {
+    from {
+        background-position:0 50%
+    }
+    to {
+        background-position:100% 50%
+    }
 
 		</style>
 	</head>
