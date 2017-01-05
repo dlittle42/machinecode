@@ -300,8 +300,8 @@ function init(){
     window.addEventListener('resize', onResize, true);
     window.addEventListener('vrdisplaypresentchange', onResize, true);
     document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-    document.addEventListener( 'click', createBlaster, false );
-    document.addEventListener( 'touchstart', createBlaster, false );
+    document.addEventListener( 'click', createBlaster, true );
+    document.addEventListener( 'touchstart', createBlaster, true );
 
     
 
@@ -672,7 +672,7 @@ scene.add(cube);
 cube.position.set(0, controls.userHeight, -10);
 
 */
-event.preventDefault();
+  if (manager.mode == 3) event.preventDefault();
  // manager.enterVRMode_();
  // console.log(manager.mode)
   console.log('createBlaster')
