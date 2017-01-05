@@ -2,7 +2,7 @@
 
 <html lang="en">
 <head>
-<title>Web VR boilerplate</title>
+<title>Space Harrier VR</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
 <meta name="mobile-web-app-capable" content="yes">
@@ -24,6 +24,9 @@ body {
   left: 10px;
   z-index: 101;
 }
+/*
+* {cursor: none;}
+*/
 </style>
 </head>
 
@@ -208,7 +211,7 @@ function loadSound(){
   sound = new Howl({
     src: ['../_audio/boing.mp3']
   });
-  //sound.play();
+  sound.play();
 
   intro = new Howl({
     src: ['audio/ready.mp3']
