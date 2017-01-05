@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<title>Web VR boilerplate</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<style>
+body {
+  width: 100%;
+  height: 100%;
+  background-color: #bd8ef8;
+  color: #fff;
+  margin: 0px;
+  padding: 0;
+  overflow: hidden;
+}
+#info{
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 101;
+}
+</style>
+</head>
+
+<body>
+<div id='info'>Tilt Info</div>
+
+</body>
+
+<script id="vertexShader" type="x-shader/x-vertex">
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+}
+  </script>
+  
+  <script id="fragmentShader" type="x-shader/x-fragment">
+uniform vec3 color1;
+uniform vec3 color2;
+uniform float scale;
+varying vec2 vUv;
+void main() {
+  vec2 center = -1.0 + 2.0 * vUv;
+  vec2 uv = floor(center.xy * scale);
+  if(mod(uv.x + uv.y, 2.0) > 0.5){
+    gl_FragColor = vec4(color1, 1.0);
+  }else{
+    gl_FragColor = vec4(color2, 1.0);
+  }
+}
+  </script>
+
+<script>
+/*
+ * Debug parameters.
+ */
+WebVRConfig = {
+  /**
+   * webvr-polyfill configuration
+   */
+
+  // Forces availability of VR mode.
+  //FORCE_ENABLE_VR: true, // Default: false.
+  // Complementary filter coefficient. 0 for accelerometer, 1 for gyro.
+  //K_FILTER: 0.98, // Default: 0.98.
+  // How far into the future to predict during fast motion.
+  //PREDICTION_TIME_S: 0.040, // Default: 0.040 (in seconds).
+  // Flag to disable touch panner. In case you have your own touch controls
+  //TOUCH_PANNER_DISABLED: true, // Default: false.
+  // Enable yaw panning only, disabling roll and pitch. This can be useful for
+  // panoramas with nothing interesting above or below.
+  YAW_ONLY: true, // Default: false.
+  // Enable the deprecated version of the API (navigator.getVRDevices).
+  //ENABLE_DEPRECATED_API: true, // Default: false.
+  // Scales the recommended buffer size reported by WebVR, which can improve
+  // performance. Making this very small can lower the effective resolution of
+  // your scene.
+  BUFFER_SCALE: 1, // default: 1.0
+  // Allow VRDisplay.submitFrame to change gl bindings, which is more
+  // efficient if the application code will re-bind it's resources on the
+  // next frame anyway.
+  // Dirty bindings include: gl.FRAMEBUFFER_BINDING, gl.CURRENT_PROGRAM,
+  // gl.ARRAY_BUFFER_BINDING, gl.ELEMENT_ARRAY_BUFFER_BINDING,
+  // and gl.TEXTURE_BINDING_2D for texture unit 0
+  // Warning: enabling this might lead to rendering issues.
+  //DIRTY_SUBMIT_FRAME_BINDINGS: true // default: false
+};
+</script>
+
+<!--
+  A polyfill for Promises. Needed for IE and Edge.
+  -->
+<script src="node_modules/es6-promise/dist/es6-promise.js"></script>
+
+<!--
+  three.js 3d library
+  -->
+<script src="node_modules/three/build/three.min.js"></script>
+
+<!--
+  VRControls.js acquires positional information from connected VR devices and applies the transformations to a three.js camera object.
+   -->
+<script src="node_modules/three/examples/js/controls/VRControls.js"></script>
+<!--
+<script src="node_modules/three/examples/js/controls/DeviceOrientationControls.js"></script>
+-->
+<!--
+  VREffect.js handles stereo camera setup and rendering.
+  -->
+<script src="node_modules/three/examples/js/effects/VREffect.js"></script>
+
+<!--
+  A polyfill for WebVR using the Device{Motion,Orientation}Event API.
+  -->
+<script src="node_modules/webvr-polyfill/build/webvr-polyfill.js"></script>
+
+<!--
+  Helps enter and exit VR mode, provides best practices while in VR.
+  -->
+<script src="build/webvr-manager.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.19.0/TweenMax.min.js"></script>
+<!--
+<script src="build/threejs-texture-checkerboard.js"></script>
+-->
+<script src="node_modules/howler/dist/howler.min.js"></script>
+
+<script>
+
+var forceVR = true;
+var debug = false;//true;
+
+var renderer, scene, camera, controls, effect, manager, loader;
+var pivot, player, player_sprite;
+var mouse = new THREE.Vector2();
+var uTime;
+var helper;
+var blasterArr = [];
+var blasterSpeed = .3;//5;
+var info = document.getElementById('info');
+var sound, intro;
+
+var hemisphereLight, shadowLight;
+var floorMaterial, floorPlane;
+var floor = [];
+var checkerTexture;
+var xA = 0;
+var yA = 0;
+var accX = 0;
+var accY= 0;
+var accZ = 0;
+
+// Request animation frame loop function
+var lastRender = 0;
+
+var vrDisplay;
+
+var accZsmooth = 0;
+var accYsmooth = 0;
+var factor = .98;
+
+
+var Colors = {
+  red:0xf25346,
+  white:0xd8d0d1,
+  brown:0x59332e,
+  pink:0xF5986E,
+  brownDark:0x23190f,
+  blue:0x68c3c0,
+};
+
+// shader for checkerboard
+
+var uniforms = {
+      "color1" : {
+        type : "c",
+        value : new THREE.Color(0x76c876)
+      },
+      "color2" : {
+        type : "c",
+        value : new THREE.Color(0xa7f9a7)
+      },
+      "scale" : {
+        type : "f",
+        value : 80,
+        min : 1, // only used for dat.gui, not needed for production
+        max : 100 // only used for dat.gui, not needed for production
+      },
+    }
+var vertexShader = document.getElementById('vertexShader').text;
+var fragmentShader = document.getElementById('fragmentShader').text;
+var checkerTexture = new THREE.ShaderMaterial(
+        {
+          uniforms : uniforms,
+          vertexShader : vertexShader,
+          fragmentShader : fragmentShader,
+          side: THREE.DoubleSide
+         // doubleSide: true,
+        });
+
+function loadSound(){
+  sound = new Howl({
+    src: ['../_audio/boing.mp3']
+  });
+  //sound.play();
+
+  intro = new Howl({
+    src: ['audio/ready.mp3']
+  });
+  intro.play();
+
+}
+
+function playSound(){
+  sound.play();
+}
+
+function playGetReady(){
+  getReady.play();
+}
+
+function muteAll(){
+  howler.mute();
+}
+
+
+function init(){
+
+
+
+
+    // Setup three.js WebGL renderer. Note: Antialiasing is a big performance hit.
+    // Only enable it if you actually need to.
+    renderer = new THREE.WebGLRenderer({antialias: false});
+    renderer.setPixelRatio(window.devicePixelRatio);
+
+    // Append the canvas element created by the renderer to document body element.
+    document.body.appendChild(renderer.domElement);
+
+    // Create a three.js scene.
+    scene = new THREE.Scene();
+
+    scene.background = new THREE.Color( 0xbd8ef8 );
+
+
+
+    // Create a three.js camera.
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+    //var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 100);
+
+    controls = new THREE.VRControls(camera);
+    controls.standing = true;
+    controls.standing = true;
+
+    // Apply VR stereo rendering to renderer.
+    effect = new THREE.VREffect(renderer);
+    effect.setSize(window.innerWidth, window.innerHeight);
+
+    // Create a VR manager helper to enter and exit VR mode.
+    var params = {
+      hideButton: false, // Default: false.
+      isUndistorted: false // Default: false.
+    };
+    manager = new WebVRManager(renderer, effect, params);
+
+    
+
+    loader = new THREE.TextureLoader();
+    //setPlayerTexture calls setupStage which triggers animate
+    loader.load('img/Space_Harrier_player_sprite.png', setPlayerTexture);
+
+    var loader2 = new THREE.TextureLoader();
+    loader2.load('img/blaster.png', function(texture){
+        blasterMaterial = new THREE.SpriteMaterial( { map: texture, color: 0xffffff } );
+       // createBlaster();
+
+       // needs a delay??
+       if (forceVR && manager.isVRCompatible){
+          manager.enterVRMode_();
+          console.log(manager)
+       }
+
+    });
+
+    createLights();
+    setupGround();
+   // addGround();
+
+    
+
+    window.addEventListener('resize', onResize, true);
+    window.addEventListener('vrdisplaypresentchange', onResize, true);
+    document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+    document.addEventListener( 'click', createBlaster, false );
+    document.addEventListener( 'touchstart', createBlaster, false );
+
+    
+
+
+}
+
+function createFloor(){
+
+}
+
+ 
+
+
+
+/*
+// Add a repeating grid as a skybox.
+var boxSize = 5;
+var loader = new THREE.TextureLoader();
+loader.load('img/box.png', onTextureLoaded);
+
+function onTextureLoaded(texture) {
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(boxSize, boxSize);
+
+  var geometry = new THREE.BoxGeometry(boxSize, boxSize, boxSize);
+  var material = new THREE.MeshBasicMaterial({
+    map: texture,
+    color: 0x01BE00,
+    side: THREE.BackSide
+  });
+*/
+
+
+
+
+/*
+  // Align the skybox to the floor (which is at y=0).
+  skybox = new THREE.Mesh(geometry, material);
+  skybox.position.y = boxSize/2;
+  scene.add(skybox);
+*/
+
+  // Floor
+  //var floor = new THREE.Mesh(cube, floorMat );
+  //scene.add( floor );
+
+ // createSea();
+
+
+  // For high end VR devices like Vive and Oculus, take into account the stage
+  // parameters provided.
+ // setupStage();
+//}
+
+
+// Create 3D objects.
+/*
+var geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+//var material = new THREE.MeshNormalMaterial();
+var cube = new THREE.Mesh(geometry, material);
+
+// Position cube mesh to be right in front of you.
+cube.position.set(0, controls.userHeight, -1);
+
+// Add cube mesh to your three.js scene
+scene.add(cube);
+*/
+
+
+
+function setPlayerTexture(playerTexture){
+  //var playerTexture = THREE.ImageUtils.loadTexture( 'img/Space_Harrier_player_sprite.png' );
+  var playerMaterial = new THREE.SpriteMaterial( { map: playerTexture, color: 0xffffff } );
+  player = new THREE.Sprite( playerMaterial );
+
+
+  //player.position.set(0, controls.userHeight, -1);
+  player.position.z = -1;
+
+  player.scale.set( .5, .5, 1.0 ); // imageWidth, imageHeight
+
+  pivot = new THREE.Object3D();
+  pivot.position.set(0, controls.userHeight, 0);
+  scene.add(pivot);
+  pivot.add(player);
+
+  var r = 1;
+  helper = new THREE.BoxHelper( new THREE.Mesh( new THREE.BoxGeometry( r, r, r)));
+  helper.material.color.setHex( 0x080808);
+  helper.material.blending = THREE.AdditiveBlending;
+  //helper.position.set(0, controls.userHeight, 0);
+  helper.position.z = -1;
+  helper.scale.set( .2, .2, .2);
+  pivot.add(helper);
+
+  if (debug ==false) helper.visible = false;
+  // position the object on the pivot, so that it appears 5 meters 
+  // in front of the user.
+
+  //controlPlayer(0,0);
+
+
+  //scene.add( player );
+
+  setupStage();
+
+}
+
+
+function animate(timestamp) {
+  var delta = Math.min(timestamp - lastRender, 500);
+  lastRender = timestamp;
+  //uTime = timestamp;
+
+  // Apply rotation to cube mesh
+ // cube.rotation.y += delta * 0.0006;
+
+  controls.update();
+  // Render the scene through the manager.
+  manager.render(scene, camera, timestamp);
+  effect.render(scene, camera);
+
+  
+  //player.position.set(0, controls.userHeight, -1);
+ // pivot.rotation.y = camera.rotation.y;
+  //console.log(camera.rotation.y)
+
+  pivot.rotation.copy( camera.rotation );
+  pivot.updateMatrix();
+
+
+  //pivot.applyQuaternion(camera.quaternion);
+/*
+  var yaxis = new THREE.Vector3(0, 1, 0);
+var zaxis = new THREE.Vector3(0, 0, 1);
+var direction = zaxis.clone();
+// Apply the camera's quaternion onto the unit vector of one of the axes
+// of our desired rotation plane (the z axis of the xz plane, in this case).
+direction.applyQuaternion(camera.quaternion);
+// Project the direction vector onto the y axis to get the y component
+// of the direction.
+var ycomponent = yaxis.clone().multiplyScalar(direction.dot(yaxis));
+// Subtract the y component from the direction vector so that we are
+// left with the x and z components.
+direction.sub(ycomponent);
+// Normalize the direction into a unit vector again.
+direction.normalize();
+// Set the pivot's quaternion to the rotation required to get from the z axis
+// to the xz component of the camera's direction.
+pivot.quaternion.setFromUnitVectors(zaxis, direction);
+*/
+/*
+  var vec = new THREE.Vector3( 0, 0, -1 );
+  vec.applyQuaternion( camera.quaternion );
+
+  pivot.rotation.copy( vec );
+
+
+  var vector = camera.getWorldDirection();
+  var theta = Math.atan2(vector.x,vector.z);
+*/
+/*
+  var startRotation = new THREE.Euler().copy( camera.rotation );
+  pivot.rotation.copy(startRotation)
+  */
+ // pivot.rotation.z = camera.rotation.z;
+
+
+ // helper.rotation.y = camera.rotation.y;
+ // helper.rotation.x = camera.rotation.x;
+
+  for(var i=0; i<floor.length; i++) {
+      
+      ground = floor[i]; 
+        
+      // move it forward by a 10th of its array position each time 
+      ground.position.z +=  0.5;
+        
+      // once the star is too close, reset its z position
+      if(ground.position.z>400) ground.position.z-=1600;   
+  }
+ // console.log(camera.rotation)
+ var camDir = camera.getWorldDirection();
+
+ for(var i=0; i<blasterArr.length; i++) {
+    blasterArr[i].position.x += camDir.x * blasterSpeed;
+    blasterArr[i].position.y += camDir.y * blasterSpeed;
+    blasterArr[i].position.z += camDir.z * blasterSpeed;
+    if (timestamp - blasterArr[i].time > 1000) {
+      scene.remove(blasterArr[i]);
+      blasterArr.splice(i, 1);
+    }
+
+ }
+
+ player.position.x = xA;
+ player.position.y = yA;  
+
+
+
+//console.log(yA)
+ 
+ //info.textContent = "x:"+vrDisplay.orientation_.x.toFixed(2)+",y:"+vrDisplay.orientation_.y.toFixed(2)+",z:"+vrDisplay.orientation_.z.toFixed(2);
+
+ 
+
+// console.log(vrDisplay.orientation_)
+
+  vrDisplay.requestAnimationFrame(animate);
+}
+
+function onResize(e) {
+  effect.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+}
+
+
+
+// Get the HMD, and if we're dealing with something that specifies
+// stageParameters, rearrange the scene.
+function setupStage() {
+  navigator.getVRDisplays().then(function(displays) {
+    if (displays.length > 0) {
+      vrDisplay = displays[0];
+      if (vrDisplay.stageParameters) {
+        setStageDimensions(vrDisplay.stageParameters);
+        // if (forceVR && manager.isVRcompatible){
+          //  manager.enterVRMode_();
+           // console.log(manager)
+        // }
+      }
+      vrDisplay.requestAnimationFrame(animate);
+    }
+ //   console.log(vrDisplay.orientation_);
+     // window.addEventListener("devicemotion", function(event) 
+      
+    // is mobile? has accelerometer?
+    //if(window.DeviceMotionEvent) { 
+   //   var util = new Util;
+  //    console.log(util.isMobile)
+  // bad mobile detection
+    if(window.innerWidth < 769) { 
+      console.log('isDeviceMotion')
+
+      window.addEventListener("devicemotion", function(event) 
+      {
+        
+          //accX = Math.round(event.accelerationIncludingGravity.x*10) / 10;  
+          //accY = Math.round(event.accelerationIncludingGravity.y*10) / 10;  
+         // accY = event.accelerationIncludingGravity.y;
+        // if (manager.mode == 1){
+
+          accZ = event.accelerationIncludingGravity.z; 
+          accY = event.accelerationIncludingGravity.y;
+          accZsmooth = factor * accZsmooth + (1 - factor) * accZ;
+          accYsmooth = factor * accYsmooth + (1 - factor) * accY;
+
+          if (debug) info.innerHTML = 'accZ:'+accZ.toFixed(2)+', accZsm:'+accZsmooth.toFixed(2)+', accY:'+accYsmooth.toFixed(2);
+          
+          movement = 2;
+          
+          if (manager.mode == 1){
+            xA = -accYsmooth * movement;
+            yA = - accZsmooth * .4;// *movement;
+          }else{
+            yA = accZsmooth * .5;// *movement;
+            xA = -accYsmooth * .5
+          }
+          
+       /*   }else{
+            xA = 0;
+            yA = 0;
+            player.position.set(0,0,-2)
+
+          }
+          */
+          
+          //run();
+      }, true);
+      /*
+      window.addEventListener("deviceorientation", function(event) 
+      {
+          
+          var xValue = Math.round(event.gamma);
+          var yValue = Math.round(event.beta);
+          var Rotation = Math.round(event.alpha);
+
+          info.innerHTML = 'x:'+xValue+', y:'+yValue+' ,rot:'+Rotation;
+        //  info.innerHTML = "x:"+vrDisplay.orientation_.x.toFixed(2)+",y:"+vrDisplay.orientation_.y.toFixed(2)+",z:"+vrDisplay.orientation_.z.toFixed(2);
+          var halfwidth= window.innerWidth/2;
+          var newYPos = yValue/5;
+          info.innerHTML += ' n:'+newYPos.toFixed(2);
+
+          //for landscape, reverse x and y
+          controlPlayer(newYPos, 0);
+
+
+
+          
+        }, true);
+        */
+
+
+
+    }    
+  });
+  
+}
+
+
+function onDocumentMouseMove( event ) {
+
+  event.preventDefault();
+
+  mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+  mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+  if (debug) info.innerHTML = 'x:'+mouse.x.toFixed(2)+', y:'+mouse.y.toFixed(2);
+
+  //controlPlayer(-mouse.x.toFixed(2)*10)
+  controlPlayer(mouse.x, mouse.y/2)
+
+}
+
+function controlPlayer(xAcc, yAcc){
+
+   // accX = (xAcc*10) / 10;  
+   // accY = (yAcc*10) / 10;  
+
+    accX = xAcc;
+    accY = yAcc;
+    
+    movement = 10;
+    
+    xA = -(accX / 10) * movement;
+    yA = -(accY / 10) * movement;
+
+   //   player.position.x = xpos;
+/*
+     TweenMax.to(player.position ,50,{
+            x:xpos,
+           // y:0,
+            ease:"Power3.easeOut",
+            onUpdate:function(){
+                      //  console.log('tweened');
+            }
+      });
+      */
+}
+/*
+function addLights() {
+    var dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    dirLight.position.set(100, 100, 50);
+    scene.add(dirLight);
+}
+*/
+
+
+
+function createBlaster(event){
+/*
+  var geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+var material = new THREE.MeshNormalMaterial();
+var cube = new THREE.Mesh(geometry, material);
+scene.add(cube);
+cube.position.set(0, controls.userHeight, -10);
+
+*/
+event.preventDefault();
+ // manager.enterVRMode_();
+ // console.log(manager.mode)
+  console.log('createBlaster')
+  /*
+  if (manager.mode == 3){
+    camera.fov = 25;
+
+    camera.updateProjectionMatrix();
+  }else{
+    camera.fov = 75;
+    camera.updateProjectionMatrix();
+
+  }
+  */
+ // console.log(camera.getWorldDirection());
+
+  blaster = new THREE.Sprite( blasterMaterial );
+  //blaster.position.z = -10;
+  //blaster.position.x = 0;//player.position.x;
+  //blaster.position.y = 0;//player.position.y;
+  blaster.scale.set( .2, .2, 1.0 );
+  blaster.time = lastRender;
+
+  //var camDir = camera.getWorldDirection();
+//  var scaleCam = camDir.multiplyScalar(1.1);
+
+ // blaster.position.set(player.position.x, controls.userHeight + player.position.y, player.position.z - .1);
+
+
+  var vector = new THREE.Vector3();
+  vector.setFromMatrixPosition( player.matrixWorld );
+
+  blaster.position.set(vector.x , vector.y, vector.z );
+  scene.add(blaster);
+
+  blasterArr.push(blaster);
+
+  playSound();
+
+}
+
+
+
+
+function setupGround(){
+
+    loader.load('img/checkerboard.jpg', function(texture){
+        var floorTexture = texture;
+        floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping; 
+        floorTexture.repeat.set( 10, 10 );
+        var floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture, side: THREE.DoubleSide } );
+        addGround(floorMaterial);
+    });
+
+
+    
+
+
+   
+}
+
+
+function addGround(floorMaterial){
+
+    //create the ground material using MeshLambert Material
+ //   var groundMat = new THREE.MeshLambertMaterial( {color: 0xffffff, side: THREE.DoubleSide}  );
+    //create the plane geometry
+    var geometry = new THREE.PlaneGeometry(400,800,300,300);
+   // var geometry = new THREE.BoxGeometry(400, 10, 800);
+
+          //create the ground form the geometry and material
+
+
+     for ( var z= -1600; z < 1600; z+=800 ) {
+    
+          
+        /*  //make the terrain bumpy
+          for (var i = 0, l = geometry.vertices.length; i < l; i++) {
+            var vertex = geometry.vertices[i];
+            var value = pn.noise(vertex.x / 10, vertex.y /10, 0);
+            vertex.z = value *6;
+          }
+          //ensure light is computed correctly
+          geometry.computeFaceNormals();
+          geometry.computeVertexNormals();
+        */
+    
+
+       //   var ground = new THREE.Mesh(geometry,groundMat); 
+
+         //  var ground = new THREE.Mesh(geometry,floorMaterial); 
+          var ground = new THREE.Mesh(geometry,checkerTexture); 
+          //rotate 90 degrees around the xaxis so we can see the terrain 
+          ground.rotation.x = -Math.PI/-2;
+          // Then set the z position to where it is in the loop (distance of camera)
+          ground.position.z = z;
+          //add the ground to the scene
+          scene.add(ground); 
+          //finally push it to the stars array 
+          floor.push(ground); 
+      }
+
+
+      /// alt versions
+      /*
+       // var geometry = new THREE.BoxGeometry(200, 200, 200);
+        var floorGeometry = new THREE.PlaneGeometry(1000, 1000, 10, 10);
+       // material = new THREE.MeshBasicMaterial();
+        //var floor = new THREE.Mesh(floorGeometry, material);
+        var floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture, side: THREE.DoubleSide } );
+        floor.position.y = -0.5;
+       floor.rotation.x = Math.PI / 2;
+        scene.add(floor);
+      */
+    /*
+    var floorTexture = new THREE.ImageUtils.loadTexture( 'img/checkerboard.jpg' );
+    floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping; 
+    floorTexture.repeat.set( 10, 10 );
+    var floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture, side: THREE.DoubleSide } );
+    var floorGeometry = new THREE.PlaneGeometry(1000, 1000, 10, 10);
+    var floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.position.y = -0.5;
+    floor.rotation.x = Math.PI / 2;
+    scene.add(floor);
+    */
+  }
+
+
+function createLights() {
+  // A hemisphere light is a gradient colored light; 
+  // the first parameter is the sky color, the second parameter is the ground color, 
+  // the third parameter is the intensity of the light
+  hemisphereLight = new THREE.HemisphereLight(0xaaaaaa,0x000000, .9)
+  
+  // A directional light shines from a specific direction. 
+  // It acts like the sun, that means that all the rays produced are parallel. 
+  shadowLight = new THREE.DirectionalLight(0xffffff, .9);
+
+  // Set the direction of the light  
+  shadowLight.position.set(150, 350, 350);
+  
+  // Allow shadow casting 
+  shadowLight.castShadow = true;
+
+  // define the visible area of the projected shadow
+  shadowLight.shadow.camera.left = -400;
+  shadowLight.shadow.camera.right = 400;
+  shadowLight.shadow.camera.top = 400;
+  shadowLight.shadow.camera.bottom = -400;
+  shadowLight.shadow.camera.near = 1;
+  shadowLight.shadow.camera.far = 1000;
+
+  // define the resolution of the shadow; the higher the better, 
+  // but also the more expensive and less performant
+  shadowLight.shadow.mapSize.width = 2048;
+  shadowLight.shadow.mapSize.height = 2048;
+  
+  // to activate the lights, just add them to the scene
+  scene.add(hemisphereLight);  
+  scene.add(shadowLight);
+}
+
+function setDebug(bool){
+    debug = bool;
+    if (bool ==false) info.innerHTML = null;
+}
+
+
+function setStageDimensions(stage) {
+  // Make the skybox fit the stage.
+  /*
+  var material = skybox.material;
+ // scene.remove(skybox);
+
+  // Size the skybox according to the size of the actual stage.
+  var geometry = new THREE.BoxGeometry(stage.sizeX, boxSize, stage.sizeZ);
+  skybox = new THREE.Mesh(geometry, material);
+
+  // Place it on the floor.
+  skybox.position.y = boxSize/2;
+ // scene.add(skybox);
+*/
+  // Place the cube in the middle of the scene, at user height.
+  player.position.set(0, controls.userHeight, -1);
+}
+
+/*
+window.ondevicemotion = function(event) {
+        
+    accX = Math.round(event.accelerationIncludingGravity.x*10) / 10;  
+    accY = Math.round(event.accelerationIncludingGravity.y*10) / 10;  
+    
+    movement = 1;
+    
+    xA = -(accX / 10) * movement;
+    yA = -(accY / 10) * movement;
+    
+    
+    //run();
+    
+}  
+*/
+
+/*
+var shootDirection = new THREE.Vector3();
+var shootVelo = 15;
+var projector = new THREE.Projector();
+function getShootDir(targetVec){
+    var vector = targetVec;
+    targetVec.set(0,0,1);
+    projector.unprojectVector(vector, camera);
+    var ray = new THREE.Ray(sphereBody.position, vector.sub(sphereBody.position).normalize() );
+    targetVec.copy(ray.direction);
+}
+
+            window.addEventListener("click",function(e){
+                if(controls.enabled==true){
+                    var x = sphereBody.position.x;
+                    var y = sphereBody.position.y;
+                    var z = sphereBody.position.z;
+                    var ballBody = new CANNON.Body({ mass: 1 });
+                    ballBody.addShape(ballShape);
+                    var ballMesh = new THREE.Mesh( ballGeometry, material );
+                    world.add(ballBody);
+                    scene.add(ballMesh);
+                    ballMesh.castShadow = true;
+                    ballMesh.receiveShadow = true;
+                    balls.push(ballBody);
+                    ballMeshes.push(ballMesh);
+                    getShootDir(shootDirection);
+                    ballBody.velocity.set(  shootDirection.x * shootVelo,
+                                            shootDirection.y * shootVelo,
+                                            shootDirection.z * shootVelo);
+
+                    // Move the ball outside the player sphere
+                    x += shootDirection.x * (sphereShape.radius*1.02 + ballShape.radius);
+                    y += shootDirection.y * (sphereShape.radius*1.02 + ballShape.radius);
+                    z += shootDirection.z * (sphereShape.radius*1.02 + ballShape.radius);
+                    ballBody.position.set(x,y,z);
+                    ballMesh.position.set(x,y,z);
+                }
+            });
+
+*/
+  loadSound();
+  init();
+
+</script>
+
+</html>
