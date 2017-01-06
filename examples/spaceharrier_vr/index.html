@@ -151,6 +151,7 @@ var sound, getReady;
 
 var hemisphereLight, shadowLight;
 var floorMaterial, floorPlane;
+var enemyMaterial, obstacleMaterial;
 var floor = [];
 var checkerTexture;
 var xA = 0;
@@ -168,6 +169,8 @@ var accZsmooth = 0;
 var accYsmooth = 0;
 var factor = .98;
 
+//var raycaster, INTERSECTED;
+
 
 var Colors = {
   red:0xf25346,
@@ -177,6 +180,45 @@ var Colors = {
   brownDark:0x23190f,
   blue:0x68c3c0,
 };
+
+// GAME VARIABLES
+var game;
+var deltaTime = 0;
+var newTime = new Date().getTime();
+var oldTime = new Date().getTime();
+var enemiesPool = [];
+var particlesPool = [];
+var particlesInUse = [];
+
+function resetGame(){
+  game = {speed:0,
+          initSpeed:.00035,
+          baseSpeed:.00035,
+          targetBaseSpeed:.00035,
+          incrementSpeedByTime:.0000025,
+          incrementSpeedByLevel:.000005,
+          distanceForSpeedUpdate:100,
+          speedLastUpdate:0,
+
+          distance:0,
+          ratioSpeedDistance:50,
+          energy:100,
+          ratioSpeedEnergy:3,
+
+          level:1,
+          levelLastUpdate:0,
+          distanceForLevelUpdate:1000,
+
+          enemyDistanceTolerance:10,
+          enemyValue:10,
+          enemiesSpeed:.6,
+          enemyLastSpawn:0,
+          distanceForenemiesSpawn:50,
+
+          status : "playing",
+         };
+  //fieldLevel.innerHTML = Math.floor(game.level);
+}
 
 // shader for checkerboard
 
@@ -268,6 +310,8 @@ function init(){
     effect = new THREE.VREffect(renderer);
     effect.setSize(window.innerWidth, window.innerHeight);
 
+   // raycaster = new THREE.Raycaster();
+
     // Create a VR manager helper to enter and exit VR mode.
     var params = {
       hideButton: false, // Default: false.
@@ -291,6 +335,14 @@ function init(){
           manager.enterVRMode_();
           console.log(manager)
        }
+
+    });
+
+    var loader3 = new THREE.TextureLoader();
+    loader2.load('img/enemy.png', function(texture){
+        enemyMaterial = new THREE.SpriteMaterial( { map: texture, color: 0xffffff } );
+       // createEnemy();
+        spawnEnemies();
 
     });
 
@@ -419,6 +471,22 @@ function animate(timestamp) {
   // Apply rotation to cube mesh
  // cube.rotation.y += delta * 0.0006;
 
+ // find intersections
+ /* raycaster.setFromCamera( mouse, camera );
+  var intersects = raycaster.intersectObjects( scene.children );
+  if ( intersects.length > 0 ) {
+    if ( INTERSECTED != intersects[ 0 ].object && intersects[ 0 ].object.name == "enemy") {
+      if ( INTERSECTED ) //INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+      INTERSECTED = intersects[ 0 ].object;
+     // INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+     // INTERSECTED.material.emissive.setHex( 0xff0000 );
+     // console.log(intersects[ 0 ].object.name);
+    }
+  } else {
+    if ( INTERSECTED ) //INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+    INTERSECTED = null;
+  }
+*/
   controls.update();
   // Render the scene through the manager.
   manager.render(scene, camera, timestamp);
@@ -428,6 +496,9 @@ function animate(timestamp) {
   //player.position.set(0, controls.userHeight, -1);
  // pivot.rotation.y = camera.rotation.y;
   //console.log(camera.rotation.y)
+
+
+
 
   pivot.rotation.copy( camera.rotation );
   pivot.updateMatrix();
@@ -496,6 +567,9 @@ pivot.quaternion.setFromUnitVectors(zaxis, direction);
     }
 
  }
+
+ if (enemiesPool.length > 0 ) updateEnemies(camDir);
+ //console.log(enemiesPool.length)
 
  player.position.x = xA;
  player.position.y = yA;  
@@ -674,7 +748,7 @@ cube.position.set(0, controls.userHeight, -10);
   if (manager.mode == 3) event.preventDefault();
  // manager.enterVRMode_();
  // console.log(manager.mode)
-  console.log('createBlaster')
+ // console.log('createBlaster')
   /*
   if (manager.mode == 3){
     camera.fov = 25;
@@ -710,6 +784,153 @@ cube.position.set(0, controls.userHeight, -10);
   blasterArr.push(blaster);
 
   playSound();
+
+}
+
+function createEnemy(ang){
+
+  enemy = new Enemy();
+  console.log('new enemy')
+
+  enemy.mesh.scale.set( .65, .65, 1.0 ); // imageWidth, imageHeight
+
+ // enemy.mesh.position.z = -1;//-Math.sin(enemy.angle)*enemy.distance;
+  enemy.mesh.position.y = controls.userHeight + Math.random()*controls.userHeight ;
+ // enemy.mesh.position.x = (Math.random()*10) - 5;// Math.cos(enemy.angle)*enemy.distance;
+  //player.position.set(0, controls.userHeight, -1);
+  //var ang = Math.random() * 10;
+  enemy.angle = Math.random()*360;
+  enemy.mesh.lookAt(camera);
+  enemy.mesh.name = "enemy";
+ // enemy.angle = - (ang*0.1);
+ // enemy.distance = game.seaRadius + game.planeDefaultHeight + (-1 + Math.random() * 2) * (game.planeAmpHeight-20);
+  enemy.mesh.position.z = -5 + Math.sin(enemy.angle)*10;
+  enemy.mesh.position.x = Math.cos(enemy.angle)*10;
+
+  scene.add(enemy.mesh);
+  enemiesPool.push(enemy);
+ 
+}
+
+function spawnEnemies(){
+  var nenemies = 10;//game.level;
+
+  for (var i=0; i<nenemies; i++){
+    createEnemy(i);
+  }
+}
+
+
+
+var Enemy = function(){
+ /* var geom = new THREE.TetrahedronGeometry(8,2);
+  var mat = new THREE.MeshPhongMaterial({
+    color:Colors.red,
+    shininess:0,
+    specular:0xffffff,
+    shading:THREE.FlatShading
+  });
+  */
+
+  this.mesh = new THREE.Sprite( enemyMaterial );
+  this.mesh.castShadow = false;//true;
+  this.angle = 0;
+  this.dist = 0;
+}
+/*
+var enemiesHolder = function (){
+  this.mesh = new THREE.Object3D();
+  this.enemiesInUse = [];
+}
+
+enemiesHolder.prototype.spawnEnemies = function(){
+  var nenemies = game.level;
+
+  for (var i=0; i<nenemies; i++){
+    var enemy;
+    if (enemiesPool.length) {
+      enemy = enemiesPool.pop();
+    }else{
+      enemy = new Enemy();
+      console.log('new enemy')
+    }
+
+    enemy.angle = - (i*0.1);
+   // enemy.distance = game.seaRadius + game.planeDefaultHeight + (-1 + Math.random() * 2) * (game.planeAmpHeight-20);
+   // enemy.mesh.position.y = -game.seaRadius + Math.sin(enemy.angle)*enemy.distance;
+    enemy.mesh.position.z = -5;//-Math.sin(enemy.angle)*enemy.distance;
+    enemy.mesh.position.x = 0;// Math.cos(enemy.angle)*enemy.distance;
+
+    this.mesh.add(enemy.mesh);
+    this.enemiesInUse.push(enemy);
+  }
+}
+/*
+enemiesHolder.prototype.rotateenemies = function(){
+  for (var i=0; i<this.enemiesInUse.length; i++){
+    var enemy = this.enemiesInUse[i];
+    enemy.angle += game.speed*deltaTime*game.enemiesSpeed;
+
+    if (enemy.angle > Math.PI*2) enemy.angle -= Math.PI*2;
+
+    enemy.mesh.position.y = -game.seaRadius + Math.sin(enemy.angle)*enemy.distance;
+    enemy.mesh.position.x = Math.cos(enemy.angle)*enemy.distance;
+    enemy.mesh.rotation.z += Math.random()*.1;
+    enemy.mesh.rotation.y += Math.random()*.1;
+
+    //var globalenemyPosition =  enemy.mesh.localToWorld(new THREE.Vector3());
+    var diffPos = airplane.mesh.position.clone().sub(enemy.mesh.position.clone());
+    var d = diffPos.length();
+    if (d<game.enemyDistanceTolerance){
+      particlesHolder.spawnParticles(enemy.mesh.position.clone(), 15, Colors.red, 3);
+
+      enemiesPool.unshift(this.enemiesInUse.splice(i,1)[0]);
+      this.mesh.remove(enemy.mesh);
+      game.planeCollisionSpeedX = 100 * diffPos.x / d;
+      game.planeCollisionSpeedY = 100 * diffPos.y / d;
+      ambientLight.intensity = 2;
+
+      removeEnergy();
+      i--;
+    }else if (enemy.angle > Math.PI){
+      enemiesPool.unshift(this.enemiesInUse.splice(i,1)[0]);
+      this.mesh.remove(enemy.mesh);
+      i--;
+    }
+  }
+}
+*/
+
+
+
+function updateEnemies(vec) { 
+ 
+  // iterate through every particle
+  for(var i=0; i<enemiesPool.length; i++) {
+ 
+    var nEnemy = enemiesPool[i]; 
+   // console.log(nEnemy)
+ 
+    // and move it forward dependent on the mouseY position. 
+    nEnemy.mesh.position.z +=  .1;
+ 
+    // if the particle is too close move it to the back
+    if(nEnemy.mesh.position.z>20) nEnemy.mesh.position.z-=40; 
+
+    // console.log(camera.rotation)
+
+/*
+    nEnemy.mesh.position.x -= vec.x * blasterSpeed;
+    nEnemy.mesh.position.y -= vec.y * blasterSpeed;
+    nEnemy.mesh.position.z -= vec.z * blasterSpeed;
+    */
+  }
+ 
+ 
+ 
+}
+
+function createObstacle(){
 
 }
 
@@ -916,9 +1137,11 @@ function getShootDir(targetVec){
             });
 
 */
+  resetGame();
   loadGetReady();
   loadSound();
   init();
+ // createEnemy();
 
 </script>
 
