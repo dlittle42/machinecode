@@ -147,7 +147,7 @@ var helper;
 var blasterArr = [];
 var blasterSpeed = .3;//5;
 var info = document.getElementById('info');
-var sound, intro;
+var sound, getReady;
 
 var hemisphereLight, shadowLight;
 var floorMaterial, floorPlane;
@@ -213,15 +213,19 @@ function loadSound(){
   });
   sound.play();
 
-  intro = new Howl({
-    src: ['audio/ready.mp3']
-  });
-  intro.play();
-
 }
 
 function playSound(){
   sound.play();
+}
+
+function loadGetReady(){
+
+  getReady = new Howl({
+    src: ['audio/ready.mp3']
+  });
+  getReady.play();
+
 }
 
 function playGetReady(){
@@ -234,7 +238,6 @@ function muteAll(){
 
 
 function init(){
-
 
 
 
@@ -308,11 +311,7 @@ function init(){
 
 }
 
-function createFloor(){
 
-}
-
- 
 
 
 
@@ -917,6 +916,7 @@ function getShootDir(targetVec){
             });
 
 */
+  loadGetReady();
   loadSound();
   init();
 
