@@ -137,7 +137,7 @@ WebVRConfig = {
 <script>
 
 var forceVR = false;//true;
-var debug = false;//true;
+var debug = true;
 
 var renderer, scene, camera, controls, effect, manager, loader;
 var pivot, player, player_sprite;
@@ -169,7 +169,12 @@ var accZsmooth = 0;
 var accYsmooth = 0;
 var factor = .98;
 
+
+var playerVector = new THREE.Vector3();
+
+
 //var raycaster, INTERSECTED;
+var raycaster = new THREE.Raycaster();
 
 
 var Colors = {
@@ -189,6 +194,8 @@ var oldTime = new Date().getTime();
 var enemiesPool = [];
 var particlesPool = [];
 var particlesInUse = [];
+
+var collidableMeshList = [];
 
 function resetGame(){
   game = {speed:0,
@@ -487,6 +494,84 @@ function animate(timestamp) {
     INTERSECTED = null;
   }
 */
+
+  // collision detection:
+  //   determines if any of the rays from the cube's origin to each vertex
+  //    intersects any face of a mesh in the array of target meshes
+  //   for increased collision accuracy, add more vertices to the cube;
+  //    for example, new THREE.CubeGeometry( 64, 64, 64, 8, 8, 8, wireMaterial )
+  //   HOWEVER: when the origin of the ray is within the target mesh, collisions do not occur
+ // var originPoint = pivot.position.clone();
+ /*
+  var originPoint = new THREE.Vector3();
+  originPoint.setFromMatrixPosition( player.matrixWorld );
+
+  blaster.position.set(vector.x , vector.y, vector.z );
+  
+  for (var vertexIndex = 0; vertexIndex < helper.geometry.vertices.length; vertexIndex++)
+  {   
+    var localVertex = helper.geometry.vertices[vertexIndex].clone();
+    var globalVertex = localVertex.applyMatrix4( helper.matrix );
+    var directionVector = globalVertex.sub( helper.position );
+    
+    var ray = new THREE.Raycaster( originPoint, directionVector.clone().normalize() );
+    var collisionResults = ray.intersectObjects( collidableMeshList );
+    if ( collisionResults.length > 0 && collisionResults[0].distance < directionVector.length() ) 
+      console.log(" Hit ");
+  } 
+  */
+
+
+  // #3
+
+  /*
+  var newPos = new THREE.Vector3(0,0,0);
+    var collisions = [];
+
+    for (var i = 0; i < lasers.length; i++) {
+      if (lasers[i].active) {
+        lasers[i].time += t;
+        newPos.copy(lasers[i].dir);
+        newPos.multiplyScalar(lasers[i].time * laserVelocity);
+        lasers[i].position.copy(newPos);
+        //lasers[i].rotation.x = Math.PI/2;
+        lasers[i].lookAt(lasers[i].dir);
+        var kill_this_laser = false;
+
+        raycaster.set(lasers[i].position, lasers[i].dir);
+        intersects = raycaster.intersectObjects(planets);
+        if (intersects.length > 0 && intersects[0].distance < collisionDist) {
+          hitCount++;
+          var obj = intersects[i].object;
+          //obj.material.emissive.setHex(0x00ff00);
+      
+          spawnPlanet(obj);
+          kill_this_laser = true;
+        }
+
+        // check max distance for laser:
+        if (lasers[i].position.z < maxLaserDist) {
+          kill_this_laser = true;
+        }
+
+        if (kill_this_laser) killLaser(i);
+      }
+    }
+    */
+
+  playerVector.setFromMatrixPosition( player.matrixWorld );
+ // console.log(playerVector)
+
+  raycaster.set(new THREE.Vector3(playerVector.x, playerVector.y, playerVector.z), camera.position);
+  var collisionResults = raycaster.intersectObjects( collidableMeshList );
+  //if ( collisionResults.length > 0 && collisionResults[0].distance < directionVector.length() ) 
+  if ( collisionResults.length > 0 ) {
+      console.log(" Hit ");
+    player.material.color = new THREE.Color(0x0066CC);
+  }else{
+    player.material.color = new THREE.Color(0xffffff);
+  }
+
   controls.update();
   // Render the scene through the manager.
   manager.render(scene, camera, timestamp);
@@ -775,10 +860,10 @@ cube.position.set(0, controls.userHeight, -10);
  // blaster.position.set(player.position.x, controls.userHeight + player.position.y, player.position.z - .1);
 
 
-  var vector = new THREE.Vector3();
-  vector.setFromMatrixPosition( player.matrixWorld );
+//  var vector = new THREE.Vector3();
+//  vector.setFromMatrixPosition( player.matrixWorld );
 
-  blaster.position.set(vector.x , vector.y, vector.z );
+  blaster.position.set(playerVector.x , playerVector.y, playerVector.z );
   scene.add(blaster);
 
   blasterArr.push(blaster);
@@ -805,10 +890,11 @@ function createEnemy(ang){
  // enemy.angle = - (ang*0.1);
  // enemy.distance = game.seaRadius + game.planeDefaultHeight + (-1 + Math.random() * 2) * (game.planeAmpHeight-20);
   enemy.mesh.position.z = -5 + Math.sin(enemy.angle)*10;
-  enemy.mesh.position.x = Math.cos(enemy.angle)*10;
+  enemy.mesh.position.x = 0;//Math.cos(enemy.angle)*10;
 
   scene.add(enemy.mesh);
   enemiesPool.push(enemy);
+  collidableMeshList.push(enemy.mesh);
  
 }
 
@@ -917,8 +1003,27 @@ function updateEnemies(vec) {
     // if the particle is too close move it to the back
     if(nEnemy.mesh.position.z>20) nEnemy.mesh.position.z-=40; 
 
-    // console.log(camera.rotation)
 
+    
+
+ /// check if enemy is in view of camera ...
+/*
+    camera.updateMatrix();
+    camera.updateMatrixWorld();
+    var frustum = new THREE.Frustum();
+    frustum.setFromMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));  
+
+    // Your 3d point to check
+    var pos = nEnemy.mesh.position;
+    if (frustum.containsPoint(pos)) {
+        // Do something with the position...
+       // console.log(nEnemy.mesh)
+       if (nEnemy.mesh.position.z >-1 )
+          console.log('hit')
+    }
+
+    // console.log(camera.rotation)
+*/
 /*
     nEnemy.mesh.position.x -= vec.x * blasterSpeed;
     nEnemy.mesh.position.y -= vec.y * blasterSpeed;
