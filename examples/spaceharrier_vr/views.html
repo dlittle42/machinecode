@@ -139,7 +139,7 @@ WebVRConfig = {
 var forceVR = false;//true;
 var debug = false;//true;
 
-
+var views;
 var renderer, scene, camera, controls, effect, manager, loader;
 var pivot, player, player_sprite;
 var mouse = new THREE.Vector2();
@@ -199,6 +199,56 @@ var particlesPool = [];
 var particlesInUse = [];
 
 var collidableMeshList = [];
+
+var views = [
+        {
+          left: 0,
+          bottom: 0,
+          width: 0.6,
+          height: 1.0,
+         // background: new THREE.Color().setRGB( 0.5, 0.5, 0.7 ),
+          eye: [ 0, 1, 0 ],
+         // up: [ 0, 1, 0 ],
+          fov: 75,
+          updateCamera: function ( camera, scene, mouseX, mouseY ) {
+  
+            //camera.lookAt( scene.position );
+          }
+          
+        },
+       
+        {
+          left: 0.6,
+          bottom: 0,
+          width: 0.4,
+          height: 0.5,
+          background: new THREE.Color().setRGB( 0.7, 0.5, 0.5 ),
+          eye: [ 0, 50, -3 ],
+          up: [ 0, 10, 0 ],
+          fov: 75,
+          updateCamera: function ( camera, scene, mouseX, mouseY ) {
+    
+            camera.lookAt( camera.position.clone().setY( 0 ) );
+          }
+         
+        },
+        {
+          left: 0.6,
+          bottom: 0.5,
+          width: 0.4,
+          height: 0.5,
+          background: new THREE.Color().setRGB( 0.5, 0.7, 0.7 ),
+          eye: [ 5, 2, -3 ],
+          up: [ 0, 1, 0 ],
+          fov: 75,
+          updateCamera: function ( camera, scene, mouseX, mouseY ) {
+   
+            camera.lookAt( camera.position.clone().setX( 0 ) );
+          }
+          
+        }
+      
+      ];
 
 function resetGame(){
   game = {speed:0,
@@ -261,8 +311,7 @@ var checkerTexture = new THREE.ShaderMaterial(
 
 function loadSound(){
   sound = new Howl({
-    //src: ['../_audio/boing.mp3']
-    src: ['audio/blaster.mp3']
+    src: ['../_audio/boing.mp3']
   });
   sound.play();
 
@@ -302,6 +351,20 @@ function init(){
     // Append the canvas element created by the renderer to document body element.
     document.body.appendChild(renderer.domElement);
 
+
+    for (var ii =  0; ii < views.length; ++ii ) {
+          var view = views[ii];
+          camera = new THREE.PerspectiveCamera( view.fov, window.innerWidth / window.innerHeight, 1, 10000 );
+          camera.position.x = view.eye[ 0 ];
+          camera.position.y = view.eye[ 1 ];
+          camera.position.z = view.eye[ 2 ];
+         // camera.up.x = view.up[ 0 ];
+         // camera.up.y = view.up[ 1 ];
+        //  camera.up.z = view.up[ 2 ];
+          view.camera = camera;
+         // camera.lookAt(0,0,0)
+        }
+
     // Create a three.js scene.
     scene = new THREE.Scene();
 
@@ -310,7 +373,8 @@ function init(){
 
 
     // Create a three.js camera.
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+    camera = views[0].camera;
+   // camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
     //var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 100);
 
 
@@ -319,8 +383,8 @@ function init(){
     controls.standing = true;
     controls.standing = true;
 
-    //camera.y = controls.userHeight;
-   // camera.lookAt(0, controls.userHeight, 0)
+   // camera.y = controls.userHeight;
+    camera.lookAt(0, controls.userHeight, 0)
 
     // Apply VR stereo rendering to renderer.
     effect = new THREE.VREffect(renderer);
@@ -583,9 +647,28 @@ function animate(timestamp) {
 
   controls.update();
   // Render the scene through the manager.
-  manager.render(scene, camera, timestamp);
-  effect.render(scene, camera);
+ // manager.render(scene, camera, timestamp);
+ // effect.render(scene, camera);
 
+
+  for ( var ii = 0; ii < views.length; ++ii ) {
+          view = views[ii];
+          var vcamera = view.camera;
+          view.updateCamera( vcamera, scene,null, null );
+          var left   = Math.floor( window.innerWidth  * view.left );
+          var bottom = Math.floor( window.innerHeight * view.bottom );
+          var width  = Math.floor( window.innerWidth  * view.width );
+          var height = Math.floor( window.innerHeight * view.height );
+          renderer.setViewport( left, bottom, width, height );
+          renderer.setScissor( left, bottom, width, height );
+          renderer.setScissorTest( true );
+          renderer.setClearColor( view.background );
+          camera.aspect = width / height;
+          camera.updateProjectionMatrix();
+         // renderer.render( scene, camera );
+          manager.render(scene, vcamera, timestamp);
+          effect.render(scene, vcamera);
+        }
   
   //player.position.set(0, controls.userHeight, -1);
  // pivot.rotation.y = camera.rotation.y;
@@ -675,15 +758,13 @@ pivot.quaternion.setFromUnitVectors(zaxis, direction);
     }else{
      
       blasterArr[i].position.x += blasterArr[i].blasterDir.x * blasterSpeed;
-      //blasterArr[i].position.y += blasterArr[i].blasterDir.y * blasterSpeed;
-      blasterArr[i].position.y += (blasterArr[i].blasterDir.y - blasterArr[i].position.y) * blasterSpeed;
+      blasterArr[i].position.y += blasterArr[i].blasterDir.y * blasterSpeed;
       blasterArr[i].position.z += blasterArr[i].blasterDir.z * blasterSpeed;
-     // console.log(blasterArr[i].blasterDir.y);
-     // if (timestamp - blasterArr[i].time > 1000) {
-     //   scene.remove(blasterArr[i]);
-     //   blasterArr.splice(i, 1);
+      if (timestamp - blasterArr[i].time > 1000) {
+        scene.remove(blasterArr[i]);
+        blasterArr.splice(i, 1);
 
-     // }
+      }
     }
     
 
@@ -910,8 +991,6 @@ cube.position.set(0, controls.userHeight, -10);
   blasterArr.push(blaster);
 
   var camDir = camera.getWorldDirection(camVector).multiplyScalar(40);
-  camDir.setY(controls.userHeight)
-  console.log(camDir)
  //var camDir = new THREE.Vector3(0, .1, -4)
 // var horizon = new THREE.Vector3(camDir.x, .02, camDir.z);
  //var scaleCam = horizon.multiplyScalar(2);
