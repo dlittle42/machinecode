@@ -6,7 +6,7 @@
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 		<style>
 			body {
-				color: #fff;
+				color: #000;
 				font-family:Monospace;
 				font-size:13px;
 				text-align:center;
@@ -49,27 +49,17 @@
 		<script>
 			var xpos = 0;
 			var ypos = 0;
-
-			var panelWidth = window.innerWidth;
-			var panelHeight = window.innerHeight;
 			
-			var initZ = panelWidth;//window.screen.availWidth;
-			alert(initZ)
+			var initZ = 8;
 			var zpos = initZ;
-			var maxZ = initZ+1400;
-			//var initPan = 10;
-			//var maxPan = 100;
-			//var panInc = 10;
+			var maxZ = 100;
+			var initPan = 10;
+			var maxPan = 100;
+			var panInc = 10;
 			var state = "In";
 			var objects = [];
-			
-			var initPan = panelWidth;
-			var panInc = initPan;
-
-			var panVert = panelHeight;
-			var panHoriz = panelWidth;
-
-			var gesture;
+			var panelWidth = window.innerWidth;
+			var panelHeight = window.innerHeight
 
 
 		
@@ -87,8 +77,8 @@
 
 			function init() {
 
-				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 10000 );
-				camera.position.z = initZ;//500;
+				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 1000 );
+				camera.position.z = 800;//initZ;//500;
 /*
 				controls = new THREE.TrackballControls( camera );
 
@@ -109,7 +99,7 @@
 				// world
 
 				scene = new THREE.Scene();
-				//scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
+				scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
 /*
 				//var geometry = new THREE.CylinderGeometry( 0, 10, 30, 4, 1 );
 				var geometry = new THREE.PlaneBufferGeometry( 20, 20 );
@@ -132,8 +122,6 @@
 				var grid = new THREE.GridHelper(100, 10);
 		        scene.add(grid);
 */
-				var axis = new THREE.AxisHelper(75);
-    			scene.add(axis);  
 
 				// lights
 
@@ -152,8 +140,7 @@
 				// renderer
 
 				renderer = new THREE.WebGLRenderer( { antialias: false } );
-				renderer.setClearColor( 0xffffff );
-				//renderer.setClearColor( scene.fog.color );
+				renderer.setClearColor( scene.fog.color );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
 
@@ -162,7 +149,7 @@
 
 				stats = new Stats();
 				container.appendChild( stats.dom );
-/*
+
 				TweenMax.to(camera.position ,2,{
 					x:xpos,
 					y:ypos,
@@ -173,7 +160,6 @@
                   	 // console.log('start tween '+ xpos);
 	                }
 	            });
-	            */
 
 				//
 
@@ -186,17 +172,15 @@
 
 			function createGridWall(){
 				//var geometry = new THREE.BoxBufferGeometry( 20, 20, 20 );
-					//var geometry = new THREE.PlaneBufferGeometry( 10, 10, 5 );
-					var geometry = new THREE.PlaneBufferGeometry( panelWidth, panelHeight, 5 );
+					var geometry = new THREE.PlaneBufferGeometry( 10, 10, 5 );
 					//var geometry = new THREE.PlaneGeometry( 10, 10, 5 );
 
-					//var objWidth = 10;
+					var objWidth = 10;
 					var maxRow = 10;
-					var maxCol = 8;
-					var hspacing = panelWidth;//+10;
-					var vspacing = panelHeight;//+10;
-					var xoffset = - panelWidth/2;//((objWidth + hspacing)* maxRow)/2;
-					var yoffset = 0;//- panelHeight/2;
+					var maxCol = 10;
+					var hspacing = 10;
+					var vspacing = 10;
+					var xoffset = -5;//((objWidth + hspacing)* maxRow)/2;
 
 					for (var i = 0; i < maxRow; i++) {
 					     for (var j = 0; j < maxCol; j++) {
@@ -207,11 +191,9 @@
 					      	object.geometry.computeBoundingSphere(); // this isn't calculated automatically
 							object.geometry.boundingSphere.center;
 
-							object.material.fog = false;
-
 							var xpos = ((hspacing * j) - hspacing/2) - xoffset;
-							var ypos = (vspacing  * i)  - ((vspacing/2)*maxRow) - yoffset;
-							//var zpos = Math.random() * 400 - 200;
+							var ypos = (vspacing  * i)  - ((vspacing/2)*maxRow);
+							var zpos = Math.random() * 400 - 200;
 
 							object.position.x = xpos;
 							console.log(xpos+","+ypos);
@@ -265,7 +247,6 @@
 
 			var pinch = new Hammer.Pinch();
 			var pan = new Hammer.Pan();
-			var press = new Hammer.Press();
 			var tap = new Hammer.Tap({
 			  taps: 1
 			});
@@ -273,32 +254,26 @@
 			pinch.recognizeWith([pan]);
 
 			// add to the Manager
-			mc.add([pinch, pan, tap, press]);
+			mc.add([pinch, pan, tap]);
 
 			// let the pan gesture support all directions.
 			// this will block the vertical scrolling on a touch-device while on the element
 			mc.get('pan').set({ direction: Hammer.DIRECTION_ALL });
 
-			mc.on("panend", function(ev) {
-			    info.textContent = gesture;//ev.type +" gesture detected.";
-			    moveCamera(gesture);
-			});
-
 			// listen to events...
 			mc.on("panleft panright panup pandown", function(ev) {
-				gesture = ev.type;
-			   // info.textContent = ev.type +" gesture detected.";
-			   // moveCamera(ev.type);
+			    info.textContent = ev.type +" gesture detected.";
+			    moveCamera(ev.type);
 			});
 
-			mc.on("tap", function(ev) {
+			mc.on("tap press", function(ev) {
 			    info.textContent = ev.type +" gesture detected.";
 			    state = 'In';
 			    panInc = initPan;
 			    zoomCamera(initZ);
 			});
 
-			mc.on("pinch press", function(ev) {
+			mc.on("pinch", function(ev) {
 			    info.textContent += ev.type +" ";
 			    state = 'Out';
 			    panInc = initPan/2;
@@ -308,14 +283,14 @@
 			function moveCamera(gesture){
 				console.log(gesture)
 				if (gesture == 'panleft'){
-					xpos += panHoriz;
+					xpos += panInc;
 
 				} else if (gesture == 'panright') {
-					xpos -= panHoriz;
+					xpos -= panInc;
 				} else if (gesture == 'panup') {
-					ypos -= panVert;
+					ypos -= panInc;
 				} else if (gesture == 'pandown') {
-					ypos += panVert;
+					ypos += panInc;
 				} 
 
 
