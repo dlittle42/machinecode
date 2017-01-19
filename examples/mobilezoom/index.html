@@ -51,7 +51,7 @@
 			var ypos = 0;
 
 			var panelWidth = window.innerWidth;
-			var panelHeight = window.innerHeight;
+			var panelHeight = window.innerHeight -35;
 			
 			var initZ = panelWidth;//window.screen.availWidth;
 			//alert(initZ)
@@ -60,16 +60,40 @@
 			//var initPan = 10;
 			//var maxPan = 100;
 			//var panInc = 10;
-			var state = "In";
+			var state = "ColumnView";
 			var objects = [];
 			
 			var initPan = panelWidth;
-			var panInc = initPan;
+			var panInc = 1;
 
 			var panVert = panelHeight;
 			var panHoriz = panelWidth;
 
 			var gesture;
+
+			var materialArr = [];
+			var imgArrIdx = 0;
+			var textureLoader;
+			var raycaster;
+			var mouse = new THREE.Vector2(), INTERSECTED;
+			var objects = [];
+			var activePanel;
+			var enablePan = true;
+
+
+			var imgArr = [
+				"image1.jpg",
+				"image2.jpg",
+				"image3.jpg",
+				"image4.jpg",
+				"image5.jpg",
+				"image6.jpg",
+				"image7.jpg",
+				"image8.jpg",
+				"image9.jpg",
+				"image10.jpg",
+				"image11.jpg"
+			]
 
 
 		
@@ -127,7 +151,39 @@
 
 				}
 */
-				createGridWall();
+
+				
+				var manager = new THREE.LoadingManager();
+				manager.onProgress = function ( item, loaded, total ) {
+				 // progressBar.style.width = (loaded / total * 100) + '%';
+				 	console.log(item, loaded, total);
+				};
+
+				manager.onLoad = function (){
+					console.log('all items loaded');
+					if (imgArrIdx < imgArr.length) {
+						loadImages();
+					}else{
+						createGridWall();
+					}
+				}
+
+				manager.onError = function (){
+					console.log('loading error');
+				}
+
+
+				// create a loader to get an image from a URL
+				textureLoader = new THREE.TextureLoader(manager);
+				// we've gotta set this to use cross-origin images
+				textureLoader.crossOrigin = true;
+
+				// load in the image
+				
+				loadImages();
+
+
+				//createGridWall();
 /*
 				var grid = new THREE.GridHelper(100, 10);
 		        scene.add(grid);
@@ -162,6 +218,9 @@
 
 				stats = new Stats();
 				container.appendChild( stats.dom );
+
+
+				raycaster = new THREE.Raycaster();
 /*
 				TweenMax.to(camera.position ,2,{
 					x:xpos,
@@ -176,12 +235,48 @@
 	            */
 
 				//
+				document.addEventListener( 'touchmove', onTouchMove, false );
+				document.addEventListener( 'touchstart', onTouchStart, false );
+				document.addEventListener( 'touchend', onTouchEnd, false );
+
+				document.addEventListener( 'mousemove', onMouseMove, false );
+				document.addEventListener( 'mousedown', onMouseDown, false );
+				document.addEventListener( 'mouseup', onMouseUp, false );
 
 				window.addEventListener( 'resize', onWindowResize, false );
 				//
 
 				render();
 
+			}
+
+			function loadImages(){
+				
+				textureLoader.load("images/"+imgArr[imgArrIdx], function(texture) {
+				  // this code makes the texture repeat
+				//  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+				//  texture.repeat.set( 10, 10 );
+				  // set the texture as the map for the material
+				//  materialOne = texture;//new THREE.MeshLambertMaterial( {map: texture, side:THREE.DoubleSide } );
+
+				  var repeatX, repeatY;
+					texture.wrapS = THREE.ClampToEdgeWrapping;
+					texture.wrapT = THREE.RepeatWrapping;
+					//repeatX = panelWidth * textureSetting.h / (panelHeight * textureSetting.w);
+					repeatX = panelWidth * 520 / (panelHeight * 311);
+					repeatY = 1;
+					texture.repeat.set(repeatX, repeatY);
+					texture.offset.x = (repeatX - 1) / 2 * -1;
+					//texture.offset.y=(repeatY) / 2 -.4;
+
+				  materialArr.push(texture);
+				  console.log("materialArr="+materialArr);
+				  imgArrIdx++;
+				
+
+
+				
+				 })
 			}
 
 			function createGridWall(){
@@ -198,10 +293,15 @@
 					var xoffset = - panelWidth/2;//((objWidth + hspacing)* maxRow)/2;
 					var yoffset = 0;//- panelHeight/2;
 
+
+
+
 					for (var i = 0; i < maxRow; i++) {
 					     for (var j = 0; j < maxCol; j++) {
-					      	var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
-					      //	var object = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {map: materialArr[(i+j)%imgArr.length], side:THREE.DoubleSide } ));
+					      //	var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
+
+					        
+					      	var object = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {map: materialArr[(i+j)%imgArr.length], side:THREE.DoubleSide } ));
 
 					      	object.doubleSided = true;
 					      	object.geometry.computeBoundingSphere(); // this isn't calculated automatically
@@ -225,6 +325,195 @@
 
 
 					// particleMaterial = new THREE.SpriteMaterial( { color: 0x0f0f0f, fog: true } );
+			}
+
+			function onMouseMove( event ) {
+
+				event.preventDefault();
+
+				mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+				mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+				console.log(mouse.x)
+
+			}
+
+			function onTouchMove( event ) {
+
+				event.preventDefault();
+
+				mouse.x = ( event.touches[ 0 ].clientX / window.innerWidth ) * 2 - 1;
+				mouse.y = - ( event.touches[ 0 ].clientY / window.innerHeight ) * 2 + 1;
+
+				console.log(mouse.x)
+
+			}
+
+			function onMouseDown( event ) {
+
+				event.preventDefault();
+
+			//	console.log(THREE.Vector3( 0, 0, -1 ).applyQuaternion( camera.quaternion ).add( camera.position ));
+
+				mouse.x = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
+				mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
+
+				raycaster.setFromCamera( mouse, camera );
+
+				vector = new THREE.Vector3( 0, 0, -1 );
+				vector.applyQuaternion( camera.quaternion ).add( camera.position );
+
+				console.log(vector);
+
+				scaledVector=vector.clone().multiplyScalar(0.95);
+
+				console.log("scaled:"+scaledVector.y);
+
+				var intersects = raycaster.intersectObjects( objects );
+
+				if ( intersects.length > 0 ) {
+
+					if (activePanel == intersects[ 0 ].object){
+						activePanel = null;
+						
+						TweenMax.to(camera.position, 1, {
+							x:intersects[0].object.origin[0],
+							y:intersects[0].object.origin[1],
+							z:0,
+							delay: 0,
+							//ease:"Power3.easeOut",
+							ease: Back.easeInOut.config(.5),
+							onUpdate:function(){
+	                      //  console.log('tweened');
+
+	                    	}
+						});
+						/*
+
+						TweenMax.to(intersects[0].object.rotation, 1, {
+							x:0,
+							y:0,
+							z:0,
+							delay: 0,
+							//ease:"Power3.easeOut",
+							ease: Back.easeInOut.config(.5),
+							onUpdate:function(){
+	                      //  console.log('tweened');
+	                    	}
+						});
+						*/
+
+					}else{
+						activePanel = intersects[ 0 ].object;
+					}
+
+					intersects[ 0 ].object.material.color.setHex( 0xe02323 );
+
+					var newSphereGeom= new THREE.SphereGeometry(.5,.5,.5);
+					var sphere= new THREE.Mesh(newSphereGeom, new THREE.MeshBasicMaterial({ color: 0x2266dd }));
+
+					sphere.position.copy( intersects[ 0 ].point );
+					sphere.scale.x = sphere.scale.y = 1;
+					scene.add( sphere );
+
+					//drawRayLine( raycaster );
+
+
+				}
+
+			}
+
+			function onTouchStart( event ) {
+
+				event.preventDefault();
+
+			//	console.log(THREE.Vector3( 0, 0, -1 ).applyQuaternion( camera.quaternion ).add( camera.position ));
+
+				mouse.x = ( event.touches[ 0 ].clientX / renderer.domElement.clientWidth ) * 2 - 1;
+				mouse.y = - ( event.touches[ 0 ].clientY / renderer.domElement.clientHeight ) * 2 + 1;
+
+				raycaster.setFromCamera( mouse, camera );
+
+				vector = new THREE.Vector3( 0, 0, -1 );
+				vector.applyQuaternion( camera.quaternion ).add( camera.position );
+
+				console.log(vector);
+
+				scaledVector=vector.clone().multiplyScalar(0.95);
+
+				console.log("scaled:"+scaledVector.y);
+
+				var intersects = raycaster.intersectObjects( objects );
+
+				if ( intersects.length > 0 ) {
+
+					if (activePanel == intersects[ 0 ].object){
+						activePanel = null;
+						
+						TweenMax.to(camera.position, 1, {
+							x:intersects[0].object.origin[0],
+							y:intersects[0].object.origin[1],
+							z:0,
+							delay: 0,
+							//ease:"Power3.easeOut",
+							ease: Back.easeInOut.config(.5),
+							onUpdate:function(){
+	                      //  console.log('tweened');
+
+	                    	}
+						});
+						/*
+						TweenMax.to(intersects[0].object.rotation, 1, {
+							x:0,
+							y:0,
+							z:0,
+							delay: 0,
+							//ease:"Power3.easeOut",
+							ease: Back.easeInOut.config(.5),
+							onUpdate:function(){
+	                      //  console.log('tweened');
+	                    	}
+						});
+						*/
+
+					}else{
+						activePanel = intersects[ 0 ].object;
+					}
+
+					intersects[ 0 ].object.material.color.setHex( 0xe02323 );
+
+					var newSphereGeom= new THREE.SphereGeometry(.5,.5,.5);
+					var sphere= new THREE.Mesh(newSphereGeom, new THREE.MeshBasicMaterial({ color: 0x2266dd }));
+
+					sphere.position.copy( intersects[ 0 ].point );
+					sphere.scale.x = sphere.scale.y = 1;
+					scene.add( sphere );
+
+					//drawRayLine( raycaster );
+
+
+				}
+
+			}
+
+			function onMouseUp( event ) {
+
+				event.preventDefault();
+				if (activePanel){
+					activePanel.material.color.setHex( 0xffffff);
+
+				}
+
+			}
+
+			function onTouchEnd( event ) {
+
+				event.preventDefault();
+				if (activePanel){
+					activePanel.material.color.setHex( 0xffffff);
+
+				}
+
 			}
 
 			function onWindowResize() {
@@ -281,7 +570,7 @@
 
 			mc.on("panend", function(ev) {
 			    info.textContent = gesture;//ev.type +" gesture detected.";
-			    moveCamera(gesture);
+			    if (enablePan) moveCamera(gesture);
 			});
 
 			// listen to events...
@@ -293,29 +582,31 @@
 
 			mc.on("tap", function(ev) {
 			    info.textContent = ev.type +" gesture detected.";
-			    state = 'In';
-			    panInc = initPan;
-			    zoomCamera(initZ);
+			    state = 'ColumnView';
+			    panInc = 1;
+			   // console.log("activePanel.position.x="+activePanel.position.x)
+			    zoomCamera(activePanel.position.x, activePanel.position.y, initZ);
 			});
 
 			mc.on("pinch press", function(ev) {
 			    info.textContent += ev.type +" ";
-			    state = 'Out';
-			    panInc = initPan/2;
-			    zoomCamera(maxZ);
+			    state = 'GridView';
+			    panInc = 3;
+			    enablePan=false;
+			    zoomCamera(xpos, ypos, maxZ);
 			});
 
 			function moveCamera(gesture){
 				console.log(gesture)
 				if (gesture == 'panleft'){
-					xpos += panHoriz;
+					xpos += panHoriz *panInc;
 
 				} else if (gesture == 'panright') {
-					xpos -= panHoriz;
+					xpos -= panHoriz*panInc;
 				} else if (gesture == 'panup') {
-					ypos -= panVert;
+					ypos -= panVert*panInc;
 				} else if (gesture == 'pandown') {
-					ypos += panVert;
+					ypos += panVert*panInc;
 				} 
 
 
@@ -330,7 +621,9 @@
 	            });
 			}
 
-			function zoomCamera(z){
+			function zoomCamera(x,y,z){
+				xpos=x;
+				ypos=y;
 				zpos=z;
 				
 
@@ -340,11 +633,12 @@
 					z:zpos,
 					ease:"Power3.easeOut",
 					//ease: Elastic.easeOut.config(2, 0.5),
-					onInit:function(){
-                  	 // console.log('start tween '+ xpos);
+					onComplete:function(){
+                  	  if (z==maxZ) enablePan=true;
 	                }
 	            });
 			}
+		
 
 		</script>
 
