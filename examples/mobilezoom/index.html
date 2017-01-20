@@ -4,6 +4,7 @@
 		<title>hammer</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link href="https://fonts.googleapis.com/css?family=Cabin+Condensed:700|Gudea:700|Heebo:800" rel="stylesheet">
 		<style>
 			body {
 				color: #fff;
@@ -86,6 +87,8 @@
 			var enablePan = true;
 			var groupArr = [];
 
+			var debug = false;//true;
+
 		
 			var focusTile = 1;
 
@@ -102,6 +105,19 @@
 				"image9.jpg",
 				"image10.jpg",
 				"image11.jpg"
+			]
+
+			var titleArr = [
+				"FAMILY",
+				"OPPORTUNITY",
+				"RACE",
+				"ENERGY",
+				"GENDER",
+				"POLITICS",
+				"NUTRITION",
+				"HERTIAGE"
+
+
 			]
 
 
@@ -196,11 +212,7 @@
 
 				//createGridWall();
 
-				var grid = new THREE.GridHelper(100, 10);
-		        scene.add(grid);
-
-				var axis = new THREE.AxisHelper(100);
-    			scene.add(axis);  
+				
 
 				// lights
 
@@ -219,7 +231,7 @@
 				// renderer
 
 				renderer = new THREE.WebGLRenderer( { antialias: false } );
-				renderer.setClearColor( 0xffffff );
+				renderer.setClearColor( 0xE5E4E4 );
 				//renderer.setClearColor( scene.fog.color );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
@@ -227,8 +239,26 @@
 				container = document.getElementById( 'container' );
 				container.appendChild( renderer.domElement );
 
-				stats = new Stats();
-				container.appendChild( stats.dom );
+				
+				if (debug){
+
+					var grid = new THREE.GridHelper(100, 10);
+			        scene.add(grid);
+
+					var axis = new THREE.AxisHelper(100);
+	    			scene.add(axis);  
+
+	    			
+
+	    			stats = new Stats();
+					container.appendChild( stats.dom );
+
+					document.getElementById("info").style.visibility = "visible";
+
+	    		}else{
+	    			document.getElementById("info").style.visibility = "hidden";
+	    		}
+				
 
 
 				raycaster = new THREE.Raycaster();
@@ -380,7 +410,11 @@
 					     for (var j = 0; j < maxRow; j++) {
 					      //	var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
 					      	if(j==0){
-					      		var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
+
+
+					      		//var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
+
+					      		var object = createLabel(titleArr[i], 0, 0, 0, 24, "white")
 					      	}else{
 					      		var object = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {map: materialArr[(i+j)%imgArr.length], side:THREE.DoubleSide } ));
 					      	}
@@ -581,14 +615,15 @@
 					 });
 					 */
 					
-
-					TweenMax.to(intersects[ 0 ].object.material, .3, {
-						opacity: 0.75,
-						ease:"Power3.easeOut",
-						onComplete:function(){
-	                      // console.log('tweened');
-	                    }
-					});
+					 if (state =="GridView"){
+							TweenMax.to(intersects[ 0 ].object.material, .3, {
+								opacity: 0.5,
+								ease:"Power3.easeOut",
+								onComplete:function(){
+			                      // console.log('tweened');
+			                    }
+							});
+						}
 
 					
 
@@ -650,13 +685,15 @@
 
 					//intersects[ 0 ].object.material.color.setHex( 0xe02323 );
 
-					TweenMax.to(intersects[ 0 ].object.material, .3, {
-						opacity: 0.5,
-						ease:"Power3.easeOut",
-						onComplete:function(){
-	                       console.log('tweened');
-	                    }
-					});
+					if (state =="GridView"){
+							TweenMax.to(intersects[ 0 ].object.material, .3, {
+								opacity: 0.5,
+								ease:"Power3.easeOut",
+								onComplete:function(){
+			                      // console.log('tweened');
+			                    }
+							});
+						}
 
 				}
 
@@ -730,7 +767,7 @@
 			function render() {
 
 				renderer.render( scene, camera );
-				stats.update();
+				if (debug) stats.update();
 
 			}
 
@@ -792,13 +829,14 @@
 				console.log(gesture)
 				var nextCol;
 				if (gesture == 'panleft'){
-					if (activeCol<maxCol-1) {
+					if (activeCol<maxCol) {
 						xpos += panHoriz *panInc;
 
 						// NOT RELIABLE - What about when you select from grid????
 						//activeCol++;
 						//moveColumn(activeCol,ypos);
-						nextCol = activeCol
+						nextCol = activeCol;
+						if (state =="ColumnView") moveColumn(nextCol,ypos);
 					}
 
 				} else if (gesture == 'panright') {
@@ -807,13 +845,18 @@
 						// NOT RELIABLE - What about when you select from grid????
 						//activeCol--;
 						//moveColumn(activeCol-2,ypos)
-						nextCol = activeCol-2
+						nextCol = activeCol-2;
+						if (state =="ColumnView") moveColumn(nextCol,ypos)
 						
 					}
 				} else if (gesture == 'panup') {
-					ypos -= panVert*panInc;
+					if (activeRow<maxRow){
+						ypos -= panVert*panInc;
+					}
 				} else if (gesture == 'pandown') {
-					ypos += panVert*panInc;
+					if (activeRow>1) {
+						ypos += panVert*panInc;
+					}
 				} 
 
 
@@ -824,7 +867,7 @@
 					ease:"Power3.easeOut",
 					onInit:function(){
 						if (state =="ColumnView"){
-                  	  		if (gesture == 'panleft' || gesture == 'panright') moveColumn(nextCol,ypos)
+                  	  		//if (gesture == 'panleft' || gesture == 'panright') moveColumn(nextCol,ypos)
                   	  	}
                   	 // moveColumn(activeCol+1,ypos)
 	                },
@@ -918,7 +961,59 @@
 				info.textContent = "X:" + xInc+", Y:" +yInc+", Tile:"+ focusTile + ", Col:"+activeCol;
 
 			}
-		
+
+			function createLabel(text, x, y, z, size, color){
+				//var canvas = document.createElement("canvas");
+
+				//canvas.height = panelHeight;
+				//canvas.width = panelWidth;
+
+				var canvas = createHiDPICanvas(panelWidth, panelHeight);
+				var context = canvas.getContext("2d");
+				context.font = size + "pt Cabin Condensed";
+				context.textAlign = "center";
+				context.fillStyle = "white";
+				context.fillRect(0,0,panelWidth, panelHeight);
+				context.fillStyle = "black";
+				context.fillText(text, panelWidth / 2, panelHeight/2);
+				var texture = new THREE.Texture(canvas);
+				texture.needsUpdate = true;
+				var material = new THREE.MeshBasicMaterial({
+					map : texture
+				})
+				var mesh = new THREE.Mesh(new THREE.PlaneGeometry(panelWidth, panelHeight, 10, 10), material);
+				mesh.position.x = x;
+				mesh.position.y = y;
+				mesh.position.z = z;
+
+				return mesh;
+
+			}
+
+			var PIXEL_RATIO = (function () {
+			    var ctx = document.createElement("canvas").getContext("2d"),
+			        dpr = window.devicePixelRatio || 1,
+			        bsr = ctx.webkitBackingStorePixelRatio ||
+			              ctx.mozBackingStorePixelRatio ||
+			              ctx.msBackingStorePixelRatio ||
+			              ctx.oBackingStorePixelRatio ||
+			              ctx.backingStorePixelRatio || 1;
+
+			    return dpr / bsr;
+			})();
+
+
+			function createHiDPICanvas(w, h, ratio) {
+			    if (!ratio) { ratio = PIXEL_RATIO; }
+			    var can = document.createElement("canvas");
+			    can.width = w * ratio;
+			    can.height = h * ratio;
+			    can.style.width = w + "px";
+			    can.style.height = h + "px";
+			    can.getContext("2d").setTransform(ratio, 0, 0, ratio, 0, 0);
+			    return can;
+			}
+					
 
 		</script>
 
