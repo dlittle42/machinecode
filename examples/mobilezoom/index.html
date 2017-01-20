@@ -18,7 +18,8 @@
 			}
 
 			#info {
-				color:#000;
+				color:#fff;
+				background-color: black;
 				position: absolute;
 				top: 0px; width: 100%;
 				padding: 5px;
@@ -49,11 +50,13 @@
 		<script>
 			var xpos = 0;
 			var ypos = 0;
+			var maxRow = 10;
+			var maxCol = 8;
 
 			var panelWidth = window.innerWidth;
 			var panelHeight = window.innerHeight -35;
 			
-			var initZ = panelWidth;//window.screen.availWidth;
+			var initZ = panelWidth;//+1200;//+1400;//+200;//window.screen.availWidth;
 			//alert(initZ)
 			var zpos = initZ;
 			var maxZ = initZ+1400;
@@ -77,8 +80,14 @@
 			var raycaster;
 			var mouse = new THREE.Vector2(), INTERSECTED;
 			var objects = [];
-			var activePanel;
+			var pickedPanel;
+			var activeCol = 1;
+			var activeRow = 1;
 			var enablePan = true;
+			var groupArr = [];
+
+		
+			var focusTile = 1;
 
 
 			var imgArr = [
@@ -164,7 +173,9 @@
 					if (imgArrIdx < imgArr.length) {
 						loadImages();
 					}else{
-						createGridWall();
+						//createGridWall();
+						//createGridColumns();
+						createGridWall2();
 					}
 				}
 
@@ -184,11 +195,11 @@
 
 
 				//createGridWall();
-/*
+
 				var grid = new THREE.GridHelper(100, 10);
 		        scene.add(grid);
-*/
-				var axis = new THREE.AxisHelper(75);
+
+				var axis = new THREE.AxisHelper(100);
     			scene.add(axis);  
 
 				// lights
@@ -221,6 +232,8 @@
 
 
 				raycaster = new THREE.Raycaster();
+
+				getCameraFocus();
 /*
 				TweenMax.to(camera.position ,2,{
 					x:xpos,
@@ -290,7 +303,7 @@
 					var maxCol = 8;
 					var hspacing = panelWidth;//+10;
 					var vspacing = panelHeight;//+10;
-					var xoffset = - panelWidth/2;//((objWidth + hspacing)* maxRow)/2;
+					var xoffset =  panelWidth/2;//((objWidth + hspacing)* maxRow)/2;
 					var yoffset = 0;//- panelHeight/2;
 
 
@@ -299,13 +312,18 @@
 					for (var i = 0; i < maxRow; i++) {
 					     for (var j = 0; j < maxCol; j++) {
 					      //	var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
-
+					      	if(i==0){
+					      		var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
+					      	}else{
+					      		var object = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {map: materialArr[(i+j)%imgArr.length], side:THREE.DoubleSide } ));
+					      	}
 					        
-					      	var object = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {map: materialArr[(i+j)%imgArr.length], side:THREE.DoubleSide } ));
+					      	
 
 					      	object.doubleSided = true;
 					      	object.geometry.computeBoundingSphere(); // this isn't calculated automatically
 							object.geometry.boundingSphere.center;
+							object.material.transparent = true
 
 							object.material.fog = false;
 
@@ -321,11 +339,150 @@
 							scene.add( object );
 							objects.push( object );
 					     }
+					    
 					 }
 
 
 					// particleMaterial = new THREE.SpriteMaterial( { color: 0x0f0f0f, fog: true } );
 			}
+
+
+			function createGridWall2(){
+				//var geometry = new THREE.BoxBufferGeometry( 20, 20, 20 );
+					//var geometry = new THREE.PlaneBufferGeometry( 10, 10, 5 );
+					var geometry = new THREE.PlaneBufferGeometry( panelWidth, panelHeight, 5 );
+					//var geometry = new THREE.PlaneGeometry( 10, 10, 5 );
+
+					//var objWidth = 10;
+					
+					var hspacing = panelWidth;//+10;
+					var vspacing = panelHeight;//+10;
+					var xoffset =  panelWidth/2;//((objWidth + hspacing)* maxRow)/2;
+					var yoffset = panelHeight/2;//- panelHeight/2;
+
+
+
+
+					for (var i = 0; i < maxCol; i++) {
+
+						var group = new THREE.Group();
+						group.name = "col"+i;
+						scene.add( group );
+						var xpos = hspacing*i;
+						group.position.x =xpos;
+							group.position.y = 0;
+							group.position.z = 0;
+							
+							 
+						//console.log(group.name +" x:"+group.position.x)
+						
+
+					     for (var j = 0; j < maxRow; j++) {
+					      //	var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
+					      	if(j==0){
+					      		var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
+					      	}else{
+					      		var object = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {map: materialArr[(i+j)%imgArr.length], side:THREE.DoubleSide } ));
+					      	}
+					        
+					      	
+
+					      	object.doubleSided = true;
+					      	object.geometry.computeBoundingSphere(); // this isn't calculated automatically
+							object.geometry.boundingSphere.center;
+							object.material.transparent = true
+
+							object.material.fog = false;
+
+							//var xpos = ((hspacing * j));// - hspacing/2) - xoffset;
+							var ypos = (-vspacing  * j);// - ((vspacing/2)*maxRow) + yoffset;
+							//var zpos = Math.random() * 400 - 200;
+
+							
+
+							object.position.x = 0;//xpos;
+							object.position.y = ypos;
+							object.position.z = 0;
+							object.origin = [xpos, ypos];
+							group.add(object);
+							console.log(group.name +" x:"+group.position.x)
+							//scene.add( object );
+							objects.push( object );
+					     }
+					  	 scene.add( group );  
+					  	 groupArr.push(group);
+					 }
+
+
+					// particleMaterial = new THREE.SpriteMaterial( { color: 0x0f0f0f, fog: true } );
+			}
+
+
+			function createGridColumns(){
+				//var geometry = new THREE.BoxBufferGeometry( 20, 20, 20 );
+					//var geometry = new THREE.PlaneBufferGeometry( 10, 10, 5 );
+					var geometry = new THREE.PlaneBufferGeometry( panelWidth, panelHeight, 5 );
+					//var geometry = new THREE.PlaneGeometry( 10, 10, 5 );
+
+					//var objWidth = 10;
+					var maxRow = 10;
+					var maxCol = 8;
+					var hspacing = panelWidth;//+10;
+					var vspacing = panelHeight;//+10;
+					var xoffset =  panelWidth/2;//((objWidth + hspacing)* maxRow)/2;
+					var yoffset = 0;//- panelHeight/2;
+
+
+
+
+					for (var i = 0; i < maxCol; i++) {
+						var group = new THREE.Group();
+						group.name = "col"+i;
+						console.log(group.name)
+						group.position.x = 0;//hspacing*i;
+							group.position.y = 0;
+							group.position.z = 0;
+
+
+					     for (var j = 0; j < maxRow; j++) {
+					      //	var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
+					      	if(i==maxCol-1){
+					      		var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
+					      	}else{
+					      		var object = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {map: materialArr[(i+j)%imgArr.length], side:THREE.DoubleSide } ));
+					      	}
+					        
+					      	
+
+					      	object.doubleSided = true;
+					      	object.geometry.computeBoundingSphere(); // this isn't calculated automatically
+							object.geometry.boundingSphere.center;
+							object.material.transparent = true
+
+							object.material.fog = false;
+
+							var xpos = ((hspacing * j) - hspacing/2) - xoffset;
+							var ypos = (vspacing  * i)  - ((vspacing/2)*maxRow) - yoffset;
+							//var zpos = Math.random() * 400 - 200;
+
+							
+
+							object.position.x = xpos;
+							object.position.y = 0;//ypos;
+							object.position.z = 0;
+							object.origin = [xpos, ypos];
+							group.add(object);
+							//scene.add( object );
+							objects.push( object );
+					     }
+					  	 scene.add( group );   
+					 }
+
+
+					// particleMaterial = new THREE.SpriteMaterial( { color: 0x0f0f0f, fog: true } );
+			}
+
+
 
 			function onMouseMove( event ) {
 
@@ -334,7 +491,7 @@
 				mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
 				mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 
-				console.log(mouse.x)
+				//console.log(mouse.x)
 
 			}
 
@@ -345,7 +502,7 @@
 				mouse.x = ( event.touches[ 0 ].clientX / window.innerWidth ) * 2 - 1;
 				mouse.y = - ( event.touches[ 0 ].clientY / window.innerHeight ) * 2 + 1;
 
-				console.log(mouse.x)
+				//console.log(mouse.x)
 
 			}
 
@@ -360,21 +517,19 @@
 
 				raycaster.setFromCamera( mouse, camera );
 
-				vector = new THREE.Vector3( 0, 0, -1 );
-				vector.applyQuaternion( camera.quaternion ).add( camera.position );
-
-				console.log(vector);
-
-				scaledVector=vector.clone().multiplyScalar(0.95);
-
-				console.log("scaled:"+scaledVector.y);
+				//vector = new THREE.Vector3( 0, 0, -1 );
+				//vector.applyQuaternion( camera.quaternion ).add( camera.position );
 
 				var intersects = raycaster.intersectObjects( objects );
 
 				if ( intersects.length > 0 ) {
 
-					if (activePanel == intersects[ 0 ].object){
-						activePanel = null;
+					if (pickedPanel == intersects[ 0 ].object){
+
+						pickedPanel = null;
+
+						console.log(intersects[0].object.origin[0])
+
 						
 						TweenMax.to(camera.position, 1, {
 							x:intersects[0].object.origin[0],
@@ -404,19 +559,38 @@
 						*/
 
 					}else{
-						activePanel = intersects[ 0 ].object;
+						pickedPanel = intersects[ 0 ].object;
+						//INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
 					}
 
-					intersects[ 0 ].object.material.color.setHex( 0xe02323 );
+					//intersects[ 0 ].object.material.color.setHex( 0xe02323 );
+					//intersects[ 0 ].object.material.color = new THREE.Color(0,1,0,.3)
 
-					var newSphereGeom= new THREE.SphereGeometry(.5,.5,.5);
-					var sphere= new THREE.Mesh(newSphereGeom, new THREE.MeshBasicMaterial({ color: 0x2266dd }));
+					/*
+					TweenMax.to(intersects[ 0 ].object.material.color, 10,{
+						r: 10, 
+						g: 0, 
+						b: 0,
+						delay: 0,
+						//yoyo:true,
+						//repeat: 1,
+						ease:"Power3.easeOut",
+						onComplete:function(){
+	                       console.log('tweened');
+	                    }
+					 });
+					 */
+					
 
-					sphere.position.copy( intersects[ 0 ].point );
-					sphere.scale.x = sphere.scale.y = 1;
-					scene.add( sphere );
+					TweenMax.to(intersects[ 0 ].object.material, .3, {
+						opacity: 0.75,
+						ease:"Power3.easeOut",
+						onComplete:function(){
+	                      // console.log('tweened');
+	                    }
+					});
 
-					//drawRayLine( raycaster );
+					
 
 
 				}
@@ -434,21 +608,15 @@
 
 				raycaster.setFromCamera( mouse, camera );
 
-				vector = new THREE.Vector3( 0, 0, -1 );
-				vector.applyQuaternion( camera.quaternion ).add( camera.position );
-
-				console.log(vector);
-
-				scaledVector=vector.clone().multiplyScalar(0.95);
-
-				console.log("scaled:"+scaledVector.y);
+			//	vector = new THREE.Vector3( 0, 0, -1 );
+			//	vector.applyQuaternion( camera.quaternion ).add( camera.position );
 
 				var intersects = raycaster.intersectObjects( objects );
 
 				if ( intersects.length > 0 ) {
 
-					if (activePanel == intersects[ 0 ].object){
-						activePanel = null;
+					if (pickedPanel == intersects[ 0 ].object){
+						pickedPanel = null;
 						
 						TweenMax.to(camera.position, 1, {
 							x:intersects[0].object.origin[0],
@@ -477,20 +645,18 @@
 						*/
 
 					}else{
-						activePanel = intersects[ 0 ].object;
+						pickedPanel = intersects[ 0 ].object;
 					}
 
-					intersects[ 0 ].object.material.color.setHex( 0xe02323 );
+					//intersects[ 0 ].object.material.color.setHex( 0xe02323 );
 
-					var newSphereGeom= new THREE.SphereGeometry(.5,.5,.5);
-					var sphere= new THREE.Mesh(newSphereGeom, new THREE.MeshBasicMaterial({ color: 0x2266dd }));
-
-					sphere.position.copy( intersects[ 0 ].point );
-					sphere.scale.x = sphere.scale.y = 1;
-					scene.add( sphere );
-
-					//drawRayLine( raycaster );
-
+					TweenMax.to(intersects[ 0 ].object.material, .3, {
+						opacity: 0.5,
+						ease:"Power3.easeOut",
+						onComplete:function(){
+	                       console.log('tweened');
+	                    }
+					});
 
 				}
 
@@ -499,8 +665,24 @@
 			function onMouseUp( event ) {
 
 				event.preventDefault();
-				if (activePanel){
-					activePanel.material.color.setHex( 0xffffff);
+				if (pickedPanel){
+					//pickedPanel.material.color.setHex( 0xffffff);
+					//TweenMax.reverse()
+				/*	TweenMax.to(pickedPanel.material.color, 200,{
+						r: 255, 
+						g: 255, 
+						b: 255,
+						delay: 0,
+						ease:"Power3.easeOut"
+					 });
+				*/
+					TweenMax.to(pickedPanel.material, .3, {
+						opacity: 1,
+						ease:"Power3.easeOut",
+						onComplete:function(){
+	                       console.log('tweened');
+	                    }
+					});
 
 				}
 
@@ -509,8 +691,15 @@
 			function onTouchEnd( event ) {
 
 				event.preventDefault();
-				if (activePanel){
-					activePanel.material.color.setHex( 0xffffff);
+				if (pickedPanel){
+					//pickedPanel.material.color.setHex( 0xffffff);
+					TweenMax.to(pickedPanel.material, .3, {
+						opacity: 1,
+						ease:"Power3.easeOut",
+						onComplete:function(){
+	                       console.log('tweened');
+	                    }
+					});
 
 				}
 
@@ -584,11 +773,14 @@
 			    info.textContent = ev.type +" gesture detected.";
 			    state = 'ColumnView';
 			    panInc = 1;
-			   // console.log("activePanel.position.x="+activePanel.position.x)
-			    zoomCamera(activePanel.position.x, activePanel.position.y, initZ);
+			    
+			   // console.log("pickedPanel.position.x="+pickedPanel.position.x)
+			   console.log(pickedPanel.origin[0])
+			    zoomCamera(pickedPanel.origin[0], pickedPanel.position.y, initZ);
 			});
 
 			mc.on("pinch press", function(ev) {
+				
 			    info.textContent += ev.type +" ";
 			    state = 'GridView';
 			    panInc = 3;
@@ -598,11 +790,26 @@
 
 			function moveCamera(gesture){
 				console.log(gesture)
+				var nextCol;
 				if (gesture == 'panleft'){
-					xpos += panHoriz *panInc;
+					if (activeCol<maxCol-1) {
+						xpos += panHoriz *panInc;
+
+						// NOT RELIABLE - What about when you select from grid????
+						//activeCol++;
+						//moveColumn(activeCol,ypos);
+						nextCol = activeCol
+					}
 
 				} else if (gesture == 'panright') {
-					xpos -= panHoriz*panInc;
+					if (activeCol>0) {
+						xpos -= panHoriz*panInc;
+						// NOT RELIABLE - What about when you select from grid????
+						//activeCol--;
+						//moveColumn(activeCol-2,ypos)
+						nextCol = activeCol-2
+						
+					}
 				} else if (gesture == 'panup') {
 					ypos -= panVert*panInc;
 				} else if (gesture == 'pandown') {
@@ -616,27 +823,100 @@
 					z:zpos,
 					ease:"Power3.easeOut",
 					onInit:function(){
-                  	  console.log('start tween '+ xpos);
+						if (state =="ColumnView"){
+                  	  		if (gesture == 'panleft' || gesture == 'panright') moveColumn(nextCol,ypos)
+                  	  	}
+                  	 // moveColumn(activeCol+1,ypos)
+	                },
+	                onComplete:function(){
+	                	//getCameraFocus();
+	                	if (state =="ColumnView"){
+	                		if (gesture == 'panleft' || gesture == 'panright') {
+	                			//resetOtherColumns(nextCol);
+	                			resetColumns()
+	                			
+	                		}
+	                		//if (gesture == 'panleft' || gesture == 'panright') resetColumn()
+	                		getCameraFocus()
+	                	} 
 	                }
 	            });
 			}
 
 			function zoomCamera(x,y,z){
+
 				xpos=x;
 				ypos=y;
 				zpos=z;
-				
+
 
 				TweenMax.to(camera.position ,.5,{
 					x:xpos,
 					y:ypos,
 					z:zpos,
 					ease:"Power3.easeOut",
+					onInit: function(){
+						//if (state =="GridView") resetColumn()
+					},
 					//ease: Elastic.easeOut.config(2, 0.5),
 					onComplete:function(){
                   	  if (z==maxZ) enablePan=true;
+                  	  getCameraFocus();
+                  	  
+					
 	                }
 	            });
+			}
+
+			function moveColumn(n, dist){
+				var object = groupArr[n];
+				object.position.y = dist;
+
+				
+				/*
+				TweenMax.to(object.position ,.5,{
+					//x:xpos,
+					y:dist,
+					//z:zpos,
+					ease:"Power3.easeOut",
+					//ease: Elastic.easeOut.config(2, 0.5),
+					onComplete:function(){
+                  	  if (z==maxZ) enablePan=true;
+                  	  
+					
+	                }
+	            });
+	            */
+			}
+/*
+			function resetOtherColumns(n){
+				for (var i = 0; i < groupArr.length; i++) {
+					var object = groupArr[i];
+					if (i!= n) object.position.y = 0;
+				}
+			}
+*/
+
+			
+			function resetColumns(){
+				for (var i = 0; i < groupArr.length; i++) {
+					var object = groupArr[i];
+					object.position.y = 0;
+				}
+				camera.position.y=0;
+				ypos = 0;
+			}
+
+			function getCameraFocus(){
+				var camX = camera.position.x;
+				var camY = camera.position.y;
+				var xInc = camX/panelWidth + 1;
+				var yInc = -camY/panelHeight + 1;
+				activeCol = xInc;
+				activeRow = yInc
+				focusTile = ((xInc * maxRow)-maxRow) + yInc;
+				info.textContent = "X:" + xInc+", Y:" +yInc+", Tile:"+ focusTile + ", Col:"+activeCol;
+
 			}
 		
 
