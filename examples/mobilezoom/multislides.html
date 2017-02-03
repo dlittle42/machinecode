@@ -22,7 +22,7 @@
 
 				background-color: #fff;
 				margin: 0px;
-				overflow: hidden; 
+				overflow: hidden;
 			}
 
 			#info {
@@ -52,7 +52,7 @@
 				background: linear-gradient(to bottom,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.85) 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
 				filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#00000000', endColorstr='#a6000000',GradientType=0 ); /* IE6-9 */
 
-			/*	pointer-events: none; */
+				pointer-events: none;
 				opacity: 0;
 			   transition: opacity .25s ease-out;
 			   -moz-transition: opacity .25s ease-out;
@@ -83,7 +83,7 @@
 				    width: 100%;
 				    font-size: 18px;
 				
-				    margin: 10px 0 0 0;
+				        margin: 10px 0 0 0;
 				    font-family: 'Gudea';
 				    text-transform: uppercase;
 				    letter-spacing: 5px;
@@ -123,24 +123,26 @@
 	</head>
 
 	<body>
-		<div id="container">
-			<div id="tile_content">
+		<div id="container"></div>
+		<div id="info"></div>
+		<div id="video-container">
+			<video id="video" autoplay loop muted playsinline src="video/Birds_414.mp4" style="display:none">
+			
+		</div>
+		<div id="tile_content">
 			<h1 id="person">NAME</h1>
 			<h2 id="location">location</h2>
 			<p id="quote">
 			“Well, right now the average middle-aged man is definitely a minority. He’s gonna have the most turndowns and… he’s gonna be homeless. Because the companies hire foreigners. They work cheaper and they work much faster, and they’re putting us all Americans out to pasture. And if we’re lucky enough to work, we’re working for money that we made 25 years ago."
 			</p>
-
-			
 		</div>
-		</div>
-		<div id="info"></div>
-		
 		<div id="nav">...</div>
 		<div id="menu">
 			<h1>Settings</h1>
 			<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque commodo mauris fermentum lacus tincidunt, at tempus odio tincidunt. Donec tincidunt eros odio, sed auctor tortor ornare sed. Mauris vel tortor et est cursus sodales. Phasellus interdum tincidunt pellentesque. Vivamus sed aliquam ligula. Ut vulputate massa tempor lacus elementum gravida. Sed vitae dolor nulla. Donec nec elit nec diam euismod tincidunt sed id nibh. Ut eget mattis nibh.</p>
 		</div>
+
+
 
 		<script src="../../bower_components/jquery/dist/jquery.min.js"></script>
 		<script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
@@ -150,7 +152,6 @@
 		<script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
 
 		<script src="../../bower_components/hammerjs/hammer.js"></script>
-		<script src="../../node_modules/propagating-hammerjs/propagating.js"></script>
 
 		<script>
 			var xpos = 0;
@@ -185,6 +186,7 @@
 
 			var materialArr = [];
 			var imgArrIdx = 0;
+			var imgTotal = 11;
 			var textureLoader;
 			var raycaster;
 			var mouse = new THREE.Vector2(), INTERSECTED;
@@ -195,25 +197,13 @@
 			var enablePan = true;
 			var groupArr = [];
 
-			var debug = true;
+			var debug = false;//true;
 
 		
 			var focusTile = 1;
 
+			var video, videoTexture, videoImage, videoImageContext, movieMaterial;
 
-			var imgArr = [
-				"image1.jpg",
-				"image2.jpg",
-				"image3.jpg",
-				"image4.jpg",
-				"image5.jpg",
-				"image6.jpg",
-				"image7.jpg",
-				"image8.jpg",
-				"image9.jpg",
-				"image10.jpg",
-				"image11.jpg"
-			]
 
 			var titleArr = [
 				"FAMILY",
@@ -234,7 +224,7 @@
 				"“College is, it’s expensive, and it holds people back, and if you don’t get, if you don’t qualify for the financial aid, it’s, it’s hard. Takes a longer time, and that’s one thing I think they should take a look at and be, re-evaluate, ‘cause I mean they’re saying that they want us to be competitive with the world. Well, then stop making it so hard to be able to accomplish that.”"
 
 			]
-
+/*
 
 			var profiles = {
 			    "stories": [
@@ -243,14 +233,15 @@
 			            "location": "Providence, RI",
 		                "image": "image1.jpg",
 		                "media": "",
-		                "quote": "“Well, right now the average middle-aged man is definitely a minority. He’s gonna have the most turndowns and… he’s gonna be <a href='http://yahoo.com' target='_blank'>homeless</a>. Because the companies hire foreigners. They work cheaper and they work much faster, and they’re putting us all Americans out to pasture. And if we’re lucky enough to work, we’re working for money that we made 25 years ago.”"
+		                "quote": "“Well, right now the average middle-aged man is definitely a minority. He’s gonna have the most turndowns and… he’s gonna be homeless. Because the companies hire foreigners. They work cheaper and they work much faster, and they’re putting us all Americans out to pasture. And if we’re lucky enough to work, we’re working for money that we made 25 years ago.”"
 		            },
+		          
 		            {
 			            "name": "Victoria",
 			            "location": "Andover, OH",
 		                "image": "image2.jpg",
 		                "media": "",
-		                "quote": "“College is, it’s expensive, and it holds people back, and if you don’t get, if you don’t qualify for the financial aid, it’s, it’s hard. Takes a <a href='http://yahoo.com' target='_blank'>longer</a> time, and that’s one thing I think they should take a look at and be, re-evaluate, ‘cause I mean they’re saying that they want us to be competitive with the world. Well, then stop making it so hard to be able to accomplish that.”"
+		                "quote": "“College is, it’s expensive, and it holds people back, and if you don’t get, if you don’t qualify for the financial aid, it’s, it’s hard. Takes a longer time, and that’s one thing I think they should take a look at and be, re-evaluate, ‘cause I mean they’re saying that they want us to be competitive with the world. Well, then stop making it so hard to be able to accomplish that.”"
 		            },
 		            {
 			            "name": "Kevin",
@@ -318,12 +309,207 @@
 			    ]
 			}
 
+			*/
+
+			var profiles = {
+
+				"stories": [
+			        {
+			            "profile": "Ed",
+			            "slides": [
+			            	{
+			            		"person": "Ed",
+			            		"location": "Providence, RI",
+			            		"image": "image1.jpg"
+
+			            	},
+			            	{
+			            		"image": "profile1.png",
+			            		"media": "Birds_414.mp4",
+			            		"quote": "“Well, right now the average middle-aged man is definitely a minority. He’s gonna have the most turndowns and… he’s gonna be homeless. Because the companies hire foreigners. They work cheaper and they work much faster, and they’re putting us all Americans out to pasture. And if we’re lucky enough to work, we’re working for money that we made 25 years ago.”"
+
+			            	}
+			            ]
+			        },
+			        {
+			            "profile": "Victoria",
+			            "slides": [
+			            	{
+			            		"name": "Victoria",
+			            		"location": "Andover, OH",
+		                		"image": "image2.jpg",
+
+			            	},
+			            	{
+			            		"image": "profile2.png",
+			            		"media": "Birds_414.mp4",
+			            		"quote": "“College is, it’s expensive, and it holds people back, and if you don’t get, if you don’t qualify for the financial aid, it’s, it’s hard. Takes a longer time, and that’s one thing I think they should take a look at and be, re-evaluate, ‘cause I mean they’re saying that they want us to be competitive with the world. Well, then stop making it so hard to be able to accomplish that.”"
+
+			            	}
+			            ]
+			        },
+			        {
+			            "profile": "Kevin",
+			            "slides": [
+			            	{
+			            		"name": "Kevin",
+			            		"location": "Arapahoe, NE",
+		                		"image": "image3.jpg",
+
+			            	},
+			            	{
+			            		"image": "profile3.png",
+			            		"media": "Birds_414.mp4",
+			            		"quote": "“Well, right now the average middle-aged man is definitely a minority. He’s gonna have the most turndowns and… he’s gonna be homeless. Because the companies hire foreigners. They work cheaper and they work much faster, and they’re putting us all Americans out to pasture. And if we’re lucky enough to work, we’re working for money that we made 25 years ago.”"
+
+			            	}
+			            ]
+			        },
+			        {
+			            "profile": "Howard",
+			            "slides": [
+			            	{
+			            		"name": "Howard",
+			           			 "location": "Sterling, CO",
+		               			 "image": "image4.jpg"
+
+			            	},
+			            	{
+			            		"image": "profile4.png",
+			            		"media": "Birds_414.mp4",
+			            		"quote": "“Well, right now the average middle-aged man is definitely a minority. He’s gonna have the most turndowns and… he’s gonna be homeless. Because the companies hire foreigners. They work cheaper and they work much faster, and they’re putting us all Americans out to pasture. And if we’re lucky enough to work, we’re working for money that we made 25 years ago.”"
+
+			            	}
+			            ]
+			        },
+			        {
+			            "profile": "Marty",
+			            "slides": [
+			            	{
+			            		"name": "Marty",
+			           			"location": "Cambridge Springs, PA",
+		                		"image": "image5.jpg"
+
+			            	},
+			            	{
+			            		"image": "profile5.png",
+			            		"media": "Birds_414.mp4",
+			            		"quote": "“Well, right now the average middle-aged man is definitely a minority. He’s gonna have the most turndowns and… he’s gonna be homeless. Because the companies hire foreigners. They work cheaper and they work much faster, and they’re putting us all Americans out to pasture. And if we’re lucky enough to work, we’re working for money that we made 25 years ago.”"
+
+			            	}
+			            ]
+			        },
+			        {
+			            "profile": "Olivia",
+			            "slides": [
+			            	{
+			            		"name": "Olivia",
+			           			"location": "Providence, RI",
+		               			"image": "image6.jpg"
+
+			            	},
+			            	{
+			            		"image": "profile1.png",
+			            		"media": "Birds_7.mp4",
+			            		"quote": "“Well, right now the average middle-aged man is definitely a minority. He’s gonna have the most turndowns and… he’s gonna be homeless. Because the companies hire foreigners. They work cheaper and they work much faster, and they’re putting us all Americans out to pasture. And if we’re lucky enough to work, we’re working for money that we made 25 years ago.”"
+
+			            	}
+			            ]
+			        },
+			        {
+			            "profile": "Olivia",
+			            "slides": [
+			            	{
+			            		"name": "Esteban",
+			            		"location": "Andover, OH",
+		                		"image": "image7.jpg"
+
+			            	},
+			            	{
+			            		"image": "profile2.png",
+			            		"media": "Birds_7.mp4",
+			            		"quote": "“College is, it’s expensive, and it holds people back, and if you don’t get, if you don’t qualify for the financial aid, it’s, it’s hard. Takes a longer time, and that’s one thing I think they should take a look at and be, re-evaluate, ‘cause I mean they’re saying that they want us to be competitive with the world. Well, then stop making it so hard to be able to accomplish that.”"
+
+			            	}
+			            ]
+			        },
+			        {
+			            "profile": "Rick",
+			            "slides": [
+			            	{
+			            		 "name": "Rick",
+			           			 "location": "Arapahoe, NE",
+		               			 "image": "image8.jpg"
+
+			            	},
+			            	{
+			            		"image": "profile3.png",
+			            		"media": "Birds_7.mp4",
+			            		"quote": "“Well, right now the average middle-aged man is definitely a minority. He’s gonna have the most turndowns and… he’s gonna be homeless. Because the companies hire foreigners. They work cheaper and they work much faster, and they’re putting us all Americans out to pasture. And if we’re lucky enough to work, we’re working for money that we made 25 years ago.”"
+
+			            	}
+			            ]
+			        },
+			        {
+			            "profile": "Scotty",
+			            "slides": [
+			            	{
+			            		"name": "Scotty",
+			            		"location": "Sterling, CO",
+		                		"image": "image9.jpg"
+
+			            	},
+			            	{
+			            		"image": "profile4.png",
+			            		"media": "Birds_7.mp4",
+			            		"quote": "“Well, right now the average middle-aged man is definitely a minority. He’s gonna have the most turndowns and… he’s gonna be homeless. Because the companies hire foreigners. They work cheaper and they work much faster, and they’re putting us all Americans out to pasture. And if we’re lucky enough to work, we’re working for money that we made 25 years ago.”"
+
+			            	}
+			            ]
+			        },
+			        {
+			            "profile": "Mertyl",
+			            "slides": [
+			            	{
+			            		"name": "Mertyl",
+			            		"location": "Cambridge Springs, PA",
+		                		"image": "image10.jpg"
+
+			            	},
+			            	{
+			            		"image": "profile5.png",
+			            		"media": "Birds_7.mp4",
+			            		"quote": "“Well, right now the average middle-aged man is definitely a minority. He’s gonna have the most turndowns and… he’s gonna be homeless. Because the companies hire foreigners. They work cheaper and they work much faster, and they’re putting us all Americans out to pasture. And if we’re lucky enough to work, we’re working for money that we made 25 years ago.”"
+
+			            	}
+			            ]
+			        },
+			        {
+			            "profile": "Janet",
+			            "slides": [
+			            	{
+			            		"name": "Janet",
+			            		"location": "Cambridge Springs, PA",
+		                		"image": "image11.jpg"
+
+			            	},
+			            	{
+			            		"image": "profile1.png",
+			            		"media": "Birds_7.mp4",
+			            		"quote": "“Well, right now the average middle-aged man is definitely a minority. He’s gonna have the most turndowns and… he’s gonna be homeless. Because the companies hire foreigners. They work cheaper and they work much faster, and they’re putting us all Americans out to pasture. And if we’re lucky enough to work, we’re working for money that we made 25 years ago.”"
+
+			            	}
+			            ]
+			        }
+			    ]
+			}
+
 
 
 			var tile_content = document.getElementById('tile_content');
 			var name = document.getElementById('person');
-			console.log(' ------- ---------')
-			console.log(name)
+			//console.log(' ------- ---------')
+			//console.log(name)
 			//var location = document.getElementById('location');
 			//var quote = document.getElementById('quote');
 
@@ -395,12 +581,15 @@
 					console.log('all items loaded');
 					console.log(profiles.stories)
 					//if (imgArrIdx < imgArr.length) {
-					if (imgArrIdx < profiles.stories.length) {
+					//if (imgArrIdx < profiles.stories.length) {
+					if (imgArrIdx < imgTotal) {
 						loadImages();
 					}else{
 						//createGridWall();
 						//createGridColumns();
-						createGridWall2();
+						
+						//createGridWall2();
+						createGridWall3();
 					}
 				}
 
@@ -473,6 +662,8 @@
 				raycaster = new THREE.Raycaster();
 
 				getCameraFocus();
+
+				createVideo();
 /*
 				TweenMax.to(camera.position ,2,{
 					x:xpos,
@@ -502,102 +693,100 @@
 
 			}
 
+			function createVideo(){
+
+			//	video = document.createElement('video');
+				video = document.getElementById('video');
+				// create the video element
+			//	video = document.createElement( 'video' );
+				// video.id = 'video';
+				// video.type = ' video/ogg; codecs="theora, vorbis" ';
+			//	video.autoplay = true;
+			//	video.loop = true;
+			//	video.src = "video/Birds_7.mp4";
+			//	video.crossOrigin = '';
+				//video.load(); // must call after setting/changing source
+			//	video.autoplay = true;
+				
+				// alternative method -- 
+				// create DIV in HTML:
+				// <video id="myVideo" autoplay style="display:none">
+				//		<source src="videos/sintel.ogv" type='video/ogg; codecs="theora, vorbis"'>
+				// </video>
+				// and set JS variable:
+				// video = document.getElementById( 'myVideo' );
+			/*	
+				videoImage = document.createElement( 'canvas' );
+				videoImage.width = 1920;//480;
+				videoImage.height = 1080;//204;
+
+				videoImageContext = videoImage.getContext( '2d' );
+				// background color if no video present
+				videoImageContext.fillStyle = '#000000';
+				videoImageContext.fillRect( 0, 0, videoImage.width, videoImage.height );
+
+				videoTexture = new THREE.Texture( videoImage );
+				videoTexture.minFilter = THREE.LinearFilter;
+				videoTexture.magFilter = THREE.LinearFilter;
+*/
+
+				videoTexture = new THREE.VideoTexture( video );
+				videoTexture.minFilter = THREE.LinearFilter;
+				videoTexture.magFilter = THREE.LinearFilter;
+				videoTexture.format = THREE.RGBFormat;
+			
+				videoTexture.wrapS = THREE.ClampToEdgeWrapping;//THREE.RepeatWrapping;
+				videoTexture.wrapT = THREE.ClampToEdgeWrapping;//THREE.RepeatWrapping;
+				
+				movieMaterial = new THREE.MeshBasicMaterial( { map: videoTexture, overdraw: true, side:THREE.DoubleSide } );
+			}
+
 			function loadImages(){
 				
 			//	textureLoader.load("images/"+imgArr[imgArrIdx], function(texture) {
-				textureLoader.load("images/"+profiles.stories[imgArrIdx].image, function(texture) {
-				  // this code makes the texture repeat
-				//  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-				//  texture.repeat.set( 10, 10 );
-				  // set the texture as the map for the material
-				//  materialOne = texture;//new THREE.MeshLambertMaterial( {map: texture, side:THREE.DoubleSide } );
+				for (var v = 0; v< profiles.stories[imgArrIdx].slides.length; v++){
+					textureLoader.load("images/"+profiles.stories[imgArrIdx].slides[v].image, function(texture) {
+					  // this code makes the texture repeat
+					//  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+					//  texture.repeat.set( 10, 10 );
+					  // set the texture as the map for the material
+					//  materialOne = texture;//new THREE.MeshLambertMaterial( {map: texture, side:THREE.DoubleSide } );
 
-				  var repeatX, repeatY;
-					texture.wrapS = THREE.ClampToEdgeWrapping;
-					texture.wrapT = THREE.RepeatWrapping;
-					//repeatX = panelWidth * textureSetting.h / (panelHeight * textureSetting.w);
-					repeatX = panelWidth * 520 / (panelHeight * 311);
-					repeatY = 1;
-					texture.repeat.set(repeatX, repeatY);
-					texture.offset.x = (repeatX - 1) / 2 * -1;
-					//texture.offset.y=(repeatY) / 2 -.4;
+					  var repeatX, repeatY;
+						texture.wrapS = THREE.ClampToEdgeWrapping;
+						texture.wrapT = THREE.RepeatWrapping;
 
-				  materialArr.push(texture);
-				  console.log("materialArr="+materialArr);
-				  imgArrIdx++;
+						texture.minFilter = THREE.LinearFilter;
+						//repeatX = panelWidth * textureSetting.h / (panelHeight * textureSetting.w);
+						repeatX = panelWidth * 520 / (panelHeight * 311);
+						repeatY = 1;
+						texture.repeat.set(repeatX, repeatY);
+						texture.offset.x = (repeatX - 1) / 2 * -1;
+						//texture.offset.y=(repeatY) / 2 -.4;
+
+					  materialArr.push(texture);
+					 // console.log("materialArr="+materialArr);
+					  
+					
+
+
+					
+					 })
+				}
+
+				imgArrIdx++;
 				
-
-
-				
-				 })
 			}
 
-			function createGridWall(){
-				//var geometry = new THREE.BoxBufferGeometry( 20, 20, 20 );
-					//var geometry = new THREE.PlaneBufferGeometry( 10, 10, 5 );
-					var geometry = new THREE.PlaneBufferGeometry( panelWidth, panelHeight, 5 );
-					//var geometry = new THREE.PlaneGeometry( 10, 10, 5 );
-
-					//var objWidth = 10;
-					var maxRow = 10;
-					var maxCol = 8;
-					var hspacing = panelWidth;//+10;
-					var vspacing = panelHeight;//+10;
-					var xoffset =  panelWidth/2;//((objWidth + hspacing)* maxRow)/2;
-					var yoffset = 0;//- panelHeight/2;
-
-
-
-
-					for (var i = 0; i < maxRow; i++) {
-					     for (var j = 0; j < maxCol; j++) {
-					      //	var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
-					      	if(i==0){
-					      		var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
-					      	}else{
-					      		//var object = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {map: materialArr[(i+j)%imgArr.length], side:THREE.DoubleSide } ));
-
-					      		var object = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {map: materialArr[(i+j)%profiles.stories.length], side:THREE.DoubleSide } ));
-					      	}
-
-					      	object.person = profiles.stories[i].name;
-
-					      	object.location = profiles.stories[i].location;
-					      	object.quote = profiles.stories[i].quote;
-					        
-					      	
-
-					      	object.doubleSided = true;
-					      	object.geometry.computeBoundingSphere(); // this isn't calculated automatically
-							object.geometry.boundingSphere.center;
-							object.material.transparent = true
-
-							object.material.fog = false;
-
-							var xpos = ((hspacing * j) - hspacing/2) - xoffset;
-							var ypos = (vspacing  * i)  - ((vspacing/2)*maxRow) - yoffset;
-							//var zpos = Math.random() * 400 - 200;
-
-							object.position.x = xpos;
-							console.log(xpos+","+ypos);
-							object.position.y = ypos;
-							object.position.z = 0;
-							object.origin = [xpos, ypos];
-							scene.add( object );
-							objects.push( object );
-					     }
-					    
-					 }
-
-
-					// particleMaterial = new THREE.SpriteMaterial( { color: 0x0f0f0f, fog: true } );
-			}
+			
 
 
 			function createGridWall2(){
 				//var geometry = new THREE.BoxBufferGeometry( 20, 20, 20 );
 					//var geometry = new THREE.PlaneBufferGeometry( 10, 10, 5 );
 					var geometry = new THREE.PlaneBufferGeometry( panelWidth, panelHeight, 5 );
+					var videoGeometry = new THREE.PlaneBufferGeometry( 414, 233, 5 );
+
 					//var geometry = new THREE.PlaneGeometry( 10, 10, 5 );
 
 					//var objWidth = 10;
@@ -632,13 +821,28 @@
 					      		//var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
 
 					      		var object = createLabel(titleArr[i], 0, 0, 0, 24, "white")
+					      		
 					      	}else{
 					      		//var object = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {map: materialArr[(i+j)%imgArr.length], side:THREE.DoubleSide } ));
 
-					      		var object = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {map: materialArr[(storyIdx)%profiles.stories.length], side:THREE.DoubleSide } ));
+					      		if (profiles.stories[storyIdx].name=""){
+					      			var materialSolid = new THREE.MeshBasicMaterial({color:"black",wireframe:false});
+					      			var object = new THREE.Mesh( geometry, materialSolid);
+					      			alert('black')
+					      		}else{
+					      		
+					      			var object = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {map: materialArr[(storyIdx)%profiles.stories.length], side:THREE.DoubleSide } ));
+					      		}
+
+					      		
+
+					      		var videoObject = new THREE.Mesh( videoGeometry, movieMaterial);
+
+					      		group.add(videoObject);
 					      		
 
 					      		object.person = profiles.stories[storyIdx].name;
+					      		console.log(profiles.stories[storyIdx])
 					         	console.log('//// person ='+ object.person)
 					      		object.location = profiles.stories[storyIdx].location;
 					      		object.quote = profiles.stories[storyIdx].quote;
@@ -649,6 +853,13 @@
 					      			storyIdx++;
 					      		}
 					      		
+					      		videoObject.position.x = 0;//xpos;
+								videoObject.position.y = panelHeight/2 - 120;//xpos;
+								videoObject.position.z = 1;//xpos;
+								videoObject.name = "video";
+					      		object.add(videoObject);
+
+					      		objects.push( videoObject );
 
 					      	}
 					        
@@ -666,13 +877,17 @@
 							var ypos = (-vspacing  * j);// - ((vspacing/2)*maxRow) + yoffset;
 							//var zpos = Math.random() * 400 - 200;
 
-							
+						
 
 							object.position.x = 0;//xpos;
 							object.position.y = ypos;
 							object.position.z = 0;
 							object.origin = [xpos, ypos];
+
+							
 							group.add(object);
+							
+
 							console.log(group.name +" x:"+group.position.x)
 							//scene.add( object );
 							objects.push( object );
@@ -686,40 +901,120 @@
 			}
 
 
-			function createGridColumns(){
+			function createGridWall3(){
 				//var geometry = new THREE.BoxBufferGeometry( 20, 20, 20 );
 					//var geometry = new THREE.PlaneBufferGeometry( 10, 10, 5 );
 					var geometry = new THREE.PlaneBufferGeometry( panelWidth, panelHeight, 5 );
+					var videoGeometry = new THREE.PlaneBufferGeometry( 414, 233, 5 );
+
 					//var geometry = new THREE.PlaneGeometry( 10, 10, 5 );
 
 					//var objWidth = 10;
-					var maxRow = 10;
-					var maxCol = 8;
+					
 					var hspacing = panelWidth;//+10;
 					var vspacing = panelHeight;//+10;
 					var xoffset =  panelWidth/2;//((objWidth + hspacing)* maxRow)/2;
-					var yoffset = 0;//- panelHeight/2;
+					var yoffset = panelHeight/2;//- panelHeight/2;
 
 
 
 
 					for (var i = 0; i < maxCol; i++) {
+
 						var group = new THREE.Group();
 						group.name = "col"+i;
-						console.log(group.name)
-						group.position.x = 0;//hspacing*i;
+						scene.add( group );
+						var xpos = hspacing*i;
+						group.position.x =xpos;
 							group.position.y = 0;
 							group.position.z = 0;
-
+							
+							 
+						//console.log(group.name +" x:"+group.position.x)
+						
 
 					     for (var j = 0; j < maxRow; j++) {
 					      //	var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
-					      	if(i==maxCol-1){
-					      		var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
+
+
+
+
+					      	if(j==0){
+
+
+					      		//var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
+
+					      		var object = createLabel(titleArr[i], 0, 0, 0, 24, "white")
+					      		
 					      	}else{
-					      		var object = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {map: materialArr[(i+j)%imgArr.length], side:THREE.DoubleSide } ));
-					      	}
+					      		console.log('--- stories['+storyIdx+'].slides ------')
+					      		var materialSolid;
+					      		for (var v = 0; v< profiles.stories[storyIdx].slides.length; v++){
+					      			var img = profiles.stories[storyIdx].slides[v].image;
+					      			console.log(img)
+					      			console.log(profiles.stories[storyIdx].slides[v].media)
+					      			console.log(typeof profiles.stories[storyIdx].slides[v].media)
+					      		//	if (typeof profiles.stories[storyIdx].slides[v].media =="undefined"){
+					      			if (v==0){
+					      				console.log('IT IS UNDEFINED, v='+v)
+					      				materialSolid = new THREE.MeshBasicMaterial({color:"yellow",wireframe:true});
+					      			}else{
+					      				materialSolid = new THREE.MeshBasicMaterial({color:"blue",wireframe:false});
+					      				console.log('IT HAS MEDIA')
+					      			}
+
+					      			
+					      			var object = new THREE.Mesh( geometry, materialSolid);
+
+
+					      			
+
+					      		}
+					      		console.log('--- END stories.slides ------')
+
+					      		//var object = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {map: materialArr[(i+j)%imgArr.length], side:THREE.DoubleSide } ));
+/*
+					      		if (profiles.stories[storyIdx].name=""){
+					      			var materialSolid = new THREE.MeshBasicMaterial({color:"black",wireframe:false});
+					      			var object = new THREE.Mesh( geometry, materialSolid);
+					      			alert('black')
+					      		}else{
+					      		
+					      			var object = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {map: materialArr[(storyIdx)%profiles.stories.length], side:THREE.DoubleSide } ));
+					      		}
+
+					      		*/
+/*
+					      		var videoObject = new THREE.Mesh( videoGeometry, movieMaterial);
+
+					      		group.add(videoObject);
+					      		
+
+					      		object.person = profiles.stories[storyIdx].name;
+					      	//	console.log(profiles.stories[storyIdx])
+					        // 	console.log('//// person ='+ object.person)
+					      		object.location = profiles.stories[storyIdx].location;
+					      		object.quote = profiles.stories[storyIdx].quote;
+
+					      		if(storyIdx>=profiles.stories.length-1){
+					      			storyIdx =0;
+					      		}else{
+					      			storyIdx++;
+					      		}
+					      		
+					      	//	videoObject.position.x = 0;//xpos;
+							//	videoObject.position.y = panelHeight/2 - 120;//xpos;
+								videoObject.position.z = 1;//xpos;
+								videoObject.name = "video";
+								
+					      		object.add(videoObject);
+
+
+					      		objects.push( videoObject );
+
+					      	
 					        
+*/
 					      	
 
 					      	object.doubleSided = true;
@@ -729,27 +1024,32 @@
 
 							object.material.fog = false;
 
-							var xpos = ((hspacing * j) - hspacing/2) - xoffset;
-							var ypos = (vspacing  * i)  - ((vspacing/2)*maxRow) - yoffset;
+							//var xpos = ((hspacing * j));// - hspacing/2) - xoffset;
+							var ypos = (-vspacing  * j);// - ((vspacing/2)*maxRow) + yoffset;
 							//var zpos = Math.random() * 400 - 200;
 
-							
+						
 
-							object.position.x = xpos;
-							object.position.y = 0;//ypos;
+							object.position.x = 0;//xpos;
+							object.position.y = ypos;
 							object.position.z = 0;
 							object.origin = [xpos, ypos];
+
+							
 							group.add(object);
+							
+
+						//	console.log(group.name +" x:"+group.position.x)
 							//scene.add( object );
 							objects.push( object );
 					     }
-					  	 scene.add( group );   
+					  	 scene.add( group );  
+					  	 groupArr.push(group);
 					 }
 
 
 					// particleMaterial = new THREE.SpriteMaterial( { color: 0x0f0f0f, fog: true } );
 			}
-
 
 
 			function onMouseMove( event ) {
@@ -791,12 +1091,14 @@
 				var intersects = raycaster.intersectObjects( objects );
 
 				if ( intersects.length > 0 ) {
+					//console.log(intersects[ 0 ].object);
 
 					if (pickedPanel == intersects[ 0 ].object){
 
 						pickedPanel = null;
 
 						console.log(intersects[0].object.origin[0])
+						console.log(intersects[0].object)
 
 						
 						TweenMax.to(camera.position, 1, {
@@ -828,7 +1130,14 @@
 
 					}else{
 						pickedPanel = intersects[ 0 ].object;
+						console.log(intersects[0].object)
+
 						//INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
+					}
+
+					if (intersects[ 0 ].object.name =="video" ){
+						alert("VIDEO");
+						video.webkitEnterFullScreen();
 					}
 
 					//intersects[ 0 ].object.material.color.setHex( 0xe02323 );
@@ -868,6 +1177,8 @@
 
 			function onTouchStart( event ) {
 
+				video.play();
+
 				event.preventDefault();
 
 			//	console.log(THREE.Vector3( 0, 0, -1 ).applyQuaternion( camera.quaternion ).add( camera.position ));
@@ -884,50 +1195,59 @@
 
 				if ( intersects.length > 0 ) {
 
-					if (pickedPanel == intersects[ 0 ].object){
-						pickedPanel = null;
-						
-						TweenMax.to(camera.position, 1, {
-							x:intersects[0].object.origin[0],
-							y:intersects[0].object.origin[1],
-							z:0,
-							delay: 0,
-							//ease:"Power3.easeOut",
-							ease: Back.easeInOut.config(.5),
-							onUpdate:function(){
-	                      //  console.log('tweened');
+					console.log(intersects[0].object)
 
-	                    	}
-						});
-						/*
-						TweenMax.to(intersects[0].object.rotation, 1, {
-							x:0,
-							y:0,
-							z:0,
-							delay: 0,
-							//ease:"Power3.easeOut",
-							ease: Back.easeInOut.config(.5),
-							onUpdate:function(){
-	                      //  console.log('tweened');
-	                    	}
-						});
-						*/
+					if (intersects[ 0 ].object.name =="video"){
+						alert("video");
+					
 
 					}else{
-						pickedPanel = intersects[ 0 ].object;
-					}
+						if (pickedPanel == intersects[ 0 ].object){
+							pickedPanel = null;
+							
+							TweenMax.to(camera.position, 1, {
+								x:intersects[0].object.origin[0],
+								y:intersects[0].object.origin[1],
+								z:0,
+								delay: 0,
+								//ease:"Power3.easeOut",
+								ease: Back.easeInOut.config(.5),
+								onUpdate:function(){
+		                      //  console.log('tweened');
 
-					//intersects[ 0 ].object.material.color.setHex( 0xe02323 );
-
-					if (state =="GridView"){
-							TweenMax.to(intersects[ 0 ].object.material, .3, {
-								opacity: 0.5,
-								ease:"Power3.easeOut",
-								onComplete:function(){
-			                      // console.log('tweened');
-			                    }
+		                    	}
 							});
+							/*
+							TweenMax.to(intersects[0].object.rotation, 1, {
+								x:0,
+								y:0,
+								z:0,
+								delay: 0,
+								//ease:"Power3.easeOut",
+								ease: Back.easeInOut.config(.5),
+								onUpdate:function(){
+		                      //  console.log('tweened');
+		                    	}
+							});
+							*/
+
+						}else{
+							pickedPanel = intersects[ 0 ].object;
 						}
+
+						//intersects[ 0 ].object.material.color.setHex( 0xe02323 );
+
+						if (state =="GridView"){
+								TweenMax.to(intersects[ 0 ].object.material, .3, {
+									opacity: 0.5,
+									ease:"Power3.easeOut",
+									onComplete:function(){
+				                      // console.log('tweened');
+				                    }
+								});
+							}
+
+					}
 
 				}
 
@@ -999,21 +1319,25 @@
 			}
 
 			function render() {
-
+/*
+				if ( video.readyState === video.HAVE_ENOUGH_DATA ) 
+				{
+					videoImageContext.drawImage( video, 0, 0 );
+					if ( videoTexture ) 
+						videoTexture.needsUpdate = true;
+				}
+*/
 				renderer.render( scene, camera );
 				if (debug) stats.update();
 
 			}
 
-			//var myElement = document.getElementById('container');
+			var myElement = document.getElementById('container');
 
 			// create a simple instance
 			// by default, it only adds horizontal recognizers
 			//var mc = new Hammer(myElement);
-			//var mc = new Hammer.Manager(myElement);
-			var mc = propagating(new Hammer.Manager(container));
-			//var mc = new Hammer.Manager(container, {domEvents:true});
-			//mc.set({ domEvents: true });
+			var mc = new Hammer.Manager(myElement);
 
 			var pinch = new Hammer.Pinch();
 			var pan = new Hammer.Pan();
@@ -1023,9 +1347,6 @@
 			});
 
 			pinch.recognizeWith([pan]);
-
-
-			
 
 			// add to the Manager
 			mc.add([pinch, pan, tap, press]);
@@ -1042,22 +1363,20 @@
 			// listen to events...
 			mc.on("panleft panright panup pandown", function(ev) {
 				gesture = ev.type;
+
 			   // info.textContent = ev.type +" gesture detected.";
 			   // moveCamera(ev.type);
 			});
 
 			mc.on("tap", function(ev) {
-				//console.log(ev);
-				//console.log(ev.srcEvent.srcElement)
 			    info.textContent = ev.type +" gesture detected.";
 			    state = 'ColumnView';
 			    panInc = 1;
-			   // event.stopPropagation();
 			    
 			   // console.log("pickedPanel.position.x="+pickedPanel.position.x)
 			   console.log(pickedPanel.origin[0])
 			   console.log(pickedPanel.person)
-			   zoomCamera(pickedPanel.origin[0], pickedPanel.position.y, initZ);
+			    zoomCamera(pickedPanel.origin[0], pickedPanel.position.y, initZ);
 			});
 
 			mc.on("pinch press", function(ev) {
@@ -1067,29 +1386,9 @@
 			    panInc = 3;
 			    enablePan=false;
 			    zoomCamera(xpos, ypos, maxZ);
+
+			    
 			});
-
-
-			var child2 = document.getElementById('quote');
-			var hammertext = propagating(new Hammer(child2))
-		      .on('tap', function (ev) {
-		      	console.log(ev);
-				console.log(ev.firstTarget.href)
-				console.log(typeof ev.firstTarget)
-		      	//alert(typeof event.target);
-		      	info.textContent+=ev.firstTarget.href;
-		      	if (ev.firstTarget.href){
-			      	window.open(ev.firstTarget.href,'_blank');
-			      }
-		      	ev.stopPropagation();
-		      //	event.preventDefault();
-		      //	event.gesture.stopPropagation();
-		      //	event.gesture.preventDefault();
-		       
-		        
-		      })
-
-		
 
 			function moveCamera(gesture){
 			//	if (panning ==false){
@@ -1190,6 +1489,7 @@
                   	  
                   	  getCameraFocus();
                   	  if (state =="ColumnView"){
+
                   	  	//quote.style.opacity = 1;
                   	  	if (activeRow != 1){
 	                  	  	showQuote();
@@ -1312,8 +1612,8 @@
 				//var idx = activeRow -1;
 				var idx = Math.abs(focusTile % profiles.stories.length)-2;
 				//objects[focusTile].name
-				console.log(focusTile)
-				console.log(objects[focusTile-1].person)
+			//	console.log(focusTile)
+			//	console.log(objects[focusTile-1].person)
 				document.getElementById('person').innerHTML = objects[focusTile-1].person;//profiles.stories[idx].name;
 				document.getElementById('location').innerHTML = objects[focusTile-1].location;//profiles.stories[idx].location;
 				document.getElementById('quote').innerHTML = objects[focusTile-1].quote;//profiles.stories[idx].quote;
