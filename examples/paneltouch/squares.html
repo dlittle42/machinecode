@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>hammer</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				color: #000;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+				font-weight: bold;
+
+				background-color: #fff;
+				margin: 0px;
+				overflow: hidden;
+			}
+
+			#info {
+				color:#000;
+				position: absolute;
+				top: 0px; width: 100%;
+				padding: 5px;
+
+			}
+
+			a {
+				color: red;
+			}
+
+
+		</style>
+	</head>
+
+	<body>
+		<div id="container"></div>
+		<div id="info"></div>
+
+		<script src="../../bower_components/jquery/dist/jquery.min.js"></script>
+		<script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
+		<script src="../../bower_components/three.js/build/three.js"></script>
+		<script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+		<!--<script src="../../bower_components/three.js/examples/js/controls/TrackballControls.js"></script>-->
+		<script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+
+		<script src="../../bower_components/hammerjs/hammer.js"></script>
+
+		<script>
+			var xpos = 0;
+			var ypos = 0;
+			
+			var initZ = 8;
+			var zpos = initZ;
+			var maxZ = 100;
+			var initPan = 10;
+			var maxPan = 100;
+			var panInc = 10;
+			var state = "In";
+			var objects = [];
+			var panelWidth = window.innerWidth;
+			var panelHeight = window.innerHeight
+
+
+		
+
+			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+			var container, stats;
+
+			var camera, controls, scene, renderer;
+
+			var cross;
+
+			init();
+			animate();
+
+			function init() {
+
+				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 1000 );
+				camera.position.z = 800;//initZ;//500;
+/*
+				controls = new THREE.TrackballControls( camera );
+
+				controls.rotateSpeed = 1.0;
+				controls.zoomSpeed = 1.2;
+				controls.panSpeed = 0.8;
+
+				controls.noZoom = false;
+				controls.noPan = false;
+
+				controls.staticMoving = true;
+				controls.dynamicDampingFactor = 0.3;
+
+				controls.keys = [ 65, 83, 68 ];
+
+				controls.addEventListener( 'change', render );
+*/
+				// world
+
+				scene = new THREE.Scene();
+				scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
+/*
+				//var geometry = new THREE.CylinderGeometry( 0, 10, 30, 4, 1 );
+				var geometry = new THREE.PlaneBufferGeometry( 20, 20 );
+				var material =  new THREE.MeshPhongMaterial( { color:0xff0000, shading: THREE.FlatShading } );
+
+				for ( var i = 0; i < 500; i ++ ) {
+
+					var mesh = new THREE.Mesh( geometry, material );
+					mesh.position.x = ( Math.random() - 0.5 ) * 1000;
+					mesh.position.y = ( Math.random() - 0.5 ) * 1000;
+					mesh.position.z = ( Math.random() - 0.5 ) * 1000;
+					mesh.updateMatrix();
+					mesh.matrixAutoUpdate = false;
+					scene.add( mesh );
+
+				}
+*/
+				createGridWall();
+/*
+				var grid = new THREE.GridHelper(100, 10);
+		        scene.add(grid);
+*/
+
+				// lights
+
+				light = new THREE.DirectionalLight( 0xffffff );
+				light.position.set( 1, 1, 1 );
+				scene.add( light );
+
+				light = new THREE.DirectionalLight( 0x002288 );
+				light.position.set( -1, -1, -1 );
+				scene.add( light );
+
+				light = new THREE.AmbientLight( 0x222222 );
+				scene.add( light );
+
+
+				// renderer
+
+				renderer = new THREE.WebGLRenderer( { antialias: false } );
+				renderer.setClearColor( scene.fog.color );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				container = document.getElementById( 'container' );
+				container.appendChild( renderer.domElement );
+
+				stats = new Stats();
+				container.appendChild( stats.dom );
+
+				TweenMax.to(camera.position ,2,{
+					x:xpos,
+					y:ypos,
+					z:initZ,
+					ease:"Power3.easeOut",
+					//ease: Elastic.easeOut.config(2, 0.5),
+					onInit:function(){
+                  	 // console.log('start tween '+ xpos);
+	                }
+	            });
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+				//
+
+				render();
+
+			}
+
+			function createGridWall(){
+				//var geometry = new THREE.BoxBufferGeometry( 20, 20, 20 );
+					var geometry = new THREE.PlaneBufferGeometry( 10, 10, 5 );
+					//var geometry = new THREE.PlaneGeometry( 10, 10, 5 );
+
+					var objWidth = 10;
+					var maxRow = 10;
+					var maxCol = 10;
+					var hspacing = 10;
+					var vspacing = 10;
+					var xoffset = -5;//((objWidth + hspacing)* maxRow)/2;
+
+					for (var i = 0; i < maxRow; i++) {
+					     for (var j = 0; j < maxCol; j++) {
+					      	var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
+					      //	var object = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {map: materialArr[(i+j)%imgArr.length], side:THREE.DoubleSide } ));
+
+					      	object.doubleSided = true;
+					      	object.geometry.computeBoundingSphere(); // this isn't calculated automatically
+							object.geometry.boundingSphere.center;
+
+							var xpos = ((hspacing * j) - hspacing/2) - xoffset;
+							var ypos = (vspacing  * i)  - ((vspacing/2)*maxRow);
+							var zpos = Math.random() * 400 - 200;
+
+							object.position.x = xpos;
+							console.log(xpos+","+ypos);
+							object.position.y = ypos;
+							object.position.z = 0;
+							object.origin = [xpos, ypos];
+							scene.add( object );
+							objects.push( object );
+					     }
+					 }
+
+
+					// particleMaterial = new THREE.SpriteMaterial( { color: 0x0f0f0f, fog: true } );
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			//	controls.handleResize();
+
+				render();
+
+			}
+
+			function animate() {
+
+				
+				render();
+				requestAnimationFrame( animate );
+				//controls.update();
+
+			}
+
+			function render() {
+
+				renderer.render( scene, camera );
+				stats.update();
+
+			}
+
+			var myElement = document.getElementById('container');
+
+			// create a simple instance
+			// by default, it only adds horizontal recognizers
+			//var mc = new Hammer(myElement);
+			var mc = new Hammer.Manager(myElement);
+
+			var pinch = new Hammer.Pinch();
+			var pan = new Hammer.Pan();
+			var tap = new Hammer.Tap({
+			  taps: 1
+			});
+
+			pinch.recognizeWith([pan]);
+
+			// add to the Manager
+			mc.add([pinch, pan, tap]);
+
+			// let the pan gesture support all directions.
+			// this will block the vertical scrolling on a touch-device while on the element
+			mc.get('pan').set({ direction: Hammer.DIRECTION_ALL });
+
+			// listen to events...
+			mc.on("panleft panright panup pandown", function(ev) {
+			    info.textContent = ev.type +" gesture detected.";
+			    moveCamera(ev.type);
+			});
+
+			mc.on("tap press", function(ev) {
+			    info.textContent = ev.type +" gesture detected.";
+			    state = 'In';
+			    panInc = initPan;
+			    zoomCamera(initZ);
+			});
+
+			mc.on("pinch", function(ev) {
+			    info.textContent += ev.type +" ";
+			    state = 'Out';
+			    panInc = initPan/2;
+			    zoomCamera(maxZ);
+			});
+
+			function moveCamera(gesture){
+				console.log(gesture)
+				if (gesture == 'panleft'){
+					xpos += panInc;
+
+				} else if (gesture == 'panright') {
+					xpos -= panInc;
+				} else if (gesture == 'panup') {
+					ypos -= panInc;
+				} else if (gesture == 'pandown') {
+					ypos += panInc;
+				} 
+
+
+				TweenMax.to(camera.position ,.5,{
+					x:xpos,
+					y:ypos,
+					z:zpos,
+					ease:"Power3.easeOut",
+					onInit:function(){
+                  	  console.log('start tween '+ xpos);
+	                }
+	            });
+			}
+
+			function zoomCamera(z){
+				zpos=z;
+				
+
+				TweenMax.to(camera.position ,.5,{
+					x:xpos,
+					y:ypos,
+					z:zpos,
+					ease:"Power3.easeOut",
+					//ease: Elastic.easeOut.config(2, 0.5),
+					onInit:function(){
+                  	 // console.log('start tween '+ xpos);
+	                }
+	            });
+			}
+
+		</script>
+
+	</body>
+</html>

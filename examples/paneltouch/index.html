@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>hammer</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link href="https://fonts.googleapis.com/css?family=Cabin+Condensed:700|Gudea:700|Heebo:800" rel="stylesheet">
+		<style>
+
+			html {
+			  box-sizing: border-box;
+			}
+			*, *:before, *:after {
+			  box-sizing: inherit;
+			}
+			body {
+				color: #fff;
+				font-family:Monospace;
+				
+				text-align:center;
+				font-weight: bold;
+
+				background-color: #fff;
+				margin: 0px;
+				overflow: hidden; 
+			}
+
+			#info {
+				color:#fff;
+				background-color: black;
+				position: absolute;
+				top: 0px; width: 100%;
+				padding: 5px;
+
+			}
+
+			a {
+				color: red;
+			}
+
+			#tile_content{
+				/*border: 1px solid red;*/
+				height: 60%;
+				width: 100%;
+				position: absolute;
+				top: 40%;
+				left: 0;
+				padding: 20px;
+
+				background: -moz-linear-gradient(top,  rgba(0,0,0,0) 0%, rgba(0,0,0,0.85) 100%); /* FF3.6-15 */
+				background: -webkit-linear-gradient(top,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.85) 100%); /* Chrome10-25,Safari5.1-6 */
+				background: linear-gradient(to bottom,  rgba(0,0,0,0) 0%,rgba(0,0,0,0.85) 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+				filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#00000000', endColorstr='#a6000000',GradientType=0 ); /* IE6-9 */
+
+			/*	pointer-events: none; */
+				opacity: 0;
+			   transition: opacity .25s ease-out;
+			   -moz-transition: opacity .25s ease-out;
+			   -webkit-transition: opacity .25s ease-out;
+
+			   display: flex;
+				align-items: center;
+				justify-content: center;
+
+				flex-flow: wrap;
+			}
+
+			h1{
+				width: 100%;
+			    font-size: 32px;
+			    /* text-align: left; */
+			    text-transform: uppercase;
+			    letter-spacing: 5px;
+			    font-family: 'Gudea';
+			    padding-bottom: 10px;
+			    border-bottom: 2px solid white;
+			    margin: 0;
+			    text-shadow: 1px 1px 2px #807d7d;
+			}
+
+			h2{
+
+				    width: 100%;
+				    font-size: 18px;
+				
+				    margin: 10px 0 0 0;
+				    font-family: 'Gudea';
+				    text-transform: uppercase;
+				    letter-spacing: 5px;
+				    padding: 0;
+				    text-shadow: 1px 1px 2px #807d7d;
+			}
+
+			p{
+				color: white;
+				font-size:16px;
+				text-align:left;
+				width: 100%;
+			}
+
+			#nav{
+				width: 60px;
+				height: 60px
+				background-color: black;
+				position: fixed;
+				bottom: 20px;
+				right: 20px;
+			}
+
+			#menu{
+				width: 100vw;
+				height: 100vh;
+				background-color: black;
+				transform: translateX(50%);
+				
+			}
+
+
+		
+
+
+		</style>
+	</head>
+
+	<body>
+		<div id="container">
+		</div>
+		<div id="info"></div>
+		
+		<div id="nav">...</div>
+
+		<script src="../../bower_components/jquery/dist/jquery.min.js"></script>
+		<script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
+		<script src="../../bower_components/three.js/build/three.js"></script>
+		<script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+		<!--<script src="../../bower_components/three.js/examples/js/controls/TrackballControls.js"></script>-->
+		<script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+
+		<script src="../../bower_components/hammerjs/hammer.js"></script>
+		<script src="../../node_modules/propagating-hammerjs/propagating.js"></script>
+
+		<script>
+			var xpos = 0;
+			var ypos = 0;
+			var maxRow = 10;
+			var maxCol = 8;
+			var storyIdx = 0;
+
+			var mainPanel;
+			var pointerDown = false;
+			var pointerX = 0;
+			var pointerY = 0;
+			var pointerInit = 0;
+			var sphere;
+
+			var center = new THREE.Vector2(0,0);
+
+
+			var panelWidth = window.innerWidth;
+			var panelHeight = window.innerHeight -35; //height of browser chrome
+			
+			var initZ = panelWidth+ 300;//+1200;//+1400;//+200;//window.screen.availWidth;
+			//alert(initZ)
+			var zpos = initZ;
+			var maxZ = initZ+1400;
+			//var initPan = 10;
+			//var maxPan = 100;
+			//var panInc = 10;
+			var state = "ColumnView";
+			var objects = [];
+			
+			var initPan = panelWidth;
+			var panInc = 1;
+
+			var panVert = panelHeight/2;
+			var panHoriz = panelWidth/2;
+
+			var gesture;
+			var panning =false;
+
+			var materialArr = [];
+			var imgArrIdx = 0;
+			var textureLoader;
+			var raycaster;
+			var mouse = new THREE.Vector2(), INTERSECTED;
+			
+			var pickedPanel;
+			var activeCol = 1;
+			var activeRow = 1;
+			var enablePan = true;
+			var groupArr = [];
+
+			var debug = true;
+
+		
+			var focusTile = 1;
+
+			var hemisphereLight, shadowLight;
+
+			var focusObj;
+
+
+			var imgArr = [
+				"image1.jpg",
+			/*	"image2.jpg",
+				"image3.jpg",
+				"image4.jpg",
+				"image5.jpg",
+				"image6.jpg",
+				"image7.jpg",
+				"image8.jpg",
+				"image9.jpg",
+				"image10.jpg",
+				"image11.jpg"
+				*/
+			]
+
+			var color = {
+			  "black": new THREE.MeshBasicMaterial({
+			    color: 0x222222
+			  }),
+			  "white": new THREE.MeshBasicMaterial({
+			    color: 0xffffff
+			  }),
+			  "red": new THREE.MeshBasicMaterial({
+			    color: 0xf25346
+			  }),
+			  "blue": new THREE.MeshBasicMaterial({
+			    color: 0x68c3c0
+			  })
+			}
+
+
+			var Colors = {
+				red:0xf25346,
+				white:0xd8d0d1,
+				brown:0x59332e,
+				pink:0xF5986E,
+				brownDark:0x23190f,
+				blue:0x68c3c0,
+			};
+
+			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+			var container, stats;
+
+			var camera, controls, scene, renderer;
+
+			var cross;
+
+			init();
+			animate();
+
+			function init() {
+
+				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.z = initZ;//500;
+
+				// world
+
+				scene = new THREE.Scene();
+				//scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
+
+		/*
+				var manager = new THREE.LoadingManager();
+				manager.onProgress = function ( item, loaded, total ) {
+				 // progressBar.style.width = (loaded / total * 100) + '%';
+				 	console.log(item, loaded, total);
+				};
+
+				manager.onLoad = function (){
+					console.log('all items loaded');
+					createPanel();
+
+				}
+
+				manager.onError = function (){
+					console.log('loading error');
+				}
+
+
+				// create a loader to get an image from a URL
+				textureLoader = new THREE.TextureLoader(manager);
+				// we've gotta set this to use cross-origin images
+				textureLoader.crossOrigin = true;
+
+				// load in the image
+				
+				loadImages();
+
+		*/
+			
+
+				//createGridWall();
+
+				createWireframe();
+
+				createLights();
+
+				createPointerHelper();
+
+
+				// renderer
+
+				renderer = new THREE.WebGLRenderer( { antialias: false } );
+				//renderer.setClearColor( 0xE5E4E4 );
+				renderer.setClearColor(0xffa91e);
+				//renderer.setClearColor( scene.fog.color );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				container = document.getElementById( 'container' );
+				container.appendChild( renderer.domElement );
+
+				
+				if (debug){
+
+					var grid = new THREE.GridHelper(100, 10);
+			        scene.add(grid);
+
+					var axis = new THREE.AxisHelper(100);
+	    			scene.add(axis);  
+
+	    			
+
+	    			stats = new Stats();
+					container.appendChild( stats.dom );
+
+					document.getElementById("info").style.visibility = "visible";
+
+	    		}else{
+	    			document.getElementById("info").style.visibility = "hidden";
+	    		}
+				
+
+
+				raycaster = new THREE.Raycaster();
+
+			//	getCameraFocus();
+
+
+				//
+				document.addEventListener( 'touchmove', onTouchMove, false );
+				document.addEventListener( 'touchstart', onTouchStart, false );
+				document.addEventListener( 'touchend', onTouchEnd, false );
+
+				document.addEventListener( 'mousemove', onMouseMove, false );
+				document.addEventListener( 'mousedown', onMouseDown, false );
+				document.addEventListener( 'mouseup', onMouseUp, false );
+
+				window.addEventListener( 'resize', onWindowResize, false );
+				//
+
+				render();
+
+			}
+
+
+
+
+			function createLights() {
+				// A hemisphere light is a gradient colored light; 
+				// the first parameter is the sky color, the second parameter is the ground color, 
+				// the third parameter is the intensity of the light
+				hemisphereLight = new THREE.HemisphereLight(0xaaaaaa,0x000000, .9)
+				
+				// A directional light shines from a specific direction. 
+				// It acts like the sun, that means that all the rays produced are parallel. 
+				shadowLight = new THREE.DirectionalLight(0xffffff, .9);
+
+				// Set the direction of the light  
+				shadowLight.position.set(150, 350, 350);
+				
+				// Allow shadow casting 
+				shadowLight.castShadow = true;
+
+				// define the visible area of the projected shadow
+				shadowLight.shadow.camera.left = -400;
+				shadowLight.shadow.camera.right = 400;
+				shadowLight.shadow.camera.top = 400;
+				shadowLight.shadow.camera.bottom = -400;
+				shadowLight.shadow.camera.near = 1;
+				shadowLight.shadow.camera.far = 1000;
+
+				// define the resolution of the shadow; the higher the better, 
+				// but also the more expensive and less performant
+				shadowLight.shadow.mapSize.width = 2048;
+				shadowLight.shadow.mapSize.height = 2048;
+				
+				// to activate the lights, just add them to the scene
+				scene.add(hemisphereLight);  
+				scene.add(shadowLight);
+			}
+
+			function loadImages(){
+				
+				textureLoader.load("images/tub01.png", function(texture) {
+				  // this code makes the texture repeat
+				//  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+				//  texture.repeat.set( 10, 10 );
+				  // set the texture as the map for the material
+				//  materialOne = texture;//new THREE.MeshLambertMaterial( {map: texture, side:THREE.DoubleSide } );
+
+				    var repeatX, repeatY;
+					texture.wrapS = THREE.ClampToEdgeWrapping;
+					texture.wrapT = THREE.RepeatWrapping;
+					//repeatX = panelWidth * textureSetting.h / (panelHeight * textureSetting.w);
+					repeatX = panelWidth * 520 / (panelHeight * 311);
+					repeatY = 1;
+					texture.repeat.set(repeatX, repeatY);
+					texture.offset.x = (repeatX - 1) / 2 * -1;
+					//texture.offset.y=(repeatY) / 2 -.4;
+
+				    materialArr.push(texture);
+
+
+				
+				 })
+			}
+
+
+
+
+			function createPanel(){
+				//var geometry = new THREE.BoxBufferGeometry( 20, 20, 20 );
+					//var geometry = new THREE.PlaneBufferGeometry( 10, 10, 5 );
+					//var geometry = new THREE.PlaneBufferGeometry( panelWidth, panelHeight, 5 );
+
+					var geometry = new THREE.PlaneGeometry(panelWidth, panelHeight, 50, 50);
+					//var geometry = new THREE.PlaneGeometry( 10, 10, 5 );
+
+					//var objWidth = 10;
+					/*
+					var hspacing = panelWidth;//+10;
+					var vspacing = panelHeight;//+10;
+					var xoffset =  panelWidth/2;//((objWidth + hspacing)* maxRow)/2;
+					var yoffset = panelHeight/2;//- panelHeight/2;
+					*/
+
+					
+		      		var object = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {map: materialArr[0], side:THREE.DoubleSide } ));
+
+		      		object.doubleSided = true;
+			      	object.geometry.computeBoundingSphere(); // this isn't calculated automatically
+					object.geometry.boundingSphere.center;
+					//object.material.transparent = true
+
+					object.geometry.dynamic = true;
+
+					object.material.fog = false;
+					      		
+
+					object.position.x = 0;//xpos;
+					object.position.y = 0;
+					object.position.z = 0;
+					object.origin = [xpos, ypos];
+					object.name="main";
+
+					mainPanel = object;
+				
+					//scene.add( object );
+					objects.push( object );
+	
+					scene.add( object );  
+
+
+
+
+					// particleMaterial = new THREE.SpriteMaterial( { color: 0x0f0f0f, fog: true } );
+			}
+
+			function createWireframe(){
+				var planeGeometry = new THREE.PlaneGeometry(panelWidth, panelHeight, 50, 50);
+
+				var mat = new THREE.MeshPhongMaterial({
+					color:Colors.red,
+					transparent:true,
+					opacity:.6,
+					shading:THREE.FlatShading,
+					wireframe: true//false
+				});
+
+				var planeMaterial = new THREE.MeshBasicMaterial({color: 0xffffff, wireframe: true});
+				mainPanel = new THREE.Mesh(planeGeometry, planeMaterial);
+
+				mainPanel.geometry.dynamic = true;
+				//mainPanel = new THREE.Mesh(planeGeometry,mat);
+				//mainPanel.rotation.x = -0.25 * Math.PI;
+
+				mainPanel.position.set(0, 0, 0);
+
+				objects.push( mainPanel);
+	
+				scene.add( mainPanel);  
+			}
+
+			function colorTo(target, value) {
+			  var target = target;
+			  var initial = new THREE.Color(target.material.color.getHex());
+			  var value = new THREE.Color(value.color.getHex());
+			  TweenMax.to(initial, .3, {
+			    r: value.r,
+			    g: value.g,
+			    b: value.b,
+			    
+			    onUpdate: function () {
+			      target.material.color = initial;
+			    }
+			  });
+			}
+
+
+
+			function getDesktopPointer(){
+				pointerX = event.clientX - ( panelWidth / 2); 
+				//console.log(pointerX)
+				pointerY = event.clientY - ( panelHeight/ 2); 
+			}
+
+			function getTouchPointer(){
+				pointerX = event.touches[ 0 ].clientX - ( window.innerWidth / 2); 
+				pointerY = event.touches[ 0 ].clientY - ( window.innerHeight/ 2); 
+				pointerInit = pointerX; 
+			}
+
+			function createPointerHelper(){
+				var newSphereGeom= new THREE.SphereGeometry(.5,.5,.5);
+				sphere= new THREE.Mesh(newSphereGeom, new THREE.MeshBasicMaterial({ color: 0x2266dd }));
+
+				
+				sphere.scale.x = sphere.scale.y = 10;
+				scene.add( sphere );
+			}
+
+			function castRay(evt){
+				
+
+				if (evt.touches){
+					console.log('got touches')
+					mouse.x = ( event.touches[0].clientX / renderer.domElement.clientWidth ) * 2 - 1;
+					mouse.y = - ( event.touches[0].clientY / renderer.domElement.clientHeight ) * 2 + 1;
+					getTouchPointer();
+				}else{
+					console.log('is mouse')
+					mouse.x = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
+					mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
+					getDesktopPointer();
+				}
+				
+
+				raycaster.setFromCamera( mouse, camera );
+
+				//vector = new THREE.Vector3( 0, 0, -1 );
+				//vector.applyQuaternion( camera.quaternion ).add( camera.position );
+
+				var intersects = raycaster.intersectObjects( objects );
+
+				//console.log(intersects)
+
+				if (pointerDown){
+
+					if ( intersects.length > 0 ) {
+
+						focusObj = intersects[0].object;
+
+						sphere.position.copy( intersects[ 0 ].point );
+
+						//mDown = true;
+						console.log('intersected')
+						console.log(intersects[0].object.position)
+						//console.log(xpos)
+
+
+						colorTo(intersects[ 0 ].object, color['red']);
+
+						//intersects[ 0 ].object.material.color.setHex( 0xe02323 );
+						//intersects[ 0 ].object.material.color = new THREE.Color(0,1,0,.3)
+
+
+					}else{
+						//mDown = false;
+						//if (typeof focusObj=='object') focusObj.material.color.setHex( 0xffffff );
+						if (typeof focusObj=='object')  colorTo(focusObj, color['white']);
+					}
+				}
+			}
+
+			
+
+
+			function onMouseMove( event ) {
+				//console.log('onMouseMove')
+				event.preventDefault();
+
+				castRay(event);
+
+			}
+
+			function onTouchMove( event ) {
+				//console.log('onTouchMove')
+				castRay(event);
+				event.preventDefault();
+/*
+				mouse.x = ( event.touches[ 0 ].clientX / window.innerWidth ) * 2 - 1;
+				mouse.y = - ( event.touches[ 0 ].clientY / window.innerHeight ) * 2 + 1;
+
+				if (mDown == true){
+					var nPointerX = event.touches[ 0 ].clientX - ( window.innerWidth / 2); 
+
+					pointerX =nPointerX;//- pointerInit;
+					info.textContent = pointerInit;
+					pointerY = event.touches[ 0 ].clientY - ( window.innerHeight / 2); 
+				}
+
+				*/
+				
+
+				//console.log(mouse.x)
+
+			}
+
+			function onMouseDown( event ) {
+				//console.log('onMouseDown')
+				pointerDown = true;
+				event.preventDefault();
+				castRay(event);
+
+			}
+
+			function onTouchStart( event ) {
+				//console.log('onTouchStart')
+				event.preventDefault();
+				pointerDown = true;
+				castRay(event);
+				
+
+			}
+
+			function onMouseUp( event ) {
+				//console.log('onMouseUp')
+				event.preventDefault();
+				pointerDown = false;
+				//if (typeof focusObj=='object') focusObj.material.color.setHex( 0xffffff );
+				if (typeof focusObj=='object')  colorTo(focusObj, color['white']);
+				
+			}
+
+			function onTouchEnd( event ) {
+				//console.log('onTouchEnd')
+				event.preventDefault();
+				pointerDown=false;
+				//if (typeof focusObj=='object') focusObj.material.color.setHex( 0xffffff );
+				if (typeof focusObj=='object')  colorTo(focusObj, color['white']);
+				
+				
+				//pickedPanel.material.color.setHex( 0xffffff);
+				
+
+			}
+
+
+			function trailPanel(){
+
+				//var x = (-pointerX - camera.position.x) * .3;
+				
+				//var y = (pointerY - camera.position.y) * .1;
+			   // y += (nextDot.y - dot.y) * .6;
+				//camera.position.x += x;
+			//	camera.position.y += y;
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			//	controls.handleResize();
+
+				render();
+
+			}
+/*
+			function animate() {
+
+				
+				render();
+				requestAnimationFrame( animate );
+				if (mDown) 
+					trailPanel();
+				//controls.update();
+
+			}
+
+			
+
+			function render() {
+
+				renderer.render( scene, camera );
+				if (debug) stats.update();
+
+
+			}
+*/
+			function animate() {
+			  //mainPanel.rotation.z += 0.005
+			  requestAnimationFrame(render)
+			}
+
+			function render(ts) {
+			  if (debug) stats.update();
+			 // if (mDown) trailPanel();
+			 // updateWave(ts)
+			  
+			  renderer.render(scene, camera)
+			  if (mainPanel && mainPanel.geometry) radialWaves(ts)
+			// if (pointerDown) radialWaves(ts)
+			  animate()
+			}
+
+
+
+			function radialWaves(ts){
+
+			  var center = new THREE.Vector2(sphere.position.x, sphere.position.y);
+
+			  var vLength = mainPanel.geometry.vertices.length;
+			  for (var i = 0; i < vLength; i++) {
+			    var v = mainPanel.geometry.vertices[i];
+			    var dist = new THREE.Vector2(v.x, v.y).sub(center);
+			    var size = 20.0;
+			    var magnitude = 20;
+			    v.z = Math.sin(dist.length()/-size + (ts/500)) * magnitude;
+			  }
+			  mainPanel.geometry.verticesNeedUpdate = true;
+			    mainPanel.geometry.normalsNeedUpdate = true;
+			    mainPanel.geometry.computeFaceNormals();
+			    mainPanel.geometry.computeVertexNormals();
+			}
+
+			//var mc = new Hammer(myElement);
+			var mc = new Hammer.Manager(container);
+
+			//var mc = new Hammer.Manager(container, {domEvents:true});
+			//mc.set({ domEvents: true });
+
+			var pinch = new Hammer.Pinch();
+			var pan = new Hammer.Pan();
+			var press = new Hammer.Press();
+			var tap = new Hammer.Tap({
+			  taps: 1
+			});
+
+			pinch.recognizeWith([pan]);
+
+
+		
+
+			// add to the Manager
+			mc.add([pinch, pan, tap, press]);
+
+			// let the pan gesture support all directions.
+			// this will block the vertical scrolling on a touch-device while on the element
+			mc.get('pan').set({ direction: Hammer.DIRECTION_ALL, threshold: 50 });
+
+			mc.on("panend", function(ev) {
+			    info.textContent = gesture;//ev.type +" gesture detected.";
+			    if (enablePan) moveCamera(gesture);
+			});
+
+			// listen to events...
+			mc.on("panleft panright panup pandown", function(ev) {
+				console.log('--from pan --')
+				console.log(ev.distance)
+				gesture = ev.type;
+			    info.textContent = ev.type +" gesture detected.";
+			    //moveCamera(ev.type);
+			});
+
+			mc.on("tap", function(ev) {
+				//console.log(ev);
+				//console.log(ev.srcEvent.srcElement)
+			    info.textContent = ev.type +" gesture detected.";
+			    panInc = 1;
+			   // event.stopPropagation();
+			 //  zoomCamera(0, 0, initZ);
+
+			});
+
+			mc.on("pinch press", function(ev) {
+				
+			    info.textContent += ev.type +" ";
+			    panInc = 3;
+			    enablePan=false;
+			    zoomCamera(xpos, ypos, maxZ);
+			});
+
+
+
+
+		
+
+			function moveCamera(gesture){
+			//	if (panning ==false){
+					console.log(gesture)
+					var nextCol;
+					panInc=1;
+					if (gesture == 'panleft'){
+
+							xpos += panHoriz *panInc;
+							//pointerX -= panHoriz *panInc;
+
+
+					} else if (gesture == 'panright') {
+							xpos -= panHoriz*panInc;
+							//pointerX += panHoriz*panInc;
+
+
+
+							
+	
+					} else if (gesture == 'panup') {
+			
+							ypos -= panVert*panInc;
+					
+					} else if (gesture == 'pandown') {
+				
+							ypos += panVert*panInc;
+		
+					} 
+					
+				TweenMax.to(camera.position ,.5,{
+						x:xpos,
+						y:ypos,
+						//z:zpos,
+						ease:"Power3.easeOut",
+						onInit:function(){
+							//pointerX = -xpos;
+	                  	 // moveColumn(activeCol+1,ypos)
+		                },
+		                onComplete:function(){
+		                	//getCameraFocus();
+
+		                	
+		                }
+		            });
+		         
+
+		          
+		       //  }
+			}
+
+
+
+			function zoomCamera(x,y,z){
+/*
+				xpos=x;
+				ypos=y;
+				zpos=z;
+
+
+				TweenMax.to(camera.position ,.5,{
+					x:xpos,
+					y:ypos,
+					z:zpos,
+					ease:"Power3.easeOut",
+					onInit: function(){
+						//if (state =="GridView") resetColumn()
+						//quote.style.opacity = 0;
+
+					},
+					//ease: Elastic.easeOut.config(2, 0.5),
+					onComplete:function(){
+                 
+                  	  	//enablePan=true;
+
+	                }
+	            });
+	           */
+			}
+
+			
+			
+
+
+			function createLabel(text, x, y, z, size, color){
+				//var canvas = document.createElement("canvas");
+
+				//canvas.height = panelHeight;
+				//canvas.width = panelWidth;
+
+				var canvas = createHiDPICanvas(panelWidth, panelHeight);
+				var context = canvas.getContext("2d");
+				context.font = size + "pt Cabin Condensed";
+				context.textAlign = "center";
+				context.fillStyle = "white";
+				context.fillRect(0,0,panelWidth, panelHeight);
+				context.fillStyle = "black";
+				context.fillText(text, panelWidth / 2, panelHeight/2);
+				var texture = new THREE.Texture(canvas);
+				texture.needsUpdate = true;
+				var material = new THREE.MeshBasicMaterial({
+					map : texture
+				})
+				var mesh = new THREE.Mesh(new THREE.PlaneGeometry(panelWidth, panelHeight, 10, 10), material);
+				mesh.position.x = x;
+				mesh.position.y = y;
+				mesh.position.z = z;
+
+				return mesh;
+
+			}
+
+			var PIXEL_RATIO = (function () {
+			    var ctx = document.createElement("canvas").getContext("2d"),
+			        dpr = window.devicePixelRatio || 1,
+			        bsr = ctx.webkitBackingStorePixelRatio ||
+			              ctx.mozBackingStorePixelRatio ||
+			              ctx.msBackingStorePixelRatio ||
+			              ctx.oBackingStorePixelRatio ||
+			              ctx.backingStorePixelRatio || 1;
+
+			    return dpr / bsr;
+			})();
+
+
+			function createHiDPICanvas(w, h, ratio) {
+			    if (!ratio) { ratio = PIXEL_RATIO; }
+			    var can = document.createElement("canvas");
+			    can.width = w * ratio;
+			    can.height = h * ratio;
+			    can.style.width = w + "px";
+			    can.style.height = h + "px";
+			    can.getContext("2d").setTransform(ratio, 0, 0, ratio, 0, 0);
+			    return can;
+			}
+
+
+		</script>
+
+	</body>
+</html>
