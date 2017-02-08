@@ -1,0 +1,514 @@
+
+    <body>
+
+        <div id="main">
+          
+          <div id='experience'></div>
+          
+        </div>
+
+        <div id="lock"></div>
+
+        <script src="../../bower_components/three.js/build/three.js"></script>
+    <script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+    <script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+    <script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+    <script src="../../bower_components/dat.gui/dat.gui.js"></script>
+
+
+
+        
+
+         <script id="shader-vertex-terrain-sombrero" type="x-shader/x-vertex">
+
+            varying vec2  v_uv;
+            varying vec3  v_line_color;
+
+
+            uniform float time;
+            uniform float speed;
+            uniform vec2 mouse;
+            uniform vec2 resolution;
+          //  uniform float elevation;
+           // uniform float noise_range;
+          //  uniform float perlin_passes;
+            uniform float sombrero_amplitude;
+            uniform float sombrero_frequency;
+            uniform vec3  line_color;
+            varying float z;
+
+
+            #define M_PI 3.1415926535897932384626433832795
+
+            void main()
+            {
+                gl_PointSize = 1.;
+                v_uv          = uv;
+                v_line_color   = line_color;
+
+               // vec2 position = (gl_Position.xy / resolution.xy) + mouse / 4.0;
+              //  vec2 position = mouse;
+
+                float distance = sqrt(((uv.x-0.5) * (uv.x-0.5)) + ((uv.y-0.5) * (uv.y-0.5)));
+                float z = (sombrero_amplitude * sin(((time * 0.5 * speed) - (distance * sombrero_frequency)) * M_PI));
+
+                vec3 newPosition = vec3(position.x,position.y,z);
+                gl_Position      = projectionMatrix * modelViewMatrix * vec4( newPosition, 1. );
+
+
+                z = newPosition.z;
+            }
+
+        </script>
+
+        <script id="shader-fragment-terrain" type="x-shader/x-fragment">
+
+                varying vec2 v_uv;
+                varying vec3 v_line_color;
+
+
+                varying float z;
+
+                #define M_PI 3.1415926535897932384626433832795
+
+                void main()
+                {
+                    vec4 temp;
+                   
+                    float alpha = sin(v_uv.y * M_PI) / 4.;
+                    temp = vec4(v_line_color, alpha);
+                    
+
+
+                    gl_FragColor = temp;
+                }
+
+        </script>
+      
+
+      <script>
+
+            window.App = class App {
+                static initClass() { 
+                
+                    this.prototype.canvasGL     = null;
+                
+                    this.prototype.container    = null;
+                
+                    this.prototype.scene        = null;
+                
+                    this.prototype.camera       = null;
+                
+                    this.prototype.renderer     = null;
+                
+                    this.prototype.geometry     = null;
+                
+                    this.prototype.material     = null;
+                
+                    this.prototype.mesh         = null;
+                
+                    this.prototype.gui          = null;
+                
+                    this.prototype.terrain      = null;
+                
+                    this.prototype.composer     = null;
+                
+                    this.prototype.render_pass  = null;
+                
+                    this.prototype.fxaa_pass    = null;
+                
+                    this.prototype.posteffect   = false;
+                
+                    this.prototype.meteo        = null;
+                
+                    this.prototype.skybox       = null;
+                }
+
+
+                constructor() {
+                    this.init = this.init.bind(this);
+                    this.update = this.update.bind(this);
+                    this.renderScene = this.renderScene.bind(this);
+                    this.resize = this.resize.bind(this);
+                }
+
+                    
+
+
+                init() {
+
+
+                    this.scene = new THREE.Scene();
+
+                    this.camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 100000 );
+
+                    console.log(this.camera);
+
+                    let controls = new THREE.OrbitControls(this.camera);
+
+                    this.camera.position.z =  7;
+
+                    this.camera.position.y =  1;
+
+                    this.renderer = new THREE.WebGLRenderer( { width:  window.innerWidth, height:  window.innerHeight, scale:1, antialias: false });
+
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+
+                    this.container = document.createElement( 'div' );
+
+                    this.container.id = 'canvasGL';
+
+                    this.container.appendChild( this.renderer.domElement );
+
+                    this.camera.lookAt(new THREE.Vector3());
+
+                    document.getElementById('experience').appendChild( this.container );
+
+                    this.terrain = new Terrain(this.scene);
+
+                    this.scene.add(this.terrain.plane_mesh);
+
+                    document.addEventListener( 'mousemove', this.recordMousePosition, false );
+                    document.addEventListener( 'touchmove', this.recordMousePosition, false );
+
+                    return this.update();
+                }
+
+                recordMousePosition(e) {
+                      // normalize the mouse position across the canvas
+                      // so in the shader the values go from -1 to +1
+                     // var canvas = renderer.domElement;
+                     // var rect = canvas.getBoundingClientRect();
+
+                      //uniforms.mouse.value.x = (e.clientX - rect.left) / window.innerWidth  *  2 - 1;
+                      //uniforms.mouse.value.y = (e.clientY - rect.top ) / window.innerHeight * -2 + 1; 
+                      if (e.touches){
+                        window.Terrain.uniforms.mouse.value.x = (e.touches[0].clientX) / window.innerWidth  *  2 - 1;
+                        window.Terrain.uniforms.mouse.value.y = (e.touches[0].clientY) / window.innerHeight * -2 + 1; 
+                      }else{
+                        window.Terrain.uniforms.mouse.value.x = (e.clientX) / window.innerWidth  *  2 - 1;
+                        window.Terrain.uniforms.mouse.value.y = (e.clientY) / window.innerHeight * -2 + 1;     
+                      } 
+                    }
+
+                update() {
+
+                    requestAnimationFrame(this.update);
+
+                    this.terrain.update();
+
+                    return this.renderScene();
+                }
+
+
+
+                renderScene() {
+
+                    return this.renderer.render( this.scene, this.camera );
+                }
+
+
+                resize(stageWidth, stageHeight) {
+
+                    
+
+                    this.camera.aspect = stageWidth / stageHeight;
+
+                    this.camera.updateProjectionMatrix();
+
+                    return this.renderer.setSize( stageWidth, stageHeight );
+                }
+            };
+            window.App.initClass();
+
+
+
+
+            window.Terrain = class Terrain {
+                static initClass() {
+                
+                    this.prototype.uniforms                 = null;
+                
+                    this.prototype.plane_mesh               = null;
+                
+                    this.prototype.plane_geometry           = null;
+                
+                   // this.prototype.groundMaterial           = null;
+                
+                    this.prototype.clock                    =  new THREE.Clock(true);
+                
+                    this.prototype.options  = {
+                
+                           // elevation : 1,
+                
+                           // noise_range  : 2.14,
+                
+                            sombrero_amplitude : 0.6,
+                
+                            sombrero_frequency : 10.0,
+                
+                            speed            : 0.8,
+                
+                            segments         : 324,
+                
+                            wireframe_color     : '#e25cfe',
+                
+                          //  perlin_passes    : 1,
+                
+                            wireframe        : true,
+                
+                          //  floor_visible    : true
+                
+                        };
+                
+                    this.prototype.scene  = null;
+                }
+
+                constructor(scene){
+
+                    this.init = this.init.bind(this);
+                    this.initGUI = this.initGUI.bind(this);
+                    this.buildPlanes = this.buildPlanes.bind(this);
+                    this.update = this.update.bind(this);
+                    this.scene = scene;
+
+                    this.init();
+                }
+
+                init() {
+
+
+
+                    this.uniforms = {
+                      time: {
+                        type: "f",
+                        value: 0.0
+                    },
+
+                      speed: {
+                        type: "f",
+                        value: this.options.speed
+                    },
+/*
+                      elevation: {
+                        type: "f",
+                        value: this.options.elevation
+                    },
+
+                      noise_range: {
+                        type: "f",
+                        value: this.options.noise_range
+                    },
+*/
+                      offset: {
+                        type: "f",
+                        value: this.options.elevation
+                    },
+/*
+                      perlin_passes: {
+                        type: "f",
+                        value: this.options.perlin_passes
+                    },
+*/
+                      sombrero_amplitude: {
+                        type: "f",
+                        value: this.options.sombrero_amplitude
+                    },
+
+                      sombrero_frequency: {
+                        type: "f",
+                        value: this.options.sombrero_frequency
+                    },
+
+                      line_color: {
+                        type: "c",
+                        value: new THREE.Color(this.options.wireframe_color)
+                    },
+                    resolution: { type: "v2", value: new THREE.Vector2() },
+                    mouse: { type: "v2", value: new THREE.Vector2() }
+                  };
+
+
+
+
+
+
+                    this.buildPlanes(this.options.segments);
+
+                   
+
+                    return this.initGUI();
+                }
+
+
+                initGUI() {
+
+                    this.gui = new dat.GUI();
+
+                    this.gui.values = {};
+
+                    this.gui.values.speed            = this.gui.add(this.options,'speed',-5,5).step(0.01);
+
+                    this.gui.values.segments         = this.gui.add(this.options,'segments',20,800).step(1);
+
+                 //   this.gui.values.perlin_passes     = this.gui.add(this.options,'perlin_passes',1,3).step(1);
+
+                 //   this.gui.values.elevation = this.gui.add(this.options,'elevation',-10,10).step(0.01);
+
+                 //   this.gui.values.noise_range  = this.gui.add(this.options,'noise_range',-10,10).step(0.01);
+
+                    this.gui.values.sombrero_amplitude     = this.gui.add(this.options,'sombrero_amplitude',-5,5).step(0.1);
+
+                    this.gui.values.sombrero_frequency     = this.gui.add(this.options,'sombrero_frequency',0,100).step(0.1);
+
+                    this.gui.values.wireframe_color     = this.gui.addColor(this.options,'wireframe_color');
+
+              
+
+                    this.gui.values.wireframe = this.gui.add(this.options, 'wireframe');
+
+                  //  this.gui.values.floor_visible = this.gui.add(this.options, 'floor_visible');
+
+
+/*
+                    this.gui.values.elevation.onChange(value => {
+
+                        this.uniforms.elevation.value = value;
+
+                    }
+                    );
+*/
+
+                    this.gui.values.wireframe.onChange(value => {
+
+                        this.plane_material.wireframe = value;
+
+                    }
+                    );
+/*
+                    this.gui.values.floor_visible.onChange(value => {
+
+                        this.groundMaterial.visible = value;
+
+                    }
+                    );
+
+
+
+                    this.gui.values.noise_range.onChange(value => {
+
+                        this.uniforms.noise_range.value = value;
+
+                    }
+                    );
+*/
+                    this.gui.values.speed.onChange(value => {
+
+                        this.uniforms.speed.value = value;
+
+                    }
+                    );
+/*
+                    this.gui.values.perlin_passes.onChange(value => {
+
+                        this.uniforms.perlin_passes.value = value;
+
+                    }
+                    );
+*/
+                    this.gui.values.sombrero_amplitude.onChange(value => {
+
+                        this.uniforms.sombrero_amplitude.value = value;
+
+                    }
+                    );
+
+                    this.gui.values.sombrero_frequency.onChange(value => {
+
+                        this.uniforms.sombrero_frequency.value = value;
+
+                    }
+                    );
+
+
+
+                    this.gui.values.wireframe_color.onChange(value => {
+                        console.log('value');
+                        this.uniforms.line_color.value = new THREE.Color(value);
+                    }
+                    );
+
+                    return this.gui.values.segments.onFinishChange(value => {
+
+                        this.scene.remove(this.plane_mesh);
+
+                        this.buildPlanes(value);
+
+                        this.scene.add(this.plane_mesh);
+                    }
+                    );
+                }
+
+                buildPlanes(segments){
+
+
+
+                    this.plane_geometry = new THREE.PlaneBufferGeometry(20,20,segments,segments);
+
+                    this.plane_material = new THREE.ShaderMaterial({
+
+                        vertexShader       : document.getElementById('shader-vertex-terrain-sombrero').textContent,
+
+                        fragmentShader     : document.getElementById('shader-fragment-terrain').textContent,
+
+                        wireframe          : this.options.wireframe,
+
+                        wireframeLinewidth : 1,
+
+                        transparent        : true,
+
+                        uniforms           : this.uniforms,
+
+                        shading             : THREE.FlatShading
+
+                    });
+
+/*
+
+                    this.groundMaterial = new THREE.MeshPhongMaterial( { ambient: 0xffffff, color: 0xffffff, specular: 0x050505 } );
+
+                    this.groundMaterial.color.setHSL( 0.095, 1, 0.75 );
+*/
+                    
+
+                    this.materials = [
+
+                                //this.groundMaterial,
+
+                                this.plane_material
+                    ];
+
+                    this.plane_mesh = THREE.SceneUtils.createMultiMaterialObject( this.plane_geometry, this.materials );
+
+                    this.plane_mesh.rotation.x = - Math.PI / 2;
+
+                    return this.plane_mesh.position.y = -0.5;
+                }
+
+
+                update() {
+
+                    return this.plane_material.uniforms['time'].value = this.clock.getElapsedTime();
+                }
+            };
+            window.Terrain.initClass();
+
+
+
+
+
+
+            let App = new window.App();
+            App.init();
+      </script>
+    </body>
