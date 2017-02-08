@@ -64,7 +64,7 @@
 
   -->
 
-  <script id="vertexShader" type="not-js">
+  <script id="vertexShader" type="x-shader/x-vertex">
     void main() {
       //gl_Position = vec4( position, 1.0 );
       gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
@@ -72,7 +72,7 @@
   </script>
 
 
-  <script id="fragmentShader" type="not-js">
+  <script id="fragmentShader" type="x-shader/x-fragment">
     precision mediump float;
 
     uniform float time;
