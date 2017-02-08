@@ -762,7 +762,7 @@
 
 			// let the pan gesture support all directions.
 			// this will block the vertical scrolling on a touch-device while on the element
-			mc.get('pan').set({ direction: Hammer.DIRECTION_ALL, threshold: 50 });
+			mc.get('pan').set({ direction: Hammer.DIRECTION_ALL, threshold: 0 });
 
 			mc.on("panend", function(ev) {
 			    info.textContent = gesture;//ev.type +" gesture detected.";
