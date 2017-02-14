@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>hammer</title>
+        <meta charset="utf-8">
+        <style>
+
+            html {
+              box-sizing: border-box;
+            }
+            *, *:before, *:after {
+              box-sizing: inherit;
+            }
+            body {
+                color: #fff;
+                font-family:Monospace;
+                
+                text-align:center;
+                font-weight: bold;
+
+                background-color: #fff;
+                margin: 0px;
+                overflow: hidden; 
+            }
+        </style>
+
+    </head>
+    <body>
+
+        <div id="main">
+          
+          <div id='experience'></div>
+          
+        </div>
+
+        <div id="lock"></div>
+
+        <script src="../../bower_components/three.js/build/three.js"></script>
+    <script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+    <script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
+    <script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+    <script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+    <script src="../../bower_components/dat.gui/dat.gui.js"></script>
+
+
+
+        
+
+         <script id="shader-vertex-terrain-sombrero" type="x-shader/x-vertex">
+
+            varying vec2  v_uv;
+            varying vec3  v_line_color;
+
+            precision mediump float;
+
+
+            uniform float time;
+            uniform float speed;
+            uniform vec2 mouse;
+            uniform vec2 resolution;
+          //  uniform float elevation;
+           // uniform float noise_range;
+          //  uniform float perlin_passes;
+            uniform float sombrero_amplitude;
+            uniform float sombrero_frequency;
+            uniform vec3  line_color;
+            varying float z;
+
+
+            #define M_PI 3.1415926535897932384626433832795
+
+            void main()
+            {
+                gl_PointSize = 1.;
+                v_uv          = uv;
+                v_line_color   = line_color;
+
+                //vec2 position = position.xy +(gl_Position.xy / resolution.xy) + mouse / 4.0;
+
+              //  vec2 position = mouse;
+//float x = sin(time + length(v_uv.xy)) + cos((mouse.x * 10.0) + v_uv.x);
+ // float y = cos(time + length(pos.xy)) + sin((mouse.y * 10.0)+ pos.y);
+                //float center = new THREE.Vector2(sphere.position.x, sphere.position.y);
+                /*
+  var v = mainPanel.geometry.vertices[i];
+                var dist = new THREE.Vector2(v.x, v.y).sub(center);
+                var size = 20.0;
+                var magnitude = 20;
+                v.z = Math.sin(dist.length()/-size + (ts/500)) * magnitude;
+
+*/
+                float x = (uv.x-0.5) - mouse.x;
+                float y = (uv.y-0.5) - mouse.y;
+                float distance = sqrt((x * x) + (y * y));
+               // float dist = v_uv.xy - mouse.xy;
+                float z = (sombrero_amplitude * sin(((time * 0.5 * speed) - (distance * sombrero_frequency)) * M_PI));
+
+                vec3 newPosition = vec3(position.x,position.y,z);
+                gl_Position      = projectionMatrix * modelViewMatrix * vec4( newPosition, 1. );
+
+
+                z = newPosition.z;
+            }
+
+        </script>
+
+        <script id="shader-fragment-terrain" type="x-shader/x-fragment">
+
+                varying vec2 v_uv;
+                varying vec3 v_line_color;
+
+
+                varying float z;
+
+                #define M_PI 3.1415926535897932384626433832795
+
+                void main()
+                {
+                    vec4 temp;
+                   
+                    float alpha = sin(v_uv.y * M_PI) / 2.;
+                    temp = vec4(v_line_color, alpha);
+                    
+
+
+                    gl_FragColor = temp;
+                }
+
+        </script>
+      
+
+      <script>
+
+
+        var canvasGL,
+            container,
+            scene,
+            camera,
+            renderer,
+            geometry,
+            material,
+            mesh,
+            raycaster,
+            gui,
+            terrain;
+
+        var plane_mesh, clock, plane_material;
+        var focusObj;
+        var panelWidth = window.innerWidth;
+        var panelHeight = window.innerHeight -35; //height of browser chrome
+
+        var mouse = new THREE.Vector2(), INTERSECTED;
+        var pointerDown = false;
+        var pointerX = 0;
+        var pointerY = 0;
+        var pointerInit = 0;
+        var sphere;
+
+        var amplitude = 0;
+        var pressing = false;
+        var increment = .2;
+        var ceiling = 3;
+        var hemisphereLight, shadowLight;
+
+        var gui = new dat.GUI();
+
+        var objects = [];
+
+
+        var color = {
+              "black": new THREE.MeshBasicMaterial({
+                color: 0x222222
+              }),
+              "white": new THREE.MeshBasicMaterial({
+                color: 0xffffff
+              }),
+              "red": new THREE.MeshBasicMaterial({
+                color: 0xf25346
+              }),
+              "blue": new THREE.MeshBasicMaterial({
+                color: 0x68c3c0
+              })
+            }
+
+
+
+        var options  = {
+                
+                           // elevation : 1,
+                
+                           // noise_range  : 2.14,
+                
+                            sombrero_amplitude : amplitude,
+                
+                            sombrero_frequency : 10.0,
+                
+                            speed            : 0.8,
+                
+                            segments         : 324,
+                
+                            wireframe_color     : '#00e6ff',//'#e25cfe',
+                
+                          //  perlin_passes    : 1,
+                
+                            wireframe        : true,
+                
+                          //  floor_visible    : true
+                
+                        };
+
+        var uniforms = {
+                      time: {
+                        type: "f",
+                        value: 0.0
+                    },
+
+                      speed: {
+                        type: "f",
+                        value: options.speed
+                    },
+
+                      offset: {
+                        type: "f",
+                        value: options.elevation
+                    },
+
+                      sombrero_amplitude: {
+                        type: "f",
+                        value: options.sombrero_amplitude
+                    },
+
+                      sombrero_frequency: {
+                        type: "f",
+                        value: options.sombrero_frequency
+                    },
+
+                      line_color: {
+                        type: "c",
+                        value: new THREE.Color(options.wireframe_color)
+                    },
+                    resolution: { type: "v2", value: new THREE.Vector2() },
+                    mouse: { type: "v2", value: new THREE.Vector2() }
+                  };
+
+
+
+
+        init();
+        buildPlane(20);
+        createLights();
+       // createPointerHelper();
+        initGUI();
+        update();
+
+
+        function init() {
+
+
+                    scene = new THREE.Scene();
+
+                    camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 100000 );
+
+                    console.log(camera);
+
+                    let controls = new THREE.OrbitControls(camera);
+
+                    camera.position.z =  30;
+
+                   // camera.position.y =  1;
+
+                    renderer = new THREE.WebGLRenderer( { width:  window.innerWidth, height:  window.innerHeight, scale:1, antialias: false });
+
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+
+                    container = document.createElement( 'div' );
+
+                    container.id = 'canvasGL';
+
+                    container.appendChild( renderer.domElement );
+
+                    camera.lookAt(new THREE.Vector3());
+
+                    document.getElementById('experience').appendChild( container );
+
+                    raycaster = new THREE.Raycaster();
+
+                  //  terrain = new Terrain(scene);
+
+                  //  scene.add(terrain.plane_mesh);
+
+                    document.addEventListener( 'mousemove', recordMousePosition, false );
+                    document.addEventListener( 'touchmove', recordMousePosition, false );
+                    document.addEventListener( 'mousedown', onPress, false );
+                    document.addEventListener( 'touchstart', onPress, false );
+                    document.addEventListener( 'mouseup', onRelease, false );
+                    document.addEventListener( 'touchend', onRelease, false );
+
+                    window.addEventListener( 'resize', onWindowResize, false );
+
+
+                   
+                }
+
+
+            function recordMousePosition(e) {
+
+              e.preventDefault();
+              castRay(e);
+
+              if (e.touches){
+                uniforms.mouse.value.x = (e.touches[0].clientX) / window.innerWidth  *  2 - 1;
+                uniforms.mouse.value.y = (e.touches[0].clientY) / window.innerHeight * -2 + 1; 
+              }else{
+                uniforms.mouse.value.x = (e.clientX) / window.innerWidth  *  2 - 1;
+                uniforms.mouse.value.y = (e.clientY) / window.innerHeight * -2 + 1;     
+              } 
+            }
+
+            function onPress(e) {
+                pointerDown = true;
+               // e.preventDefault();
+                //castRay(e);
+                recordMousePosition(e);
+                pressing = true;
+            }
+
+            function onRelease(e) {
+                e.preventDefault();
+                pointerDown = false;
+                if (typeof focusObj=='object')  colorTo(focusObj, color['white']);
+
+                pressing =false;
+            }
+/*
+            function onMouseMove( event ) {
+                //console.log('onMouseMove')
+                event.preventDefault();
+
+                castRay(event);
+
+            }
+
+            function onTouchMove( event ) {
+                //console.log('onTouchMove')
+                castRay(event);
+                event.preventDefault();
+
+
+            }
+
+            function onMouseDown( event ) {
+                //console.log('onMouseDown')
+                pointerDown = true;
+                event.preventDefault();
+                castRay(event);
+
+            }
+
+            function onTouchStart( event ) {
+                //console.log('onTouchStart')
+                event.preventDefault();
+                pointerDown = true;
+                castRay(event);
+                
+
+            }
+*/
+
+            function update() {
+
+                requestAnimationFrame(update);
+
+                if (pressing == true){
+                    if (amplitude <= ceiling){
+                        amplitude += increment
+                    }
+                }else{
+                    if (amplitude >0){
+                        amplitude -= increment
+                    }
+                }
+                uniforms.sombrero_amplitude.value = amplitude
+
+               
+               // this.terrain.update();
+                plane_material.uniforms['time'].value = clock.getElapsedTime();
+
+                renderScene();
+            }
+
+
+
+
+
+            function renderScene() {
+
+                renderer.render( scene, camera );
+            }
+
+
+            function getDesktopPointer(){
+                pointerX = event.clientX - ( panelWidth / 2); 
+                //console.log(pointerX)
+                pointerY = event.clientY - ( panelHeight/ 2); 
+            }
+
+            function getTouchPointer(){
+                pointerX = event.touches[ 0 ].clientX - ( window.innerWidth / 2); 
+                pointerY = event.touches[ 0 ].clientY - ( window.innerHeight/ 2); 
+                pointerInit = pointerX; 
+            }
+
+            function createPointerHelper(){
+                var newSphereGeom= new THREE.SphereGeometry(.5,.5,.5);
+                sphere= new THREE.Mesh(newSphereGeom, new THREE.MeshBasicMaterial({ color: 0x2266dd }));
+
+                
+               // sphere.scale.x = sphere.scale.y = 10;
+                scene.add( sphere );
+            }
+
+
+            function castRay(evt){
+                
+
+                if (evt.touches){
+                   // console.log('got touches')
+                    mouse.x = ( evt.touches[0].clientX / renderer.domElement.clientWidth ) * 2 - 1;
+                    mouse.y = - ( evt.touches[0].clientY / renderer.domElement.clientHeight ) * 2 + 1;
+                    pointerX = evt.touches[ 0 ].clientX - ( window.innerWidth / 2); 
+                    pointerY = evt.touches[ 0 ].clientY - ( window.innerHeight/ 2); 
+                    pointerInit = pointerX; 
+                }else{
+                   // console.log('is mouse')
+                    mouse.x = ( evt.clientX / renderer.domElement.clientWidth ) * 2 - 1;
+                    mouse.y = - ( evt.clientY / renderer.domElement.clientHeight ) * 2 + 1;
+                    pointerX = evt.clientX - ( panelWidth / 2); 
+                    pointerY = evt.clientY - ( panelHeight/ 2); 
+                }
+                
+
+                raycaster.setFromCamera( mouse, camera );
+
+                //vector = new THREE.Vector3( 0, 0, -1 );
+                //vector.applyQuaternion( camera.quaternion ).add( camera.position );
+
+                var intersects = raycaster.intersectObjects( objects );
+
+                console.log(intersects)
+
+                if (pointerDown){
+                    console.log('pointerdown')
+
+                    if ( intersects.length > 0 ) {
+
+                        focusObj = intersects[0].object;
+
+                      //  sphere.position.copy( intersects[ 0 ].point );
+
+                        //mDown = true;
+                        console.log('intersected')
+                        console.log(intersects[0].object.position)
+                        //console.log(xpos)
+
+
+                        colorTo(intersects[ 0 ].object, color['red']);
+                       // uniforms.line_color.value = new THREE.Color(color['red'])
+
+                        //intersects[ 0 ].object.material.color.setHex( 0xe02323 );
+                        //intersects[ 0 ].object.material.color = new THREE.Color(0,1,0,.3)
+
+
+                    }else{
+                        //mDown = false;
+                        //if (typeof focusObj=='object') focusObj.material.color.setHex( 0xffffff );
+                        if (typeof focusObj=='object') {
+                            colorTo(focusObj, color['white']);
+                           // uniforms.line_color.value = new THREE.Color(color['white'])
+                        } 
+                    }
+                }
+            }
+
+            function colorTo(target, value) {
+              var target = target;
+              var initial = new THREE.Color(options.wireframe_color);//new THREE.Color(target.material.color.getHex());
+              var value = new THREE.Color(value.color.getHex());
+              TweenMax.to(initial, .3, {
+                r: value.r,
+                g: value.g,
+                b: value.b,
+                
+                onUpdate: function () {
+                 // target.material.color = initial;
+                  uniforms.line_color.value = initial;
+                }
+              });
+            }
+
+
+
+            function onWindowResize() {
+
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+
+                renderer.setSize( window.innerWidth, window.innerHeight );
+
+              controls.handleResize();
+
+            //    update();
+
+            }
+
+
+
+            function buildPlane(segments){
+
+                clock =  new THREE.Clock(true);
+
+                var plane_geometry = new THREE.PlaneBufferGeometry(20,20,segments,segments);
+
+                plane_material = new THREE.ShaderMaterial({
+
+                        vertexShader       : document.getElementById('shader-vertex-terrain-sombrero').textContent,
+
+                        fragmentShader     : document.getElementById('shader-fragment-terrain').textContent,
+
+                        wireframe          : options.wireframe,
+
+                        wireframeLinewidth : 5,
+
+                        transparent        : true,
+
+                        uniforms           : uniforms
+
+                       // shading             : THREE.FlatShading
+
+                    });
+
+
+                    
+
+                    materials = [
+
+                                //groundMaterial,
+
+                                plane_material
+                    ];
+
+
+
+                   // plane_geometry.computeBoundingSphere(); // this isn't calculated automatically
+                   // plane_geometry.boundingSphere.center;
+
+                 //   plane_mesh = THREE.SceneUtils.createMultiMaterialObject( plane_geometry, materials );
+                    plane_mesh = new THREE.Mesh( plane_geometry, plane_material);
+                   // plane_mesh = new THREE.Mesh( plane_geometry, new THREE.MeshBasicMaterial( {color: 0x2233ff, side:THREE.DoubleSide } ));
+
+
+
+                   // plane_mesh.rotation.x = - Math.PI / 2;
+
+                   // plane_mesh.position.y = -0.5;
+
+                    //plane_mesh.doubleSided = true;
+                    
+
+                    scene.add(plane_mesh);
+
+                    objects.push(plane_mesh);
+                }
+
+            function createLights() {
+                // A hemisphere light is a gradient colored light; 
+                // the first parameter is the sky color, the second parameter is the ground color, 
+                // the third parameter is the intensity of the light
+                hemisphereLight = new THREE.HemisphereLight(0xaaaaaa,0x000000, .9)
+                
+                // A directional light shines from a specific direction. 
+                // It acts like the sun, that means that all the rays produced are parallel. 
+                shadowLight = new THREE.DirectionalLight(0xffffff, .9);
+
+                // Set the direction of the light  
+                shadowLight.position.set(150, 350, 350);
+                
+                // Allow shadow casting 
+                shadowLight.castShadow = true;
+
+                // define the visible area of the projected shadow
+                shadowLight.shadow.camera.left = -400;
+                shadowLight.shadow.camera.right = 400;
+                shadowLight.shadow.camera.top = 400;
+                shadowLight.shadow.camera.bottom = -400;
+                shadowLight.shadow.camera.near = 1;
+                shadowLight.shadow.camera.far = 1000;
+
+                // define the resolution of the shadow; the higher the better, 
+                // but also the more expensive and less performant
+                shadowLight.shadow.mapSize.width = 2048;
+                shadowLight.shadow.mapSize.height = 2048;
+                
+                // to activate the lights, just add them to the scene
+                scene.add(hemisphereLight);  
+                scene.add(shadowLight);
+            }
+
+
+            function initGUI() {
+
+                    //this.gui = new dat.GUI();
+
+                    gui.values = {};
+
+                    gui.values.speed            = gui.add(options,'speed',-5,5).step(0.01);
+
+                    gui.values.segments         = gui.add(options,'segments',20,800).step(1);
+
+                 //   gui.values.perlin_passes     = gui.add(options,'perlin_passes',1,3).step(1);
+
+                 //   gui.values.elevation = gui.add(options,'elevation',-10,10).step(0.01);
+
+                 //   gui.values.noise_range  = gui.add(options,'noise_range',-10,10).step(0.01);
+
+                    gui.values.sombrero_amplitude     = gui.add(options,'sombrero_amplitude',-5,5).step(0.1);
+
+                    gui.values.sombrero_frequency     = gui.add(options,'sombrero_frequency',0,100).step(0.1);
+
+                    gui.values.wireframe_color     = gui.addColor(options,'wireframe_color');
+
+              
+
+                    gui.values.wireframe = gui.add(options, 'wireframe');
+
+                  //  gui.values.floor_visible = gui.add(options, 'floor_visible');
+
+
+
+
+                    gui.values.wireframe.onChange(value => {
+
+                        plane_material.wireframe = value;
+
+                    }
+                    );
+
+                    gui.values.speed.onChange(value => {
+
+                        uniforms.speed.value = value;
+
+                    }
+                    );
+
+                    gui.values.sombrero_amplitude.onChange(value => {
+
+                        uniforms.sombrero_amplitude.value = value;
+
+                    }
+                    );
+
+                    gui.values.sombrero_frequency.onChange(value => {
+
+                        uniforms.sombrero_frequency.value = value;
+
+                    }
+                    );
+
+
+
+                    gui.values.wireframe_color.onChange(value => {
+                        console.log('value');
+                        uniforms.line_color.value = new THREE.Color(value);
+                    }
+                    );
+
+                    gui.values.segments.onFinishChange(value => {
+
+                        scene.remove(plane_mesh);
+
+                        buildPlane(value);
+
+                        scene.add(plane_mesh);
+                    }
+                    );
+                }
+
+      </script>
+    </body>
+    </html>
