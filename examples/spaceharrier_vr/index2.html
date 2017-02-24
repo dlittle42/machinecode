@@ -156,6 +156,7 @@ var pivot, player, player_sprite;
 var mouse = new THREE.Vector2();
 var uTime;
 var helper;
+var blaster;
 var blasterArr = [];
 var arrowArr = [];
 var blasterSpeed = .03;//5;
@@ -279,9 +280,10 @@ function resetGame(){
 
 function loadSound(){
   sound = new Howl({
-    src: ['../_audio/boing.mp3']
+    src: ['../_audio/boing.mp3'],
+    volume: 0.5
   });
-  sound.play();
+  //sound.play();
 
 }
 
@@ -294,7 +296,7 @@ function loadGetReady(){
   getReady = new Howl({
     src: ['audio/ready.mp3']
   });
-  getReady.play();
+ // getReady.play();
 
 }
 
@@ -307,7 +309,7 @@ function loadExplode(){
   explode = new Howl({
     src: ['audio/explode.mp3']
   });
-  explode.play();
+  //explode.play();
 
 }
 
@@ -1043,7 +1045,7 @@ var Enemy = function(){
   //    scene.add( cube );
   
   //this.mesh = new THREE.Sprite( enemyMaterial );
-  //this.mesh.castShadow = false;//true;
+  this.mesh.castShadow = true;
   this.angle = 0;
   this.dist = 0;
 }
