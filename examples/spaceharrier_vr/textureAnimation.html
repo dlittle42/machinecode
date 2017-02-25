@@ -244,11 +244,27 @@ function spawnEnemies(num){
 	}
 }
 
+function destroyAll(){
+	console.log('destroyAll')
+	for (var i=0; i<enemyPool.length; i++){
+		console.log(enemyPool[i])
+		enemyPool[i].destroy();
+
+	}
+	enemyPool=[];
+}
+
 function Enemy(){
   var enemyTexture = new THREE.TextureLoader().load( "img/enemy.png" );
   //annie = new TextureAnimator( enemyTexture, 10, 1, 10, 75 ); // texture, #horiz, #vert, #total, duration.
   var enemyMaterial = new THREE.MeshBasicMaterial( { map: enemyTexture, side:THREE.DoubleSide, color: 0xffffff } );
   enemyMaterial.transparent = true;
+  //fixes flicker when planes intersect
+  enemyMaterial.depthTest= true
+  enemyMaterial.depthWrite= false
+	enemyMaterial.polygonOffset= true
+	enemyMaterial.polygonOffsetFactor= -4
+	/// end fix
   var enemyGeometry = new THREE.PlaneGeometry(60, 40, 10, 10);
   var enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
   enemy.position.set((Math.random()*1000)-500,40,0);
@@ -266,6 +282,15 @@ function Enemy(){
   		this.shadow.update();
   		this.start+=options.speed;
 
+
+  }
+
+  this.destroy = function(){
+  	console.log('destroy')
+  	this.shadow.destroy();
+  	scene.remove(this.mesh);
+    //enemyPool.splice(this, 1);
+   // console.log(enemyPool)
 
   }
 
@@ -292,6 +317,11 @@ function Shadow(pos){
   		this.mesh.scale.set( shadowScale, shadowScale, 1.0 )
   
 
+
+  }
+
+  this.destroy = function(){
+  	scene.remove(this.mesh);
 
   }
 
@@ -444,6 +474,10 @@ function initGUI() {
     return gui.values.numEnemies.onFinishChange(value => {
 
     	console.log(value);
+
+    	destroyAll();
+
+    	spawnEnemies(value);
 
        // scene.remove(plane_mesh);
 
