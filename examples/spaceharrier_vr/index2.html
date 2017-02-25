@@ -143,6 +143,8 @@ WebVRConfig = {
 
 <script src="node_modules/three/examples/js/utils/ShadowMapViewer.js"></script>
 
+<script src="../../bower_components/dat.gui/dat.gui.js"></script>
+
 
 
 <script>
@@ -159,10 +161,12 @@ var helper;
 var blaster;
 var blasterArr = [];
 var arrowArr = [];
-var blasterSpeed = .03;//5;
+
 var info = document.getElementById('info');
 var tally = document.getElementById('tally');
 var sound, getReady, explode;
+
+var shadowMaterial;
 
 var hemisphereLight, shadowLight;
 var floorMaterial, floorPlane;
@@ -186,6 +190,8 @@ var accZsmooth = 0;
 var accYsmooth = 0;
 var factor = .98;
 
+var gui = new dat.GUI();
+
 
 // Keeps track of time
     var clock = new THREE.Clock();
@@ -205,6 +211,24 @@ var Colors = {
   pink:0xF5986E,
   brownDark:0x23190f,
   blue:0x68c3c0,
+};
+
+var options  = {
+                
+
+                
+                
+    blasterSpeed: .03,//5;
+    enemySpeed: .01,//5;
+
+   // segments         : 324,
+
+   // wireframe_color     : '#00e6ff',//'#e25cfe',
+
+    helpers        : true,
+
+  //  floor_visible    : true
+
 };
 
 // GAME VARIABLES
@@ -397,10 +421,20 @@ function init(){
     });
 
     var loader3 = new THREE.TextureLoader();
-    loader2.load('img/enemy.png', function(texture){
+    loader3.load('img/enemy.png', function(texture){
         enemyMaterial = new THREE.SpriteMaterial( { map: texture, color: 0xffffff } );
        // createEnemy();
         spawnEnemies();
+
+    });
+
+
+    var loaderShadow = new THREE.TextureLoader();
+    loaderShadow.load('img/shadow.png', function(texture){
+      //  shadowMaterial = new THREE.SpriteMaterial( { map: texture, color: 0xffffff } );
+         shadowMaterial = new THREE.MeshBasicMaterial( { map: texture, color: '0xff0000', side: THREE.DoubleSide, transparent: true} );
+        createShadow();
+        
 
     });
 
@@ -498,10 +532,34 @@ function addWorldBox(){
 }
 
 
+function createShadow(){
+  console.log('createShadow')
+  //var shadowMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff, side: THREE.DoubleSide } );
+  var shadowMaterial = new THREE.MeshPhongMaterial( { color: 0x43e206, specular: 0x009900, opacity: 0.5, transparent: true,shininess: 10, shading: THREE.FlatShading } )
+  var geometry = new THREE.PlaneGeometry(2,1,30,30);
+
+  var shadow = new THREE.Mesh( geometry,shadowMaterial );
+  //shadow.position.z = playerDepth;
+  //shadow.position.y=1;
+  player.add(shadow);
+    //plane.position.y = -2;
+  shadow.rotation.x = -Math.PI/2;
+  shadow.position.y = - controls.userHeight;
+}
+
 function setPlayerTexture(playerTexture){
+  console.log('createPlayer')
   //var playerTexture = THREE.ImageUtils.loadTexture( 'img/Space_Harrier_player_sprite.png' );
-  var playerMaterial = new THREE.SpriteMaterial( { map: playerTexture, color: 0xffffff } );
-  player = new THREE.Sprite( playerMaterial );
+ // var playerMaterial = new THREE.SpriteMaterial( { map: playerTexture, color: 0xffffff } );
+  var playerMaterial = new THREE.MeshBasicMaterial( { map: playerTexture, color: 0xffffff, side: THREE.DoubleSide } );
+  playerMaterial.transparent = true;
+  var geometry = new THREE.PlaneGeometry(1,1,30,30);
+  player = new THREE.Mesh( geometry, playerMaterial );
+  //player.rotation.x = Math.PI/10;
+  player.castShadow = true;
+
+
+ // player = new THREE.Sprite( playerMaterial );
 
 
   //player.position.set(0, controls.userHeight, -1);
@@ -514,6 +572,12 @@ function setPlayerTexture(playerTexture){
   scene.add(pivot);
   pivot.add(player);
 
+
+
+ // var shadow = new THREE.Sprite( shadowMaterial );
+
+ 
+
 /*
   var r = 1;
   helper = new THREE.BoxHelper( new THREE.Mesh( new THREE.BoxGeometry( r, r, r)));
@@ -524,10 +588,13 @@ function setPlayerTexture(playerTexture){
   helper.scale.set( .2, .2, .2);
 */
 
-  var material = new THREE.MeshLambertMaterial( { color: 0x42f445, opacity: 0.5, transparent: true, side: THREE.DoubleSide } );
+  var material = new THREE.MeshLambertMaterial( { color: 0x42f445, opacity: 0.2, transparent: true, side: THREE.DoubleSide, wireframe: false } );
+
+ // var material = new THREE.MeshLambertMaterial( { color: 0x42f445, wireframe: false } );
+
   var geometry = new THREE.BoxGeometry(1,1,1);
   var helper = new THREE.Mesh(geometry, material);
-   helper.position.z = playerDepth-1;
+  helper.position.z = playerDepth;
 
  //  helper.scale.set( .2, .2, .2);
    helper.castShadow = true;
@@ -536,6 +603,8 @@ function setPlayerTexture(playerTexture){
   pivot.add(helper);
 
   if (debug ==false) helper.visible = false;
+
+  
   // position the object on the pivot, so that it appears 5 meters 
   // in front of the user.
 
@@ -558,6 +627,7 @@ function animate(timestamp) {
 
   // Apply rotation to cube mesh
  // cube.rotation.y += delta * 0.0006;
+ playerVector.setFromMatrixPosition( player.matrixWorld );
 
  for(var i=0; i<blasterArr.length; i++) {
 
@@ -587,10 +657,10 @@ function animate(timestamp) {
         playExplode();
     }else{
      
-      blasterArr[i].position.x += blasterArr[i].blasterDir.x * blasterSpeed;
+      blasterArr[i].position.x += blasterArr[i].blasterDir.x * options.blasterSpeed;
       //blasterArr[i].position.y += blasterArr[i].blasterDir.y * blasterSpeed;
      // blasterArr[i].position.y += (blasterArr[i].blasterDir.y - blasterArr[i].position.y) * blasterSpeed;
-      blasterArr[i].position.z += blasterArr[i].blasterDir.z * blasterSpeed;
+      blasterArr[i].position.z += blasterArr[i].blasterDir.z * options.blasterSpeed;
 
      // if (i==0) console.log(blasterArr[i].position.z);
    /*   if (timestamp - blasterArr[i].time > 1000) {
@@ -877,18 +947,14 @@ function createBlaster(event){
 
   var geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
 var material = new THREE.MeshNormalMaterial();
-/*
-  var geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-var material = new THREE.MeshNormalMaterial();
-var cube = new THREE.Mesh(geometry, material);
-scene.add(cube);
-cube.position.set(0, controls.userHeight, -10);
+//blaster = new THREE.Mesh(geometry, material);
 
-*/
+
+
   if (manager.mode == 3) event.preventDefault();
  // manager.enterVRMode_();
  // console.log(manager.mode)
-  console.log('createBlaster')
+ // console.log('createBlaster')
   /*
   if (manager.mode == 3){
     camera.fov = 25;
@@ -901,7 +967,30 @@ cube.position.set(0, controls.userHeight, -10);
   }
   */
  // console.log(camera.getWorldDirection());
-blaster.position.set(playerVector.x , playerVector.y, playerVector.z );
+
+  blaster = new THREE.Sprite( blasterMaterial );
+  //blaster.position.z = -10;
+  //blaster.position.x = 0;//player.position.x;
+  //blaster.position.y = 0;//player.position.y;
+  blaster.scale.set( .2, .2, 1.0 );
+  blaster.time = lastRender;
+  
+  //var distVector = playerVector.multiplyScalar(2);
+
+
+  //projector.unprojectVector( vector, camera );
+  //blaster.raycaster = new THREE.Raycaster(new THREE.Vector3(playerVector.x, playerVector.y, playerVector.z), new THREE.Vector3(distVector.x, playerVector.y, distVector.z));
+
+  //var camDir = camera.getWorldDirection();
+//  var scaleCam = camDir.multiplyScalar(1.1);
+
+ // blaster.position.set(player.position.x, controls.userHeight + player.position.y, player.position.z - .1);
+
+
+//  var vector = new THREE.Vector3();
+//  vector.setFromMatrixPosition( player.matrixWorld );
+
+  blaster.position.set(playerVector.x , playerVector.y, playerVector.z );
   scene.add(blaster);
 
   blasterArr.push(blaster);
@@ -940,6 +1029,7 @@ blaster.position.set(playerVector.x , playerVector.y, playerVector.z );
   playSound();
 
 }
+
 
 
 function setupGridHelper(){
@@ -1124,7 +1214,7 @@ function updateEnemies(vec) {
    // console.log(nEnemy)
  
     // and move it forward dependent on the mouseY position. 
-    nEnemy.mesh.position.z +=  .01;//.1;
+    nEnemy.mesh.position.z +=  options.enemySpeed;//.1;
  
     // if the particle is too close move it to the back
     if(nEnemy.mesh.position.z>20){
@@ -1392,12 +1482,75 @@ function getShootDir(targetVec){
             });
 
 */
+
+function initGUI() {
+
+                    //this.gui = new dat.GUI();
+
+                    gui.values = {};
+
+                    gui.values.blasterSpeed            = gui.add(options,'blasterSpeed',0.0,0.1).step(0.001);
+
+                    gui.values.enemySpeed            = gui.add(options,'enemySpeed',0.0,0.1).step(0.001);
+
+                   // gui.values.segments         = gui.add(options,'segments',20,800).step(1);
+
+                   // gui.values.wireframe_color     = gui.addColor(options,'wireframe_color');
+                    
+                    gui.values.helpers = gui.add(options, 'helpers');
+
+                  //  gui.values.floor_visible = gui.add(options, 'floor_visible');
+
+
+
+
+                    gui.values.helpers.onChange(value => {
+
+                        //plane_material.wireframe = value;
+                        console.log("helpers="+ value);
+
+                    }
+                    );
+
+                    gui.values.blasterSpeed.onChange(value => {
+
+                        options.blasterSpeed.value = value;
+
+                    }
+                    );
+
+                    gui.values.enemySpeed.onChange(value => {
+
+                        options.enemySpeed.value = value;
+
+                    }
+                    );
+
+                   /*
+                    gui.values.wireframe_color.onChange(value => {
+                        console.log('value');
+                        uniforms.line_color.value = new THREE.Color(value);
+                    }
+                    );
+
+                    gui.values.segments.onFinishChange(value => {
+
+                        scene.remove(plane_mesh);
+
+                        buildPlane(value);
+
+                        scene.add(plane_mesh);
+                    }
+                    );
+                    */
+                }
  // loadGetReady();
  // loadSound();
  resetGame();
   loadGetReady();
   loadSound();
   loadExplode()
+  initGUI();
   init();
 
 </script>
