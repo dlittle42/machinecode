@@ -92,16 +92,20 @@ var container, scene, camera, renderer, controls, stats;
 var clock = new THREE.Clock();
 
 // custom global variables
-var annie, boomer; // animators
+var annie, hero; // animators
 
 var enemyPool=[];
 
 var gui;
 
+var player;
+
 var options  = {
                 
 
         speed            : 0.1,
+
+        sprite_horizontal : 0,
 
        // segments         : 324,
 
@@ -221,21 +225,71 @@ function init()
   // MESHES WITH ANIMATED TEXTURES!
   
   //var runnerTexture = new THREE.ImageUtils.loadTexture( 'img/explosion_sprite_small.png' );
-  var runnerTexture = new THREE.TextureLoader().load( "img/explosion_sprite_small.png" );
-   annie = new TextureAnimator( runnerTexture, 7, 1, 7, 75 );
-  //annie = new TextureAnimator( runnerTexture, 10, 1, 10, 75 ); // texture, #horiz, #vert, #total, duration.
-  var runnerMaterial = new THREE.MeshBasicMaterial( { map: runnerTexture, side:THREE.DoubleSide, color: 0xffffff } );
-  runnerMaterial.transparent = true;
-  var runnerGeometry = new THREE.PlaneGeometry(116, 78, 1, 1);
-  var runner = new THREE.Mesh(runnerGeometry, runnerMaterial);
-  runner.position.set(-100,40,0);
-  scene.add(runner);
+  var explosionTexture = new THREE.TextureLoader().load( "img/explosion_sprite_small.png" );
+   annie = new TextureAnimator( explosionTexture, 7, 1, 7, 75 );
+  //annie = new TextureAnimator( explosionTexture, 10, 1, 10, 75 ); // texture, #horiz, #vert, #total, duration.
+  var explosionMaterial = new THREE.MeshBasicMaterial( { map: explosionTexture, side:THREE.DoubleSide, color: 0xffffff } );
+  explosionMaterial.transparent = true;
+  explosionMaterial.depthTest= true
+  explosionMaterial.depthWrite= false
+	explosionMaterial.polygonOffset= true
+	explosionMaterial.polygonOffsetFactor= -4
+  var explosionGeometry = new THREE.PlaneGeometry(116, 78, 1, 1);
+  var explosion = new THREE.Mesh(explosionGeometry, explosionMaterial);
+  explosion.position.set(-100,40,0);
+  scene.add(explosion);
 
 
   
   spawnEnemies(options.numEnemies);
 
+  player = new Player("img/player_horizontal.png", 0, true);
+  var player2 = new Player("img/Space_Harrier_player_sprite.png", 100 );
+
   
+}
+
+function Player(img, xpos, sprite){
+
+	//var playerTexture = new THREE.TextureLoader().load( "img/player_small_128.png" );
+	var playerTexture = new THREE.TextureLoader().load( img);
+	if (sprite) hero = new TextureAnimator( playerTexture, 3, 1, 3, 75 );
+  //annie = new TextureAnimator( playerTexture, 10, 1, 10, 75 ); // texture, #horiz, #vert, #total, duration.
+  var playerMaterial = new THREE.MeshBasicMaterial( { map: playerTexture, side:THREE.DoubleSide, color: 0xffffff } );
+  playerMaterial.transparent = true;
+  //fixes flicker when planes intersect
+  playerMaterial.depthTest= true
+  playerMaterial.depthWrite= false
+	playerMaterial.polygonOffset= true
+	playerMaterial.polygonOffsetFactor= -4
+	/// end fix
+  var playerGeometry = new THREE.PlaneGeometry(40, 40, 10, 10);
+  var player = new THREE.Mesh(playerGeometry, playerMaterial);
+  player.position.set(xpos,40,0);
+  scene.add(player);
+
+  this.mesh = player;
+  this.start=0;
+  this.shadow = new Shadow(player.position);
+  this.dist = Math.random()*60
+
+  this.update = function(){
+  		this.mesh.position.y = 80 + Math.sin(this.start)*40;
+  		this.mesh.position.z = Math.cos(this.start)*this.dist;
+  		this.shadow.update();
+  		this.start+=options.speed;
+
+
+  }
+
+  this.destroy = function(){
+  	console.log('destroy')
+  	this.shadow.destroy();
+  	scene.remove(this.mesh);
+    //playerPool.splice(this, 1);
+   // console.log(enemyPool)
+
+  }
 }
 
 function spawnEnemies(num){
@@ -376,6 +430,13 @@ function TextureAnimator(texture, tilesHoriz, tilesVert, numTiles, tileDispDurat
 
   // which image is currently being displayed?
   this.currentTile = 0;
+
+  this.setFrame = function( frame ){
+  	this.currentTile = frame;
+    var currentColumn = this.currentTile % this.tilesHorizontal;
+    texture.offset.x = currentColumn / this.tilesHorizontal;
+
+  }
     
   this.update = function( milliSec )
   {
@@ -401,6 +462,8 @@ function initGUI() {
     gui.values = {};
 
     gui.values.speed            = gui.add(options,'speed',0,1).step(0.1);
+
+    gui.values.sprite_horizontal  = gui.add(options,'sprite_horizontal',0,2).step(1);
 
    // gui.values.scale            = gui.add(options,'scale',1,100).step(1.0);
 
@@ -453,6 +516,18 @@ function initGUI() {
     gui.values.speed.onChange(value => {
 
         options.speed.value = value;
+
+    }
+    );
+
+    gui.values.sprite_horizontal.onChange(value => {
+    	console.log('sprite change')
+        options.sprite_horizontal.value = value;
+        
+        hero.setFrame(value);
+
+      //  hero.update();
+        console.log(hero)
 
     }
     );
