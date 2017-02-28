@@ -107,7 +107,10 @@ var options  = {
 
         sprite_horizontal : 0,
 
+        sprite_vertical : 0,
+
        // segments         : 324,
+        flicker: false,
 
         checker_color1     : '#76c876',
 
@@ -118,6 +121,8 @@ var options  = {
         run: false,
 
         fall: false,
+
+        fly: false,
 
       //  scale            : 1,
 
@@ -177,8 +182,8 @@ function init()
   var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 0.1, FAR = 20000;
   camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
   scene.add(camera);
-  camera.position.set(0,150,400);
-  camera.lookAt(scene.position);  
+  camera.position.set(0,50,100);
+  
   // RENDERER
   if ( Detector.webgl )
     renderer = new THREE.WebGLRenderer( {antialias:true} );
@@ -245,7 +250,6 @@ function init()
   explosion.position.set(-100,40,0);
   scene.add(explosion);
 
-
   
   spawnEnemies(options.numEnemies);
 
@@ -280,8 +284,50 @@ function Player(img, xpos, sprite){
   this.mesh = player;
   this.start=0;
   this.shadow = new Shadow(player.position);
-  this.dist = Math.random()*60
+  this.dist = Math.random()*60;
 
+  this.update = function(){
+    console.log('player update')
+
+  }
+
+  this.animate = function(state, loops){
+    console.log('player animate')
+    //this.tilesHorizontal =3;
+    hero.currentTile = 0;
+    hero.numberOfTiles =3;
+    if (state=="fly"){
+      console.log("fly")
+      hero.setFrame(0,3, 'freeze');
+
+    }else if (state=="run"){
+      console.log("run")
+      hero.setFrame(0,2, 'loop');
+
+    }else if (state=="fall"){
+      console.log("fall")
+      hero.setFrame(0,1, 'once');
+      this.flicker();
+
+    }else if(state=="die"){
+      console.log("die")
+      //this.tilesHorizontal =4;
+      hero.numberOfTiles =4;
+      hero.setFrame(0,0, 'once');
+      this.flicker();
+
+    }
+  }
+
+  this.flicker = function(){
+    TweenMax.to(this.mesh.material, .1, {opacity: 0, delay: .4,repeat: 7, yoyo: true });
+  }
+
+ 
+
+
+
+/*
   this.update = function(){
   		this.mesh.position.y = 80 + Math.sin(this.start)*40;
   		this.mesh.position.z = Math.cos(this.start)*this.dist;
@@ -299,6 +345,7 @@ function Player(img, xpos, sprite){
    // console.log(enemyPool)
 
   }
+  */
 }
 
 function spawnEnemies(num){
@@ -432,6 +479,8 @@ function TextureAnimator(texture, tilesHoriz, tilesVert, numTiles, tileDispDurat
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping; 
   texture.repeat.set( 1 / this.tilesHorizontal, 1 / this.tilesVertical );
 
+
+
   // how long should each image be displayed?
   this.tileDisplayDuration = tileDispDuration;
 
@@ -441,45 +490,77 @@ function TextureAnimator(texture, tilesHoriz, tilesVert, numTiles, tileDispDurat
   // which image is currently being displayed?
   this.currentTile = 0;
 
+  this.animBehavior=false;
+/*
   this.setFrame = function( frame ){
   	this.currentTile = frame;
     var currentColumn = this.currentTile % this.tilesHorizontal;
     texture.offset.x = currentColumn / this.tilesHorizontal;
 
   }
+ */
+
+  this.setFrame = function( xpos, ypos, state ){
+    this.animBehavior = state;
+    console.log(xpos, ypos)
+    var currentColumn = xpos % this.tilesHorizontal;
+    texture.offset.x = currentColumn / this.tilesHorizontal;
+    var currentRow = ypos % this.tilesVertical;
+    console.log('currentRow ='+ currentRow)
+    texture.offset.y = currentRow / this.tilesVertical;
+
+  }
     
   this.update = function( milliSec )
   {
     this.currentDisplayTime += milliSec;
-    while (this.currentDisplayTime > this.tileDisplayDuration)
-    {
-      this.currentDisplayTime -= this.tileDisplayDuration;
-      this.currentTile++;
-      if (this.currentTile == this.numberOfTiles)
-        this.currentTile = 0;
-      var currentColumn = this.currentTile % this.tilesHorizontal;
-      texture.offset.x = currentColumn / this.tilesHorizontal;
-     // var currentRow = Math.floor( this.currentTile / this.tilesHorizontal );
-     // texture.offset.y = currentRow / this.tilesVertical;
+
+    if (this.animBehavior == "once") {
+      this.playOnce();
+    }else if (this.animBehavior == "loop") {
+      this.playLoop();
     }
+
+
   };
 
-
-  this.animate = function(state){
-  	if (state=="run"){
-  		console.log("run")
-  		texture.offset.y = 2 / this.tilesVertical;
-
-  	}else if (state=="fall"){
-  		console.log("fall")
-  		texture.offset.y = 1 / this.tilesVertical;
-
-  	}else if(state=="die"){
-  		console.log("die")
-  		texture.offset.y = 4 / this.tilesVertical;
-
-  	}
+  this.playOnce = function(){
+      while (this.currentDisplayTime > this.tileDisplayDuration)
+    {
+          this.currentDisplayTime -= this.tileDisplayDuration;
+          if (this.currentTile < this.numberOfTiles-1){
+              this.currentTile++;
+           //   if (this.currentTile == this.numberOfTiles)
+             //   this.currentTile = 0;
+              var currentColumn = this.currentTile % this.tilesHorizontal;
+              texture.offset.x = currentColumn / this.tilesHorizontal;
+            //  var currentRow = Math.floor( this.currentTile / this.tilesHorizontal );
+             // texture.offset.y = currentRow / this.tilesVertical;
+           }else{
+            //flash player
+            //console.log(this.currentDisplayTime)
+            // (Math.floor(this.currentDisplayTime)% 2 == 0)? this.opacity=.2 : this.opacity= 1;
+           }
+    }
   }
+
+  this.playLoop = function(){
+      while (this.currentDisplayTime > this.tileDisplayDuration)
+    {
+
+          this.currentDisplayTime -= this.tileDisplayDuration;
+          this.currentTile++;
+          if (this.currentTile == this.numberOfTiles)
+            this.currentTile = 0;
+          var currentColumn = this.currentTile % this.tilesHorizontal;
+          texture.offset.x = currentColumn / this.tilesHorizontal;
+        //  var currentRow = Math.floor( this.currentTile / this.tilesHorizontal );
+         // texture.offset.y = currentRow / this.tilesVertical;
+       }
+  } 
+
+
+  
 }   
 
 function initGUI() {
@@ -490,9 +571,13 @@ function initGUI() {
 
     gui.values.speed            = gui.add(options,'speed',0,1).step(0.1);
 
-    gui.values.sprite_horizontal  = gui.add(options,'sprite_horizontal',0,2).step(1);
+    gui.values.sprite_horizontal  = gui.add(options,'sprite_horizontal',0,3).step(1);
+
+    gui.values.sprite_vertical  = gui.add(options,'sprite_vertical',0,3).step(1);
 
    // gui.values.scale            = gui.add(options,'scale',1,100).step(1.0);
+
+   gui.values.flicker = gui.add(options, 'flicker');
 
     gui.values.numEnemies         = gui.add(options,'numEnemies',0,40).step(1);
 
@@ -506,6 +591,8 @@ function initGUI() {
     gui.values.fall = gui.add(options, 'fall');
 
     gui.values.die = gui.add(options, 'die');
+
+    gui.values.fly = gui.add(options, 'fly');
 
   //  gui.values.wireframe = gui.add(options, 'wireframe');
 
@@ -536,24 +623,38 @@ function initGUI() {
     );
 
 */
+  gui.values.flicker.onChange(value => {
+
+        player.flicker()
+       // player.mesh.material.opacity = .5
+
+    }
+    );
+
+	gui.values.fly.onChange(value => {
+
+        player.animate('fly');
+
+    }
+    );
 
     gui.values.run.onChange(value => {
 
-        hero.animate('run');
+        player.animate('run');
 
     }
     );
 
     gui.values.fall.onChange(value => {
 
-        hero.animate('fall');
+        player.animate('fall');
 
     }
     );
 
     gui.values.die.onChange(value => {
 
-        hero.animate('die');
+        player.animate('die');
 
     }
     );
@@ -569,10 +670,24 @@ function initGUI() {
     	console.log('sprite change')
         options.sprite_horizontal.value = value;
         
-        hero.setFrame(value);
+       // hero.setFrame(value);
+        hero.setFrame(value, options.sprite_vertical);
 
       //  hero.update();
-        console.log(hero)
+       // console.log(hero.currentTile)
+
+    }
+    );
+
+    gui.values.sprite_vertical.onChange(value => {
+    	console.log('sprite change')
+        options.sprite_vertical.value = value;
+        
+       // hero.setFrame(value);
+        hero.setFrame(options.sprite_horizontal, value);
+
+      //  hero.update();
+       // console.log(hero.currentTile)
 
     }
     );
