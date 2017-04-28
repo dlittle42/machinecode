@@ -113,9 +113,9 @@ WebVRConfig = {
 <script src="node_modules/three/examples/js/controls/VRControls.js"></script>
 
 
-
+<!--
 <script src="node_modules/three/examples/js/controls/OrbitControls.js"></script>
-
+-->
 
 <!--
 <script src="node_modules/three/examples/js/controls/DeviceOrientationControls.js"></script>
@@ -141,7 +141,8 @@ WebVRConfig = {
 -->
 <script src="node_modules/howler/dist/howler.min.js"></script>
 
-<script src="node_modules/three/examples/js/utils/ShadowMapViewer.js"></script>
+
+<script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
 
 <script src="../../bower_components/dat.gui/dat.gui.js"></script>
 
@@ -159,6 +160,7 @@ var mouse = new THREE.Vector2();
 var uTime;
 var helper;
 var blaster;
+var blasterMaterial;
 var blasterArr = [];
 var arrowArr = [];
 
@@ -190,11 +192,11 @@ var accZsmooth = 0;
 var accYsmooth = 0;
 var factor = .98;
 
-var gui = new dat.GUI();
+//var gui = new dat.GUI();
 
 
 // Keeps track of time
-    var clock = new THREE.Clock();
+//    var clock = new THREE.Clock();
 
 var playerVector = new THREE.Vector3();
 var camVector = new THREE.Vector3();
@@ -213,23 +215,63 @@ var Colors = {
   blue:0x68c3c0,
 };
 
+
+//from textureAnimation
+// standard global variables
+//var container, scene, camera, renderer, controls, stats;
+//var keyboard = new THREEx.KeyboardState();
+var clock = new THREE.Clock();
+
+// custom global variables
+var annie, hero; // animators
+
+var enemyPool=[];
+var enemyRaygunArr=[];
+
+var gui;
+
+var player;
+
+var sceneHUD, cameraHUD;
+
+var windowWidth, windowHeight;
+var mouseX = 0, mouseY = 0;
+
 var options  = {
                 
 
-                
-                
-    blasterSpeed: .03,//5;
-    enemySpeed: .01,//5;
+        speed            : 0.1,
 
-   // segments         : 324,
+        sprite_horizontal : 0,
 
-   // wireframe_color     : '#00e6ff',//'#e25cfe',
+        sprite_vertical : 0,
 
-    helpers        : true,
+       // segments         : 324,
+        attack: false,
 
-  //  floor_visible    : true
+        flicker: false,
 
-};
+        checker_color1     : '#76c876',
+
+        checker_color2     : '#a7f9a7',
+
+        die: false,
+
+        run: false,
+
+        fall: false,
+
+        fly: false,
+
+      //  scale            : 1,
+
+      //  perlin_passes    : 1,
+
+        numEnemies        : 10,
+
+      //  floor_visible    : true
+
+    };
 
 // GAME VARIABLES
 var game;
@@ -270,6 +312,54 @@ var checkerTexture = new THREE.ShaderMaterial(
           side: THREE.DoubleSide
          // doubleSide: true,
         });
+
+var views = [
+        {
+          left: 0,
+          bottom: 0,
+          width: 0.5,
+          height: 1.0,
+          background: new THREE.Color().setRGB( 0.5, 0.5, 0.7 ),
+          eye: [ 0, 300, 1800 ],
+          up: [ 0, 1, 0 ],
+          fov: 30,
+          updateCamera: function ( camera, scene, mouseX, mouseY ) {
+            camera.position.x += mouseX * 0.05;
+            camera.position.x = Math.max( Math.min( camera.position.x, 2000 ), -2000 );
+            camera.lookAt( scene.position );
+          }
+        },
+        {
+          left: 0.5,
+          bottom: 0,
+          width: 0.5,
+          height: 0.5,
+          background: new THREE.Color().setRGB( 0.7, 0.5, 0.5 ),
+          eye: [ 0, 1800, 0 ],
+          up: [ 0, 0, 1 ],
+          fov: 45,
+          updateCamera: function ( camera, scene, mouseX, mouseY ) {
+            camera.position.x -= mouseX * 0.05;
+            camera.position.x = Math.max( Math.min( camera.position.x, 2000 ), -2000 );
+            camera.lookAt( camera.position.clone().setY( 0 ) );
+          }
+        },
+        {
+          left: 0.5,
+          bottom: 0.5,
+          width: 0.5,
+          height: 0.5,
+          background: new THREE.Color().setRGB( 0.5, 0.7, 0.7 ),
+          eye: [ 1400, 800, 1400 ],
+          up: [ 0, 1, 0 ],
+          fov: 60,
+          updateCamera: function ( camera, scene, mouseX, mouseY ) {
+            camera.position.y -= mouseX * 0.05;
+            camera.position.y = Math.max( Math.min( camera.position.y, 1600 ), -1600 );
+            camera.lookAt( scene.position );
+          }
+        }
+      ];
 
 
 function resetGame(){
@@ -345,7 +435,6 @@ function muteAll(){
   howler.mute();
 }
 
-
 function init(){
 
 
@@ -355,8 +444,6 @@ function init(){
     renderer = new THREE.WebGLRenderer({antialias: false});
     renderer.setPixelRatio(window.devicePixelRatio);
 
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFShadowMap;
 
     // Append the canvas element created by the renderer to document body element.
     document.body.appendChild(renderer.domElement);
@@ -367,12 +454,22 @@ function init(){
     scene.background = new THREE.Color( 0xbd8ef8 );
 
 
+    for (var ii =  0; ii < views.length; ++ii ) {
+          var view = views[ii];
+          camera = new THREE.PerspectiveCamera( view.fov, window.innerWidth / window.innerHeight, 1, 10000 );
+          camera.position.x = view.eye[ 0 ];
+          camera.position.y = view.eye[ 1 ];
+          camera.position.z = view.eye[ 2 ];
+          camera.up.x = view.up[ 0 ];
+          camera.up.y = view.up[ 1 ];
+          camera.up.z = view.up[ 2 ];
+          view.camera = camera;
+        }
+
 
     // Create a three.js camera.
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-    //var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 100);
+   // camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
 
-   // camera.y = 5;
 
     let helper = new THREE.CameraHelper(camera);
     scene.add(helper);
@@ -381,14 +478,6 @@ function init(){
     controls.userHeight = vantagePoint;
     controls.standing = true;
     //controls.standing = true;
-
-/*
-       // This helps move the camera
-    dolly = new THREE.Group();
-    dolly.position.set( 0, 0, 0 );
-    scene.add( dolly );
-    dolly.add( camera );
-*/
 
     // Apply VR stereo rendering to renderer.
     effect = new THREE.VREffect(renderer);
@@ -402,107 +491,39 @@ function init(){
     manager = new WebVRManager(renderer, effect, params);
 
     
-
-    loader = new THREE.TextureLoader();
-    //setPlayerTexture calls setupStage which triggers animate
-    loader.load('img/player_small_128.png', setPlayerTexture);
-
-    var loader2 = new THREE.TextureLoader();
-    loader2.load('img/blaster.png', function(texture){
-        blasterMaterial = new THREE.SpriteMaterial( { map: texture, color: 0xffffff } );
-       // createBlaster();
-
-       // needs a delay??
-       if (forceVR && manager.isVRCompatible){
-          manager.enterVRMode_();
-          console.log(manager)
-       }
-
-    });
-
-    var loader3 = new THREE.TextureLoader();
-    loader3.load('img/enemy.png', function(texture){
-        enemyMaterial = new THREE.SpriteMaterial( { map: texture, color: 0xffffff } );
-       // createEnemy();
-        spawnEnemies();
-
-    });
+    var blasterTexture = new THREE.TextureLoader().load( "img/blaster.png" );
+  //annie = new TextureAnimator( shadowTexture, 10, 1, 10, 75 ); // texture, #horiz, #vert, #total, duration.
+    blasterMaterial = new THREE.MeshBasicMaterial( { map: blasterTexture, side:THREE.DoubleSide, color: 0xffffff, opacity: 1, transparent: true } );
+ 
 
 
-    var loaderShadow = new THREE.TextureLoader();
-    loaderShadow.load('img/shadow.png', function(texture){
-      //  shadowMaterial = new THREE.SpriteMaterial( { map: texture, color: 0xffffff } );
-         shadowMaterial = new THREE.MeshBasicMaterial( { map: texture, color: '0xff0000', side: THREE.DoubleSide, transparent: true} );
-        createShadow();
-        
+    setupStage();
+    createLights();
 
-    });
-
-    //createLights();
-    shadowLights();
    // setupGround();
 
-    setupGridHelper();
-    addWorldBox();
-   // addGround();
-
-    
+    setupFloor();
+    spawnEnemies(10);
+   // player = new Player("img/hero-spritesheet.png", 0, true);
 
     window.addEventListener('resize', onResize, true);
     window.addEventListener('vrdisplaypresentchange', onResize, true);
-    document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
     document.addEventListener( 'click', createBlaster, true );
     document.addEventListener( 'touchstart', createBlaster, true );
 
-    
-
-
+    document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+  
+      
 }
 
+function onDocumentMouseMove( event ) {
+        mouseX = ( event.clientX - windowWidth / 2 );
+        mouseY = ( event.clientY - windowHeight / 2 );
+      }
 
 
 
-
-/*
-// Add a repeating grid as a skybox.
-var boxSize = 5;
-var loader = new THREE.TextureLoader();
-loader.load('img/box.png', onTextureLoaded);
-
-function onTextureLoaded(texture) {
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(boxSize, boxSize);
-
-  var geometry = new THREE.BoxGeometry(boxSize, boxSize, boxSize);
-  var material = new THREE.MeshBasicMaterial({
-    map: texture,
-    color: 0x01BE00,
-    side: THREE.BackSide
-  });
-*/
-
-
-
-
-/*
-  // Align the skybox to the floor (which is at y=0).
-  skybox = new THREE.Mesh(geometry, material);
-  skybox.position.y = boxSize/2;
-  scene.add(skybox);
-*/
-
-  // Floor
-  //var floor = new THREE.Mesh(cube, floorMat );
-  //scene.add( floor );
-
- // createSea();
-
-
-  // For high end VR devices like Vive and Oculus, take into account the stage
-  // parameters provided.
- // setupStage();
-//}
 
 
 // Create 3D objects.
@@ -546,7 +567,7 @@ function createShadow(){
   shadow.rotation.x = -Math.PI/2;
   shadow.position.y = - controls.userHeight;
 }
-
+/*
 function setPlayerTexture(playerTexture){
   console.log('createPlayer')
   //var playerTexture = THREE.ImageUtils.loadTexture( 'img/Space_Harrier_player_sprite.png' );
@@ -574,19 +595,6 @@ function setPlayerTexture(playerTexture){
 
 
 
- // var shadow = new THREE.Sprite( shadowMaterial );
-
- 
-
-/*
-  var r = 1;
-  helper = new THREE.BoxHelper( new THREE.Mesh( new THREE.BoxGeometry( r, r, r)));
-  helper.material.color.setHex( 0x080808);
-  helper.material.blending = THREE.AdditiveBlending;
-  //helper.position.set(0, controls.userHeight, 0);
-  helper.position.z = -1;
-  helper.scale.set( .2, .2, .2);
-*/
 
   var material = new THREE.MeshLambertMaterial( { color: 0x42f445, opacity: 0.2, transparent: true, side: THREE.DoubleSide, wireframe: false } );
 
@@ -616,29 +624,104 @@ function setPlayerTexture(playerTexture){
   setupStage();
 
 }
+*/
 
+function Player(img, xpos, sprite){
+
+  console.log("New Player")
+
+  //var playerTexture = new THREE.TextureLoader().load( "img/player_small_128.png" );
+  var playerTexture = new THREE.TextureLoader().load( img);
+  if (sprite) hero = new TextureAnimator( playerTexture, 4, 4, 3, 75 );
+  //annie = new TextureAnimator( playerTexture, 10, 1, 10, 75 ); // texture, #horiz, #vert, #total, duration.
+  var playerMaterial = new THREE.MeshBasicMaterial( { map: playerTexture, side:THREE.DoubleSide, color: 0xffffff } );
+  playerMaterial.transparent = true;
+
+ // playerMaterial.map.offset = new THREE.Vector2(0.25 * 1, 0);
+ // playerMaterial.map.repeat = new THREE.Vector2(1 / 4, 1);
+  //fixes flicker when planes intersect
+  playerMaterial.depthTest= true
+  playerMaterial.depthWrite= false
+  playerMaterial.polygonOffset= true
+  playerMaterial.polygonOffsetFactor= -4
+  /// end fix
+  var playerGeometry = new THREE.PlaneGeometry(1, 1, 10, 10);
+  var player = new THREE.Mesh(playerGeometry, playerMaterial);
+  player.position.set(0,controls.userHeight,playerDepth);
+  scene.add(player);
+
+  this.mesh = player;
+  this.start=0;
+  this.shadow = new Shadow(player.position);
+  this.dist = Math.random()*60;
+
+  this.update = function(){
+    //console.log('player update')
+
+  }
+
+  this.animate = function(state, loops){
+    console.log('player animate')
+    //this.tilesHorizontal =3;
+    hero.currentTile = 0;
+    hero.numberOfTiles =3;
+    if (state=="fly"){
+      console.log("fly")
+      hero.setFrame(0,3, 'freeze');
+
+    }else if (state=="run"){
+      console.log("run")
+      hero.setFrame(0,2, 'loop');
+
+    }else if (state=="fall"){
+      console.log("fall")
+      hero.setFrame(0,1, 'once');
+      this.flicker();
+
+    }else if(state=="die"){
+      console.log("die")
+      //this.tilesHorizontal =4;
+      hero.numberOfTiles =4;
+      hero.setFrame(0,0, 'once');
+      this.flicker();
+
+    }
+  }
+
+  this.flicker = function(){
+    TweenMax.to(this.mesh.material, .1, {opacity: 0, delay: .4,repeat: 7, yoyo: true });
+  }
+
+}
 
 function animate(timestamp) {
 
   var delta = clock.getDelta();
+
+  getWorldRotation();
  // var delta = Math.min(timestamp - lastRender, 500);
  // lastRender = timestamp;
   //uTime = timestamp;
 
   // Apply rotation to cube mesh
  // cube.rotation.y += delta * 0.0006;
- playerVector.setFromMatrixPosition( player.matrixWorld );
+// playerVector.setFromMatrixPosition( player.matrixWorld );
+
+//console.log(blasterArr)
+//console.log(collidableMeshList)
 
  for(var i=0; i<blasterArr.length; i++) {
 
-    //console.log(blasterArr[i].raycaster)
-    blaster.raycaster.set(blaster.from, blaster.to);
+   // console.log(blasterArr[i].raycaster)
+    blasterArr[i].raycaster.set(blasterArr[i].from, blasterArr[i].to);
+
+
+    raycaster.set(blasterArr[i].from, blasterArr[i].to);
     var blasterCollision = blasterArr[i].raycaster.intersectObjects( collidableMeshList );
 
     
     //if ( collisionResults.length > 0 && collisionResults[0].distance < directionVector.length() ) 
     if ( blasterCollision.length > 0) {
-      console.log(blasterCollision)
         tally.innerHTML = "bullet hit"
         console.log('-//------')
         console.log(" BLASTED " + blasterCollision[0].object.name);
@@ -648,28 +731,28 @@ function animate(timestamp) {
        // blasterArr[i].active=false;
        // scene.remove(blasterCollision[0].object);
         console.log('------//-')
-       // console.log(blasterCollision[0].object)
+        console.log(blasterCollision[0].object)
        // scene.remove(blasterCollision[0]);
        // collidableMeshList.splice(collidableMeshList.indexOf(blasterCollision[0].object), 1);
         collidableMeshList.splice(collidableMeshList.indexOf(blasterCollision[0].object), 1);
       //  console.log(collidableMeshList);
         scene.remove(blasterArr[i]);
         blasterArr.splice(i, 1);
-        playExplode();
+      //  playExplode();
     }else{
      
-      blasterArr[i].position.x += blasterArr[i].blasterDir.x * options.blasterSpeed;
+    //  blasterArr[i].position.x += blasterArr[i].blasterDir.x * options.blasterSpeed;
       //blasterArr[i].position.y += blasterArr[i].blasterDir.y * blasterSpeed;
      // blasterArr[i].position.y += (blasterArr[i].blasterDir.y - blasterArr[i].position.y) * blasterSpeed;
-      blasterArr[i].position.z += blasterArr[i].blasterDir.z * options.blasterSpeed;
+    //  blasterArr[i].position.z += blasterArr[i].blasterDir.z * options.blasterSpeed;
 
      // if (i==0) console.log(blasterArr[i].position.z);
-   /*   if (timestamp - blasterArr[i].time > 1000) {
-        scene.remove(blasterArr[i]);
-        blasterArr.splice(i, 1);
-
-      }
-      */
+     // if (timestamp - blasterArr[i].time > 1000) {
+      //  scene.remove(blasterArr[i]);
+     //   blasterArr.splice(i, 1);
+//
+     // }
+      
       
     }
     
@@ -678,6 +761,7 @@ function animate(timestamp) {
 
  }
 
+/*
   for(var i=0; i<arrowArr.length; i++) {
       if (timestamp - arrowArr[i].time > 3000) {
           scene.remove(arrowArr[i]);
@@ -685,8 +769,15 @@ function animate(timestamp) {
 
         }
   }
+*/
+ //if (enemiesPool.length > 0 ) updateEnemies();
+// annie.update(700 * delta);
+//  hero.update(700*delta);
 
- if (enemiesPool.length > 0 ) updateEnemies();
+  for (var i=0; i<enemyPool.length; i++){
+    var nEnemy = enemyPool[i];
+    nEnemy.update();
+  }
 
   controls.update(delta);
   // Render the scene through the manager.
@@ -694,7 +785,31 @@ function animate(timestamp) {
  // effect.render(scene, camera);
 
   // Update the scene through the manager.
-  manager.render(scene, camera);
+ // manager.render(scene, camera);
+ // manager.render(sceneHUD, cameraHUD);
+ renderer.render( scene, camera );
+/*
+  for ( var ii = 0; ii < views.length; ++ii ) {
+          view = views[ii];
+          camera = view.camera;
+          view.updateCamera( camera, scene, mouseX, mouseY );
+          var left   = Math.floor( windowWidth  * view.left );
+          var bottom = Math.floor( windowHeight * view.bottom );
+          var width  = Math.floor( windowWidth  * view.width );
+          var height = Math.floor( windowHeight * view.height );
+          renderer.setViewport( left, bottom, width, height );
+          renderer.setScissor( left, bottom, width, height );
+          renderer.setScissorTest( true );
+          renderer.setClearColor( view.background );
+          camera.aspect = width / height;
+          camera.updateProjectionMatrix();
+         // renderer.render( scene, camera );
+        //  manager.render( scene, camera );
+        }
+*/
+
+
+
   // effect.render(scene, camera);
 
   // Call the render function again
@@ -777,8 +892,8 @@ pivot.quaternion.setFromUnitVectors(zaxis, direction);
 
  }
 */
- player.position.x = xA;
- player.position.y = yA;  
+// player.position.x = xA;
+ //player.position.y = yA;  
 
 
 
@@ -946,9 +1061,15 @@ function addLights() {
 
 function createBlaster(event){
 
-  var geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-var material = new THREE.MeshNormalMaterial();
+  console.log('createBlaster')
+
+//  var geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+//  var material = new THREE.MeshNormalMaterial();
 //blaster = new THREE.Mesh(geometry, material);
+var blasterTexture = new THREE.TextureLoader().load( "img/blaster.png" );
+  //annie = new TextureAnimator( shadowTexture, 10, 1, 10, 75 ); // texture, #horiz, #vert, #total, duration.
+    blasterMaterial = new THREE.MeshBasicMaterial( { map: blasterTexture, side:THREE.DoubleSide, color: 0xffffff, opacity: 1, transparent: true } );
+ 
 
 
 
@@ -969,11 +1090,14 @@ var material = new THREE.MeshNormalMaterial();
   */
  // console.log(camera.getWorldDirection());
 
-  blaster = new THREE.Sprite( blasterMaterial );
+  //blaster = new THREE.Sprite( blasterMaterial );
+
+  var blasterGeometry = new THREE.PlaneGeometry(.3, .2, 1, 1);
+  var blaster = new THREE.Mesh(blasterGeometry, blasterMaterial);
   //blaster.position.z = -10;
   //blaster.position.x = 0;//player.position.x;
   //blaster.position.y = 0;//player.position.y;
-  blaster.scale.set( .2, .2, 1.0 );
+ // blaster.scale.set( .2, .2, 1.0 );
   blaster.time = lastRender;
   
   //var distVector = playerVector.multiplyScalar(2);
@@ -991,11 +1115,59 @@ var material = new THREE.MeshNormalMaterial();
 //  var vector = new THREE.Vector3();
 //  vector.setFromMatrixPosition( player.matrixWorld );
 
-  blaster.position.set(playerVector.x , playerVector.y, playerVector.z );
+  //blaster.position.set(playerVector.x , playerVector.y, playerVector.z );
+  
+
+  var camVector = new THREE.Vector3();
+
+ // var origin = camera.getWorldDirection(camVector);
+  var camDir1 = camera.getWorldDirection(camVector).multiplyScalar(10);
+  
+  var camDir = new THREE.Vector3(camDir1.x, camDir1.y + controls.userHeight, camDir1.z);
+
+
+//console.log(origin)
+  blaster.position.set(camera.position.x,camera.position.y,camera.position.z);
+ // blaster.position.set(0,controls.userHeight,playerDepth);
   scene.add(blaster);
+  console.log(blaster.position)
+
+
+  blaster.blasterDir = camDir;//scaleCam;
+  blaster.lookAt(camDir)
+
+
+ blaster.raycaster = new THREE.Raycaster(new THREE.Vector3(camera.position.x, camera.position.y, camera.position.z), new THREE.Vector3(camDir.x, camDir.y, camDir.z));
+
+ console.log(blaster.raycaster)
+
+  blaster.from = blaster.position;//new THREE.Vector3( 2, 2, 2 );
+  blaster.to = blaster.blasterDir;//new THREE.Vector3( 0, controls.userHeight, -40);
+  var direction = blaster.to.clone().sub(blaster.from);
+  var length = direction.length();
+
+
 
   blasterArr.push(blaster);
 
+ // blaster.lookAt(camDir)
+
+  
+
+  TweenMax.to(blaster.position,1, {
+    x: camDir.x, 
+    y: camDir.y,
+    z: camDir.z,
+    ease:"linear",
+    onComplete:function(){
+
+      scene.remove( blaster);
+      var i = blasterArr.indexOf(blaster);
+      blasterArr.splice(i, 1);
+      
+  }});
+
+/*
   var camVector = new THREE.Vector3();
 
   var camDir1 = camera.getWorldDirection(camVector).multiplyScalar(20);
@@ -1011,17 +1183,37 @@ var material = new THREE.MeshNormalMaterial();
 
  blaster.raycaster = new THREE.Raycaster(new THREE.Vector3(playerVector.x, playerVector.y, playerVector.z),  blaster.blasterDir);
 
- console.log(blaster.raycaster)
-
   blaster.from = blaster.position;//new THREE.Vector3( 2, 2, 2 );
   blaster.to = blaster.blasterDir;//new THREE.Vector3( 0, controls.userHeight, -40);
   var direction = blaster.to.clone().sub(blaster.from);
   var length = direction.length();
 
+
+*/
+
   //blaster.raycaster = new THREE.Raycaster(new THREE.Vector3(playerVector.x, playerVector.y, playerVector.z),  blaster.blasterDir);
- 
-  var arrowHelper = new THREE.ArrowHelper(direction.normalize(), blaster.from, length, 0xff0000 );
-  arrowHelper.time = lastRender;
+
+ // var direction = blaster.to.clone().sub(blaster.from);
+//  var length = direction.length();
+
+//  var arrowHelper = new THREE.ArrowHelper(new THREE.Vector3( 2, 2, 2 ), new THREE.Vector3( 0, 0, 0 ), 20, 0xff0000 );
+
+   var originV3 = new THREE.Vector3(blaster.position.x, controls.userHeight-.01, blaster.position.z); 
+
+   var arrowHelper = new THREE.ArrowHelper(direction.normalize(), originV3, 20, 0xff0000 );
+  //  arrowHelper.time = lastRender;
+  arrowHelper.line.material.linewidth = 5;
+
+/*
+  var directionV3 = new THREE.Vector3(1, 0, -10);
+var originV3 = new THREE.Vector3(0, controls.userHeight-1, 0);
+
+var arrowHelper = new THREE.ArrowHelper(directionV3, originV3, 100, 0xff0000, 20, 10); // 100 is length, 20 and 10 are head length and width
+
+*/
+
+
+
   scene.add( arrowHelper );
 
   arrowArr.push( arrowHelper);
@@ -1029,13 +1221,25 @@ var material = new THREE.MeshNormalMaterial();
 
 
 
-  playSound();
+  //playSound();
 
 }
 
 
+function checkCollisions(b, vec, objects) {
+    this.ray.set(b.position.clone(), vec);
+    var collResults = this.ray.intersectObjects(objects, true);
+    if (collResults.length > 0 && collResults[0].distance < 5) {
+      console.log(collResults)
+      var object = collResults[0].object;
+      object.hit = true;
+      this.removeBullet(b);
+      return object;
+    }
+  }
 
-function setupGridHelper(){
+
+function setupFloor(){
 /*
    var geometry = new THREE.PlaneGeometry(5,5,30,30);
 
@@ -1050,15 +1254,26 @@ function setupGridHelper(){
   scene.add(mesh);
   */
 
-
+/*
   var planeGeometry = new THREE.PlaneGeometry( 20, 20, 32, 32 );
-    var planeMaterial = new THREE.MeshPhongMaterial( { color: 0x00dddd, specular: 0x009900, opacity: 0.5, transparent: true,shininess: 10, shading: THREE.FlatShading } )
+   // var planeMaterial = new THREE.MeshPhongMaterial( { color: 0x00dddd, specular: 0x009900, opacity: 0.5, transparent: true,shininess: 10, shading: THREE.FlatShading } )
+    var planeMaterial = new THREE.MeshLambertMaterial( { color: 0xff0000, opacity: 0.5, transparent: true} )
     var plane = new THREE.Mesh( planeGeometry, planeMaterial );
-    plane.receiveShadow = true;
+  //  plane.receiveShadow = true;
     plane.opacity = .7;
     scene.add( plane );
     //plane.position.y = -2;
     plane.rotation.x = -Math.PI/2;
+
+*/
+    var floorGeometry = new THREE.PlaneGeometry(20, 20, 10, 10);
+ // var floor = new THREE.Mesh(floorGeometry, floorMaterial);
+
+  var floor = new THREE.Mesh(floorGeometry,checkerTexture)
+ // floor.position.y = -0.5;
+  floor.rotation.x = Math.PI / 2;
+  scene.add(floor);
+  
 
 }
 
@@ -1104,165 +1319,122 @@ function createEnemy(ang){
   scene.add(enemy.mesh);
   enemiesPool.push(enemy);
   collidableMeshList.push(enemy.mesh);
+  console.log(collidableMeshList)
   //collidableMeshList.push(nhelper);
  
 }
 
-function spawnEnemies(){
-  var nenemies = 10;//game.level;
-
-  for (var i=0; i<nenemies; i++){
-    createEnemy(i);
+function spawnEnemies(num){
+  for (var i=0; i<num; i++){
+    var alien = new Enemy();
   }
 }
 
+function destroyAll(){
+  console.log('destroyAll')
+  for (var i=0; i<enemyPool.length; i++){
+    console.log(enemyPool[i])
+    enemyPool[i].destroy();
+
+  }
+  enemyPool=[];
+}
 
 
-var Enemy = function(){
-  /*
-  var geom = new THREE.TetrahedronGeometry(8,2);
-  var mat = new THREE.MeshPhongMaterial({
-    color:Colors.red,
-    shininess:0,
-    specular:0xffffff,
-    shading:THREE.FlatShading
-  });
-  */
+function Enemy(){
+  var enemyTexture = new THREE.TextureLoader().load( "img/enemy.png" );
+  //annie = new TextureAnimator( enemyTexture, 10, 1, 10, 75 ); // texture, #horiz, #vert, #total, duration.
+  var enemyMaterial = new THREE.MeshBasicMaterial( { map: enemyTexture, side:THREE.DoubleSide, color: 0xffffff } );
+  enemyMaterial.transparent = true;
+  //fixes flicker when planes intersect
+  enemyMaterial.depthTest= true
+  enemyMaterial.depthWrite= false
+  enemyMaterial.polygonOffset= true
+  enemyMaterial.polygonOffsetFactor= -4
+  /// end fix
+  var enemyGeometry = new THREE.PlaneGeometry(2, 1, 10, 10);
+  var enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
+  enemy.position.set((Math.random()*10) - 5,1,-5);
+  scene.add(enemy);
 
-  var geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-  var material = new THREE.MeshBasicMaterial({color:0xff0000, transparent:true, opacity:0.4, side: THREE.DoubleSide})
-  this.mesh = new THREE.Mesh(geometry, material);
-  this.active = true;
 
-  //this.mesh = new THREE.Mesh( geometry, material );
-  //    scene.add( cube );
+  var bboxHelper = new THREE.BoxHelper(enemy, 0xffffff);
+  scene.add(bboxHelper);
+
+
+
+
+  this.mesh = enemy;
+  enemyPool.push(this)
+  this.start=0;
+  this.shadow = new Shadow(enemy.position);
+  this.dist = 5;//Math.random()*6;
+  this.blaster = null;
+  this.blasterInterval = Math.random()*50;
+
+
+  collidableMeshList.push(this.mesh);
+
+  this.update = function(){
+   //   this.mesh.position.y = Math.sin(this.start)+2;
+   //   this.mesh.position.z = -2+  (Math.cos(this.start)*this.dist)- this.dist/2;
+      this.shadow.update();
+      this.start+=options.speed;
+      //console.log(this.start % this.blasterInterval)
+    //  if (Math.floor(this.start % this.blasterInterval)==0) this.shoot();
+
+
+  }
+
+  this.destroy = function(){
+    console.log('destroy')
+    this.shadow.destroy();
+    scene.remove(this.mesh);
+    this.blaster =null;
+    //enemyPool.splice(this, 1);
+   // console.log(enemyPool)
+
+  }
+
+  this.shoot = function(){
+    if (this.blaster==null) this.blaster = new Blaster(this);
+  }
+
+}
+
+
+function Shadow(pos){
+
+  var shadowTexture = new THREE.TextureLoader().load( "img/shadow.png" );
+  //annie = new TextureAnimator( shadowTexture, 10, 1, 10, 75 ); // texture, #horiz, #vert, #total, duration.
+  var shadowMaterial = new THREE.MeshBasicMaterial( { map: shadowTexture, side:THREE.DoubleSide, color: 0xffffff, opacity: 0.5, transparent: true } );
+
+  var shadowGeometry = new THREE.PlaneGeometry(.01, .01, 1, 1);
+  var shadow = new THREE.Mesh(shadowGeometry, shadowMaterial);
+  shadow.position.set(pos.x,.1,-5);
+  shadow.rotation.x = Math.PI / 2;
+  scene.add(shadow);
+
+  this.mesh = shadow;
+
+  this.update = function(){
+      this.mesh.position.x = pos.x;
+      this.mesh.position.z = pos.z;
+      var shadowScale = 1 + (40/pos.y);
+      this.mesh.scale.set( shadowScale, shadowScale, 1.0 )
   
-  //this.mesh = new THREE.Sprite( enemyMaterial );
-  this.mesh.castShadow = true;
-  this.angle = 0;
-  this.dist = 0;
-}
-/*
-var enemiesHolder = function (){
-  this.mesh = new THREE.Object3D();
-  this.enemiesInUse = [];
-}
 
-enemiesHolder.prototype.spawnEnemies = function(){
-  var nenemies = game.level;
 
-  for (var i=0; i<nenemies; i++){
-    var enemy;
-    if (enemiesPool.length) {
-      enemy = enemiesPool.pop();
-    }else{
-      enemy = new Enemy();
-      console.log('new enemy')
-    }
-
-    enemy.angle = - (i*0.1);
-   // enemy.distance = game.seaRadius + game.planeDefaultHeight + (-1 + Math.random() * 2) * (game.planeAmpHeight-20);
-   // enemy.mesh.position.y = -game.seaRadius + Math.sin(enemy.angle)*enemy.distance;
-    enemy.mesh.position.z = -5;//-Math.sin(enemy.angle)*enemy.distance;
-    enemy.mesh.position.x = 0;// Math.cos(enemy.angle)*enemy.distance;
-
-    this.mesh.add(enemy.mesh);
-    this.enemiesInUse.push(enemy);
   }
-}
-/*
-enemiesHolder.prototype.rotateenemies = function(){
-  for (var i=0; i<this.enemiesInUse.length; i++){
-    var enemy = this.enemiesInUse[i];
-    enemy.angle += game.speed*deltaTime*game.enemiesSpeed;
 
-    if (enemy.angle > Math.PI*2) enemy.angle -= Math.PI*2;
+  this.destroy = function(){
+    scene.remove(this.mesh);
 
-    enemy.mesh.position.y = -game.seaRadius + Math.sin(enemy.angle)*enemy.distance;
-    enemy.mesh.position.x = Math.cos(enemy.angle)*enemy.distance;
-    enemy.mesh.rotation.z += Math.random()*.1;
-    enemy.mesh.rotation.y += Math.random()*.1;
-
-    //var globalenemyPosition =  enemy.mesh.localToWorld(new THREE.Vector3());
-    var diffPos = airplane.mesh.position.clone().sub(enemy.mesh.position.clone());
-    var d = diffPos.length();
-    if (d<game.enemyDistanceTolerance){
-      particlesHolder.spawnParticles(enemy.mesh.position.clone(), 15, Colors.red, 3);
-
-      enemiesPool.unshift(this.enemiesInUse.splice(i,1)[0]);
-      this.mesh.remove(enemy.mesh);
-      game.planeCollisionSpeedX = 100 * diffPos.x / d;
-      game.planeCollisionSpeedY = 100 * diffPos.y / d;
-      ambientLight.intensity = 2;
-
-      removeEnergy();
-      i--;
-    }else if (enemy.angle > Math.PI){
-      enemiesPool.unshift(this.enemiesInUse.splice(i,1)[0]);
-      this.mesh.remove(enemy.mesh);
-      i--;
-    }
   }
-}
-*/
-
-
-
-function updateEnemies(vec) { 
- 
-  // iterate through every particle
-  for(var i=0; i<enemiesPool.length; i++) {
- 
-    var nEnemy = enemiesPool[i]; 
-   // console.log(nEnemy)
- 
-    // and move it forward dependent on the mouseY position. 
-    nEnemy.mesh.position.z +=  options.enemySpeed;//.1;
- 
-    // if the particle is too close move it to the back
-    if(nEnemy.mesh.position.z>20){
-      if (nEnemy.active==true) {
-        nEnemy.mesh.position.z-=40; 
-      }else{
-        scene.remove(nEnemy)
-      }
-    }
-
-
-    
-
- /// check if enemy is in view of camera ...
-/*
-    camera.updateMatrix();
-    camera.updateMatrixWorld();
-    var frustum = new THREE.Frustum();
-    frustum.setFromMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));  
-
-    // Your 3d point to check
-    var pos = nEnemy.mesh.position;
-    if (frustum.containsPoint(pos)) {
-        // Do something with the position...
-       // console.log(nEnemy.mesh)
-       if (nEnemy.mesh.position.z >-1 )
-          console.log('hit')
-    }
-
-    // console.log(camera.rotation)
-*/
-/*
-    nEnemy.mesh.position.x -= vec.x * blasterSpeed;
-    nEnemy.mesh.position.y -= vec.y * blasterSpeed;
-    nEnemy.mesh.position.z -= vec.z * blasterSpeed;
-    */
-  }
- 
- 
- 
-}
-
-function createObstacle(){
 
 }
+
+
 
 
 
@@ -1403,6 +1575,163 @@ function createLights() {
   scene.add(shadowLight);
 }
 
+function TextureAnimator(texture, tilesHoriz, tilesVert, numTiles, tileDispDuration) 
+{ 
+  // note: texture passed by reference, will be updated by the update function.
+    
+  this.tilesHorizontal = tilesHoriz;
+  this.tilesVertical = tilesVert;
+  // how many images does this spritesheet contain?
+  //  usually equals tilesHoriz * tilesVert, but not necessarily,
+  //  if there at blank tiles at the bottom of the spritesheet. 
+  this.numberOfTiles = numTiles;
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping; 
+  texture.repeat.set( 1 / this.tilesHorizontal, 1 / this.tilesVertical );
+
+
+
+  // how long should each image be displayed?
+  this.tileDisplayDuration = tileDispDuration;
+
+  // how long has the current image been displayed?
+  this.currentDisplayTime = 0;
+
+  // which image is currently being displayed?
+  this.currentTile = 0;
+
+  this.animBehavior=false;
+
+
+  this.setFrame = function( xpos, ypos, state ){
+    this.animBehavior = state;
+    console.log(xpos, ypos)
+    var currentColumn = xpos % this.tilesHorizontal;
+    texture.offset.x = currentColumn / this.tilesHorizontal;
+    var currentRow = ypos % this.tilesVertical;
+    console.log('currentRow ='+ currentRow)
+    texture.offset.y = currentRow / this.tilesVertical;
+
+  }
+    
+  this.update = function( milliSec )
+  {
+    this.currentDisplayTime += milliSec;
+
+    if (this.animBehavior == "once") {
+      this.playOnce();
+    }else if (this.animBehavior == "loop") {
+      this.playLoop();
+    }
+
+
+  };
+
+  this.playOnce = function(){
+      while (this.currentDisplayTime > this.tileDisplayDuration)
+    {
+          this.currentDisplayTime -= this.tileDisplayDuration;
+          if (this.currentTile < this.numberOfTiles-1){
+              this.currentTile++;
+           //   if (this.currentTile == this.numberOfTiles)
+             //   this.currentTile = 0;
+              var currentColumn = this.currentTile % this.tilesHorizontal;
+              texture.offset.x = currentColumn / this.tilesHorizontal;
+            //  var currentRow = Math.floor( this.currentTile / this.tilesHorizontal );
+             // texture.offset.y = currentRow / this.tilesVertical;
+           }else{
+            //flash player
+            //console.log(this.currentDisplayTime)
+            // (Math.floor(this.currentDisplayTime)% 2 == 0)? this.opacity=.2 : this.opacity= 1;
+           }
+    }
+  }
+
+  this.playLoop = function(){
+      while (this.currentDisplayTime > this.tileDisplayDuration)
+    {
+
+          this.currentDisplayTime -= this.tileDisplayDuration;
+          this.currentTile++;
+          if (this.currentTile == this.numberOfTiles)
+            this.currentTile = 0;
+          var currentColumn = this.currentTile % this.tilesHorizontal;
+          texture.offset.x = currentColumn / this.tilesHorizontal;
+        //  var currentRow = Math.floor( this.currentTile / this.tilesHorizontal );
+         // texture.offset.y = currentRow / this.tilesVertical;
+       }
+  } 
+
+
+  
+}   
+
+//function createBlaster(event){
+function Blaster(shooter){
+
+
+ // console.log(shooter)
+ // var blasterTexture = new THREE.TextureLoader().load( "img/blaster.png" );
+  //annie = new TextureAnimator( shadowTexture, 10, 1, 10, 75 ); // texture, #horiz, #vert, #total, duration.
+ // var blasterMaterial = new THREE.MeshBasicMaterial( { map: blasterTexture, side:THREE.DoubleSide, color: 0xffffff, opacity: 1, transparent: true } );
+
+  var blasterGeometry = new THREE.PlaneGeometry(.3, .2, 1, 1);
+  var blaster = new THREE.Mesh(blasterGeometry, blasterMaterial);
+  blaster.position.set(shooter.mesh.position.x , shooter.mesh.position.y, shooter.mesh.position.z );
+
+  enemyRaygunArr.push(blaster);
+  
+  scene.add(blaster);
+
+
+  TweenMax.to(blaster.position,1, {
+  //  x: 0, 
+   // y: 0,
+    z: 5,
+    ease:"linear",
+    onComplete:function(){
+
+      scene.remove( blaster);
+      var i = enemyRaygunArr.indexOf(blaster);
+      enemyRaygunArr.splice(i, 1);
+      shooter.blaster =null;
+  }});
+  
+
+ 
+
+
+
+
+
+ // blaster.time = lastRender;
+  
+/*
+
+  blaster.position.set(playerVector.x , playerVector.y, playerVector.z );
+  scene.add(blaster);
+
+  blasterArr.push(blaster);
+
+  var camVector = new THREE.Vector3();
+
+  var camDir1 = camera.getWorldDirection(camVector).multiplyScalar(20);
+  var camDir = new THREE.Vector3(camDir1.x, controls.userHeight, camDir1.z);//.multiplyScalar(20);
+
+
+ blaster.blasterDir = camDir;//scaleCam;
+ blaster.lookAt(camDir)
+
+ blaster.raycaster = new THREE.Raycaster(new THREE.Vector3(playerVector.x, playerVector.y, playerVector.z),  blaster.blasterDir);
+
+  blaster.from = blaster.position;//new THREE.Vector3( 2, 2, 2 );
+  blaster.to = blaster.blasterDir;//new THREE.Vector3( 0, controls.userHeight, -40);
+  var direction = blaster.to.clone().sub(blaster.from);
+  var length = direction.length();
+
+*/
+
+}
+
 function setDebug(bool){
     debug = bool;
     if (bool ==false) info.innerHTML = null;
@@ -1486,75 +1815,220 @@ function getShootDir(targetVec){
 
 */
 
+function getWorldRotation(){
+  if (debug) info.innerHTML = camera.rotation.y;
+}
+
+
+function initHUD() {
+    sceneHUD = new THREE.Scene();
+    cameraHUD = new THREE.OrthographicCamera(-10.5, 10.5, 10.5, -10.5, -10, 10);
+    cameraHUD.position.z = 5;
+    sceneHUD.add(cameraHUD);
+
+    var lineGeometry = new THREE.Geometry();
+    lineGeometry.vertices.push(new THREE.Vector3(-10, -10, 0),
+    new THREE.Vector3(10, -10, 0),
+    new THREE.Vector3(10, 10, 0),
+    new THREE.Vector3(-10, 10, 0),
+    new THREE.Vector3(-10, -10, 0));
+    var line = new THREE.Line(lineGeometry,
+    new THREE.LineBasicMaterial({
+        color: 0xffffff
+    }));
+    sceneHUD.add(line);
+}
+
 function initGUI() {
 
-                    //this.gui = new dat.GUI();
+    gui = new dat.GUI();
 
-                    gui.values = {};
+    gui.values = {};
 
-                    gui.values.blasterSpeed            = gui.add(options,'blasterSpeed',0.0,0.1).step(0.001);
+    gui.values.speed            = gui.add(options,'speed',0,1).step(0.1);
 
-                    gui.values.enemySpeed            = gui.add(options,'enemySpeed',0.0,0.1).step(0.001);
+    gui.values.sprite_horizontal  = gui.add(options,'sprite_horizontal',0,3).step(1);
 
-                   // gui.values.segments         = gui.add(options,'segments',20,800).step(1);
+    gui.values.sprite_vertical  = gui.add(options,'sprite_vertical',0,3).step(1);
 
-                   // gui.values.wireframe_color     = gui.addColor(options,'wireframe_color');
-                    
-                    gui.values.helpers = gui.add(options, 'helpers');
+   // gui.values.scale            = gui.add(options,'scale',1,100).step(1.0);
 
-                  //  gui.values.floor_visible = gui.add(options, 'floor_visible');
+    gui.values.attack = gui.add(options, 'attack');
+
+    gui.values.flicker = gui.add(options, 'flicker');
+
+    gui.values.numEnemies         = gui.add(options,'numEnemies',0,40).step(1);
+
+
+    gui.values.checker_color1     = gui.addColor(options,'checker_color1');
+
+    gui.values.checker_color2     = gui.addColor(options,'checker_color2');
+
+    gui.values.run = gui.add(options, 'run');
+
+    gui.values.fall = gui.add(options, 'fall');
+
+    gui.values.die = gui.add(options, 'die');
+
+    gui.values.fly = gui.add(options, 'fly');
+
+  //  gui.values.wireframe = gui.add(options, 'wireframe');
+
+  //  gui.values.floor_visible = gui.add(options, 'floor_visible');
+
+
+/*
+    gui.values.elevation.onChange(value => {
+
+        uniforms.elevation.value = value;
+
+    }
+    );
+
+
+    gui.values.wireframe.onChange(value => {
+
+        plane_material.wireframe = value;
+
+    }
+    );
+
+    gui.values.floor_visible.onChange(value => {
+
+        groundMaterial.visible = value;
+
+    }
+    );
+
+*/
+
+  gui.values.attack.onChange(value => {
+
+        //player.flicker()
+
+       // spawnEnemies(options.numEnemies);
+
+        for (var i=0; i<options.numEnemies; i++){
+          //console.log(enemyPool[i]);
+          var blast = new Blaster(enemyPool[i]);
+        }
+  
+       // player.mesh.material.opacity = .5
+
+      // var attacker = new Blaster(enemyPool[0].mesh)
+
+    }
+    );
+
+
+  gui.values.flicker.onChange(value => {
+
+        player.flicker()
+       // player.mesh.material.opacity = .5
+
+    }
+    );
+
+  gui.values.fly.onChange(value => {
+
+        player.animate('fly');
+
+    }
+    );
+
+    gui.values.run.onChange(value => {
+
+        player.animate('run');
+
+    }
+    );
+
+    gui.values.fall.onChange(value => {
+
+        player.animate('fall');
+
+    }
+    );
+
+    gui.values.die.onChange(value => {
+
+        player.animate('die');
+
+    }
+    );
+
+    gui.values.speed.onChange(value => {
+
+        options.speed.value = value;
+
+    }
+    );
+
+    gui.values.sprite_horizontal.onChange(value => {
+      console.log('sprite change')
+        options.sprite_horizontal.value = value;
+        
+       // hero.setFrame(value);
+        hero.setFrame(value, options.sprite_vertical);
+
+      //  hero.update();
+       // console.log(hero.currentTile)
+
+    }
+    );
+
+    gui.values.sprite_vertical.onChange(value => {
+      console.log('sprite change')
+        options.sprite_vertical.value = value;
+        
+       // hero.setFrame(value);
+        hero.setFrame(options.sprite_horizontal, value);
+
+      //  hero.update();
+       // console.log(hero.currentTile)
+
+    }
+    );
 
 
 
+    gui.values.checker_color1.onChange(value => {
+        console.log('value');
+        uniforms.color1.value = new THREE.Color(value);
+    }
+    );
 
-                    gui.values.helpers.onChange(value => {
+    gui.values.checker_color2.onChange(value => {
+        console.log('value');
+        uniforms.color2.value = new THREE.Color(value);
+    }
+    );
 
-                        //plane_material.wireframe = value;
-                        console.log("helpers="+ value);
+    return gui.values.numEnemies.onFinishChange(value => {
 
-                    }
-                    );
+      console.log(value);
 
-                    gui.values.blasterSpeed.onChange(value => {
+      destroyAll();
 
-                        options.blasterSpeed.value = value;
+      spawnEnemies(value);
 
-                    }
-                    );
+       // scene.remove(plane_mesh);
 
-                    gui.values.enemySpeed.onChange(value => {
+      //  buildPlanes(value);
 
-                        options.enemySpeed.value = value;
-
-                    }
-                    );
-
-                   /*
-                    gui.values.wireframe_color.onChange(value => {
-                        console.log('value');
-                        uniforms.line_color.value = new THREE.Color(value);
-                    }
-                    );
-
-                    gui.values.segments.onFinishChange(value => {
-
-                        scene.remove(plane_mesh);
-
-                        buildPlane(value);
-
-                        scene.add(plane_mesh);
-                    }
-                    );
-                    */
-                }
+      //  scene.add(plane_mesh);
+    }
+    );
+}
  // loadGetReady();
  // loadSound();
- resetGame();
-  loadGetReady();
-  loadSound();
-  loadExplode()
+// resetGame();
+//  loadGetReady();
+//  loadSound();
+ // loadExplode()
   initGUI();
   init();
+  //initHUD();
 
 </script>
 

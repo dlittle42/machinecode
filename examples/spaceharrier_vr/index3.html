@@ -355,8 +355,6 @@ function init(){
     renderer = new THREE.WebGLRenderer({antialias: false});
     renderer.setPixelRatio(window.devicePixelRatio);
 
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFShadowMap;
 
     // Append the canvas element created by the renderer to document body element.
     document.body.appendChild(renderer.domElement);
@@ -370,9 +368,7 @@ function init(){
 
     // Create a three.js camera.
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-    //var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 100);
 
-   // camera.y = 5;
 
     let helper = new THREE.CameraHelper(camera);
     scene.add(helper);
@@ -381,14 +377,6 @@ function init(){
     controls.userHeight = vantagePoint;
     controls.standing = true;
     //controls.standing = true;
-
-/*
-       // This helps move the camera
-    dolly = new THREE.Group();
-    dolly.position.set( 0, 0, 0 );
-    scene.add( dolly );
-    dolly.add( camera );
-*/
 
     // Apply VR stereo rendering to renderer.
     effect = new THREE.VREffect(renderer);
@@ -407,54 +395,17 @@ function init(){
     //setPlayerTexture calls setupStage which triggers animate
     loader.load('img/player_small_128.png', setPlayerTexture);
 
-    var loader2 = new THREE.TextureLoader();
-    loader2.load('img/blaster.png', function(texture){
-        blasterMaterial = new THREE.SpriteMaterial( { map: texture, color: 0xffffff } );
-       // createBlaster();
-
-       // needs a delay??
-       if (forceVR && manager.isVRCompatible){
-          manager.enterVRMode_();
-          console.log(manager)
-       }
-
-    });
-
-    var loader3 = new THREE.TextureLoader();
-    loader3.load('img/enemy.png', function(texture){
-        enemyMaterial = new THREE.SpriteMaterial( { map: texture, color: 0xffffff } );
-       // createEnemy();
-        spawnEnemies();
-
-    });
 
 
-    var loaderShadow = new THREE.TextureLoader();
-    loaderShadow.load('img/shadow.png', function(texture){
-      //  shadowMaterial = new THREE.SpriteMaterial( { map: texture, color: 0xffffff } );
-         shadowMaterial = new THREE.MeshBasicMaterial( { map: texture, color: '0xff0000', side: THREE.DoubleSide, transparent: true} );
-        createShadow();
-        
 
-    });
 
-    //createLights();
-    shadowLights();
+    createLights();
+
    // setupGround();
 
     setupGridHelper();
-    addWorldBox();
-   // addGround();
 
-    
 
-    window.addEventListener('resize', onResize, true);
-    window.addEventListener('vrdisplaypresentchange', onResize, true);
-    document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-    document.addEventListener( 'click', createBlaster, true );
-    document.addEventListener( 'touchstart', createBlaster, true );
-
-    
 
 
 }
@@ -613,7 +564,7 @@ function setPlayerTexture(playerTexture){
 
   //scene.add( player );
 
-  setupStage();
+ // setupStage();
 
 }
 
@@ -635,10 +586,9 @@ function animate(timestamp) {
     blaster.raycaster.set(blaster.from, blaster.to);
     var blasterCollision = blasterArr[i].raycaster.intersectObjects( collidableMeshList );
 
-    
+   // console.log(blasterCollision)
     //if ( collisionResults.length > 0 && collisionResults[0].distance < directionVector.length() ) 
     if ( blasterCollision.length > 0) {
-      console.log(blasterCollision)
         tally.innerHTML = "bullet hit"
         console.log('-//------')
         console.log(" BLASTED " + blasterCollision[0].object.name);
@@ -1010,8 +960,6 @@ var material = new THREE.MeshNormalMaterial();
  blaster.lookAt(camDir)
 
  blaster.raycaster = new THREE.Raycaster(new THREE.Vector3(playerVector.x, playerVector.y, playerVector.z),  blaster.blasterDir);
-
- console.log(blaster.raycaster)
 
   blaster.from = blaster.position;//new THREE.Vector3( 2, 2, 2 );
   blaster.to = blaster.blasterDir;//new THREE.Vector3( 0, controls.userHeight, -40);
@@ -1549,13 +1497,14 @@ function initGUI() {
                 }
  // loadGetReady();
  // loadSound();
- resetGame();
-  loadGetReady();
-  loadSound();
-  loadExplode()
-  initGUI();
+// resetGame();
+//  loadGetReady();
+//  loadSound();
+//  loadExplode()
+//  initGUI();
   init();
 
 </script>
 
 </html>
+
