@@ -67,6 +67,21 @@
    <script type="text/javascript" src="../../bower_components/three.js/examples/js/shaders/CopyShader.js"></script>
    <script type="text/javascript" src="../../bower_components/three.js/examples/js/shaders/TriangleBlurShader.js"></script>
 
+
+   <script src="../../bower_components/three.js/examples/js/pmrem/PMREMGenerator.js"></script>
+    <script src="../../bower_components/three.js/examples/js/pmrem/PMREMCubeUVPacker.js"></script>
+  
+
+    <script src="../../bower_components/three.js/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="../../bower_components/three.js/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="../../bower_components/three.js/examples/js/postprocessing/MaskPass.js"></script>
+    <script src="../../bower_components/three.js/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="../../bower_components/three.js/examples/js/shaders/CopyShader.js"></script>
+    <script src="../../bower_components/three.js/examples/js/shaders/FXAAShader.js"></script>
+    <script src="../../bower_components/three.js/examples/js/shaders/ConvolutionShader.js"></script>
+    <script src="../../bower_components/three.js/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="../../bower_components/three.js/examples/js/postprocessing/UnrealBloomPass.js"></script>
+
     <script>
 
         // setup the scene, camera, engine
@@ -80,6 +95,7 @@
         var group = new THREE.Object3D();
         var bitBot = new THREE.Object3D();
         var mouse = {x: 0, y: 0};
+        var pos = new THREE.Vector3();
 
         var blur_prop= {deltaX:0, deltaY:0};
         var max_blur=0.02;
@@ -87,7 +103,9 @@
         var motion_delay=0.2;
         var ease_type=Expo.easeInOut;
         var postprocessing = { enabled : false, renderMode: 0 }; // renderMode: 0('framebuffer'), 1('onlyAO')
-
+        var no_geom;
+        var mouse ={x:0, y:0};
+        var mouseX;
 
         function loadYes(){
           yesSound = new Howl({
@@ -112,6 +130,15 @@
                             
 
                           })
+          TweenMax.to(yesBot.rotation, .3, {
+                           x: (Math.PI/180)*((Math.random()*40)-20),
+                            y: (Math.PI/180)*(Math.random()*180),
+                            //z: (Math.PI/180)*(Math.random()*180),
+                            ease:"Power3.easeOut"
+                            
+
+                          })
+
           TweenMax.to(bitBot.scale, .3, {
                             x: .3,
                             y: .3,
@@ -150,6 +177,15 @@
                             
 
                           })
+          TweenMax.to(noBot.rotation, .3, {
+                            x: (Math.PI/180)*(Math.random()*180),
+                            y: (Math.PI/180)*(Math.random()*180),
+                            z: (Math.PI/180)*(Math.random()*180),
+                            ease:"Power3.easeOut"
+                            
+
+                          })
+
           TweenMax.to(bitBot.scale, .3, {
                             x: .3,
                             y: .3,
@@ -286,7 +322,7 @@
         //  group.rotation.x=0.62;
         //  group.rotation.y=-0.78;
           var yes_geom = new THREE.OctahedronGeometry(1, 0);
-          var no_geom = new THREE.SphereGeometry(1, 30, 30);
+          no_geom = new THREE.SphereGeometry(1, 16, 16);
 
           yesBot =  new THREE.Mesh(yes_geom, new THREE.MeshPhongMaterial({
             color: 0xf4e842,
@@ -301,6 +337,33 @@
           }));
         //  noBot.position.x = -3;
           group.add(noBot)
+
+
+          var numVerts = no_geom.vertices.length;
+   
+          console.log(numVerts);
+     
+          for(var i = 0; i < numVerts; i++)
+          {
+             // var v2 = no_geom.vertices[i].clone();
+              //v2 = v2.multiplyScalar( 2 );
+
+              var radius = 3;//(Math.random()*2)
+              if (i % 10 == 0){
+              //  no_geom.vertices[i].multiplyScalar( (radius) * Math.sin(angle));
+                no_geom.vertices[i].multiplyScalar(1.6);
+               // v2 = v2.multiplyScalar( 4 );
+              }else if (i % 5== 0){
+                no_geom.vertices[i].multiplyScalar(1.4);
+                //v2 = v2.multiplyScalar( 3 );
+              }else{
+                no_geom.vertices[i].multiplyScalar(.5);
+                //v2 = v2.multiplyScalar( 1.5 );
+              }
+             // tweenDepth(no_geom.vertices[i], v2);
+
+          }
+
 
           // adding cubes to scene
           scene.add( group ); 
@@ -324,6 +387,8 @@
           composer.addPass(effectCopy);
           */
 
+          document.addEventListener( 'mousemove', recordMousePosition, false );
+          document.addEventListener( 'touchmove', recordMousePosition, false );
            window.addEventListener('resize', onWindowResize, false);
 
            window.addEventListener('keyup', function(e) {
@@ -336,8 +401,50 @@
             });
         }
 
-        
 
+        function recordMousePosition(e) {
+
+              e.preventDefault();
+             // castRay(e);
+
+              if (e.touches){
+                mouse.x = (e.touches[0].clientX) / window.innerWidth  *  2 - 1;
+                mouse.y = (e.touches[0].clientY) / window.innerHeight * -2 + 1; 
+              }else{
+                mouse.x = (e.clientX) / window.innerWidth  *  2 - 1;
+                mouse.y = (e.clientY) / window.innerHeight * -2 + 1;     
+              } 
+
+              mouseX = e.clientX;
+
+
+             // Make the sphere follow the mouse
+              var vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
+              vector.unproject( camera );
+              var dir = vector.sub( camera.position ).normalize();
+              var distance = - camera.position.z / dir.z;
+              pos = camera.position.clone().add( dir.multiplyScalar( distance ) );
+        }
+
+        
+        function tweenDepth(vertex, vect) {
+
+
+               TweenMax.to(vertex, Math.random()*3,{
+                   // z:depth,
+                    x:vect.x,
+                    y:vect.y,
+                    z:vect.z,
+                    delay: Math.random(),
+                    ease:"Power3.easeOut",
+                    onUpdate:function(){
+                        no_geom.verticesNeedUpdate = true;
+                        
+                  //  console.log('tweened');
+                }});
+
+
+      }
 
       //  document.addEventListener('mousemove', onMouseMove, false);
 
@@ -496,6 +603,17 @@
         function animate() {
           //var timestamp = new Date() * 0.0005;
           deltaTime = clock.getDelta();
+         // console.log(mouseX)
+         // group.position.x = (mouseX - group.position.x)*.06;
+       //  group.position.x += (mouse.x - group.position.x)*.06;
+
+         dX = pos.x - group.position.x;
+        dY = pos.y - group.position.y;
+        dZ = pos.z - group.position.z;
+       
+          group.position.x += (dX / 5);
+          group.position.y += (dY / 5);
+          group.position.z += (dZ / 5);
 
           requestAnimationFrame(animate);
 

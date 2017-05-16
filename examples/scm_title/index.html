@@ -1,0 +1,463 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>three.js webgl - orbit controls</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+       html{
+            width: 100%;
+        height: 100%;
+        
+        background: #232526;  /* fallback for old browsers */
+        background: -webkit-linear-gradient(to right, #414345, #232526);  /* Chrome 10-25, Safari 5.1-6 */
+        background: linear-gradient(to right, #414345, #232526); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+
+          }
+
+      body {
+        color: #000;
+        font-family:Monospace;
+        font-size:13px;
+        text-align:center;
+        font-weight: bold;
+
+        /*background-color: #fff;*/
+        margin: 0px;
+        overflow: hidden;
+      }
+
+      #info {
+        color:#000;
+        position: absolute;
+        top: 0px; width: 100%;
+        padding: 5px;
+
+      }
+
+      a {
+        color: red;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="container"></div>
+
+
+    <script src="../../bower_components/jquery/dist/jquery.min.js"></script>
+
+    <script src="../../bower_components/three.js/build/three.js"></script> 
+      <script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+      <script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+      <script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+      <script src="../../bower_components/dat.gui/dat.gui.js"></script>
+      <script src="../../bower_components/howler.js/dist/howler.min.js"></script>
+      <script src="../../bower_components/ThreeCSG/ThreeCSG.js"></script>
+
+
+   
+    <script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
+   <script src="http://cdnjs.cloudflare.com/ajax/libs/gsap/latest/easing/EasePack.min.js"></script>
+   
+   <script type="text/javascript" src="../../bower_components/three.js/examples/js/postprocessing/EffectComposer.js"></script>
+   <script type="text/javascript" src="../../bower_components/three.js/examples/js/postprocessing/ShaderPass.js"></script>
+   <script type="text/javascript" src="../../bower_components/three.js/examples/js/postprocessing/RenderPass.js"></script>
+   <script type="text/javascript" src="../../bower_components/three.js/examples/js/postprocessing/MaskPass.js"></script>
+   <script type="text/javascript" src="../../bower_components/three.js/examples/js/shaders/CopyShader.js"></script>
+   <script type="text/javascript" src="../../bower_components/three.js/examples/js/shaders/TriangleBlurShader.js"></script>
+
+    <script>
+
+        // setup the scene, camera, engine
+        var scene = new THREE.Scene(); 
+        var render_blur=false;
+        var _w=500;
+        var _h=500;
+
+        var renderer, camera;
+        var scm1, wire, material, clock;
+        var group = new THREE.Object3D();
+        var bitBot = new THREE.Object3D();
+        var mouse = {x: 0, y: 0};
+
+        var blur_prop= {deltaX:0, deltaY:0};
+        var max_blur=0.02;
+        var motion_speed=1;
+        var motion_delay=0.2;
+        var ease_type=Expo.easeInOut;
+        var postprocessing = { enabled : false, renderMode: 0 }; // renderMode: 0('framebuffer'), 1('onlyAO')
+        var no_geom;
+        var mouse ={x:0, y:0};
+        var mouseX;
+
+      
+        function init() {
+          clock = new THREE.Clock(true);
+          camera = new THREE.PerspectiveCamera( 45,  window.innerWidth / window.innerHeight, 0.1, 1000 );
+          camera.position.z = 10; 
+          // do not forget to add antialiasing, cubes looks very bad without it
+          renderer = new THREE.WebGLRenderer({ antialias: true } ); 
+          renderer.setClearColor(new THREE.Color(0x262626, 1.0));
+          renderer.setSize(window.innerWidth, window.innerHeight);
+          document.body.appendChild( renderer.domElement );
+
+          controls = new THREE.OrbitControls(camera, renderer.domElement);
+          //  controls = new THREE.OrbitControls( camera, renderer.domElement );
+          /*  controls.enableDamping = true;
+            controls.dampingFactor = 0.25;
+            controls.minDistance = 60;
+            controls.maxDistance = 800;
+            */
+
+          // creating holder for cubes
+
+          group.add(bitBot)
+          
+          var geometry = new THREE.SphereGeometry(2,16,16, Math.PI/2, Math.PI*2, 0, Math.PI);
+          var geometry = new THREE.SphereGeometry( 2,10,10, 0, 200 * (Math.PI / 180), 0, Math.PI);
+          //var geometry = new THREE.DodecahedronGeometry(2, 0);
+          //var geometry = new THREE.SphereGeometry(2,0);
+            material = new THREE.MeshPhongMaterial({
+              color: 0x000000,
+              shading: THREE.FlatShading,
+              transparent: true, 
+              opacity: 1.0
+            });
+            material.side = THREE.DoubleSide;
+
+
+            wire = new THREE.MeshPhongMaterial({
+              color: 0xffffff,
+              wireframe: true
+            });
+
+          scm1 =  new THREE.Mesh(geometry, material);
+
+
+          subtractObjects();
+
+          intersectObjects();
+
+    
+          // setup material
+          /*
+          var colors=[0x20a0aa,0xfead13,0xed4039];
+          var material = new THREE.MeshBasicMaterial( { color: 0x000000, vertexColors: THREE.FaceColors } );
+          for ( var i = 0; i < geometry.faces.length; i ++ ) {
+            geometry.faces[ i ].color.setHex( colors[Math.floor(i/4) ]);
+          }
+          */
+          /*
+          var cubes=[];
+          var cubes2=[];
+          // positions of cubes 
+          var cubes_pos=[
+          [-1,1,-1],[-1,1,1],[1,1,1],
+          [1,1,-1],[1,-1,-1],[1,-1,1],
+          [-1,-1,1],[-1,-1,-1]];
+
+          var cubes2_pos=[
+          [-2,0,0],
+          [2,0,0],
+          [0,0,-2],
+          [0,0,2],
+          [0,2,0],
+          [0,-2,0]];
+
+          var material2 = new THREE.MeshPhongMaterial({
+              color: 0x58ABFF,
+              shading: THREE.FlatShading
+            });
+          */
+        
+
+          /*
+
+          // generating cubes 
+          for ( var k = 0; k < cubes_pos.length; k ++ ) {
+            var cube = new THREE.Mesh( geometry, material2 );
+            cube.position.x=cubes_pos[k][0];
+            cube.position.y=cubes_pos[k][1];
+            cube.position.z=cubes_pos[k][2];
+
+            cube.rotation.x = (Math.PI/180)*45;
+            cube.rotation.y = (Math.PI/180)*45;
+           // cube.rotation.z = (Math.PI/180)*45;
+
+            cubes.push(cube);
+          //  group.add(cube);
+          }
+
+          for ( var k = 0; k < cubes2_pos.length; k ++ ) {
+            var cube = new THREE.Mesh( geometry, material2 );
+            cube.position.x=cubes2_pos[k][0];
+            cube.position.y=cubes2_pos[k][1];
+            cube.position.z=cubes2_pos[k][2];
+
+            cube.rotation.x = (Math.PI/180)*45;
+          //  cube.rotation.y = (Math.PI/180)*45;
+            cube.rotation.z = (Math.PI/180)*45;
+
+            cubes2.push(cube);
+          //  group.add(cube);
+          }
+        */
+
+
+       //   group.add(scm1)
+          // adding cubes to scene
+       //   scene.add( group ); 
+          addLights();
+
+
+          var axisHelper = new THREE.AxisHelper( 1.25 );
+          scene.add( axisHelper );
+
+          /*
+          // For motion blur effect we need to use shaders, thats why we need to use composer 
+          var tri = new THREE.ShaderPass(THREE.TriangleBlurShader, 'texture');
+          tri.enabled = true;
+          var renderPass = new THREE.RenderPass(scene, camera);
+          var effectCopy = new THREE.ShaderPass(THREE.CopyShader);
+          effectCopy.renderToScreen = true;
+          var composer = new THREE.EffectComposer(renderer);
+
+          composer.addPass(renderPass);
+          composer.addPass(tri);
+          composer.addPass(effectCopy);
+          */
+
+          document.addEventListener( 'mousemove', recordMousePosition, false );
+          document.addEventListener( 'touchmove', recordMousePosition, false );
+           window.addEventListener('resize', onWindowResize, false);
+
+           window.addEventListener('keyup', function(e) {
+              if (e.keyCode === 89) {
+
+                
+              }else if (e.keyCode === 78) {
+              
+              }
+            });
+        }
+
+        function subtractObjects(){
+
+          var start_time = (new Date()).getTime();
+          var cube_geometry = new THREE.CubeGeometry( 4, 4, 4 );
+          var cube_mesh = new THREE.Mesh( cube_geometry );
+
+          var cube_1 = new THREE.Mesh( cube_geometry, wire );
+
+          cube_mesh.position.x = -7;
+          cube_1.position.x = -7;
+          scene.add(cube_1);
+
+          var cube_bsp = new ThreeBSP( cube_mesh );
+          var sphere_geometry = new THREE.SphereGeometry( 1.8, 32, 32 );
+          var sphere_mesh = new THREE.Mesh( sphere_geometry );
+          var sphere_1 = new THREE.Mesh( sphere_geometry, wire );
+          sphere_mesh.position.x = -6;
+          sphere_1.position.x = -6;
+          scene.add(sphere_1);
+          var sphere_bsp = new ThreeBSP( sphere_mesh );
+          
+        //  var subtract_bsp = cube_bsp.subtract( sphere_bsp );
+          var subtract_bsp = sphere_bsp.subtract( cube_bsp );
+          var result = subtract_bsp.toMesh(material);
+        /*  var result = subtract_bsp.toMesh( new THREE.MeshLambertMaterial({
+            shading: THREE.SmoothShading,
+            map: new THREE.TextureLoader().load('texture.png')
+          }));
+          */
+
+          result.geometry.computeVertexNormals();
+          scene.add( result );
+          console.log( 'Example 1: ' + ((new Date()).getTime() - start_time) + 'ms' );
+
+        }
+
+        function intersectObjects(){
+
+          var start_time = (new Date()).getTime();
+          var sphere_geometry_1 = new THREE.SphereGeometry( 2, 64, 8 );
+          var sphere_bsp_1 = new ThreeBSP( sphere_geometry_1 );
+          var sphere_1 = new THREE.Mesh( sphere_geometry_1, wire );
+          scene.add(sphere_1);
+          
+          var sphere_geometry_2 = new THREE.SphereGeometry( 2, 8, 32 );
+          var sphere_mesh_2 = new THREE.Mesh( sphere_geometry_2 );
+          var sphere_2 = new THREE.Mesh( sphere_geometry_2, wire );
+          scene.add(sphere_2);
+          sphere_mesh_2.position.x = 2;
+          sphere_2.position.x = 2;
+          var sphere_bsp_2 = new ThreeBSP( sphere_mesh_2 );
+       
+          var intersect_bsp = sphere_bsp_1.intersect( sphere_bsp_2 );
+          
+          var result = intersect_bsp.toMesh( new THREE.MeshPhongMaterial({
+             color: 0x000000,
+             shading: THREE.FlatShading
+          }));
+
+          //result.position.y = 2;
+          result.geometry.computeVertexNormals();
+          scene.add( result );
+          
+          console.log( 'Example 3: ' + ((new Date()).getTime() - start_time) + 'ms' );
+
+        }
+
+
+        function recordMousePosition(e) {
+
+              e.preventDefault();
+             // castRay(e);
+
+              if (e.touches){
+                mouse.x = (e.touches[0].clientX) / window.innerWidth  *  2 - 1;
+                mouse.y = (e.touches[0].clientY) / window.innerHeight * -2 + 1; 
+              }else{
+                mouse.x = (e.clientX) / window.innerWidth  *  2 - 1;
+                mouse.y = (e.clientY) / window.innerHeight * -2 + 1;     
+              } 
+
+              mouseX = e.clientX;
+            }
+
+        
+        function tweenDepth(vertex, vect) {
+
+
+               TweenMax.to(vertex, Math.random()*3,{
+                   // z:depth,
+                    x:vect.x,
+                    y:vect.y,
+                    z:vect.z,
+                    delay: Math.random(),
+                    ease:"Power3.easeOut",
+                    onUpdate:function(){
+                        no_geom.verticesNeedUpdate = true;
+                        
+                  //  console.log('tweened');
+                }});
+
+
+      }
+
+      //  document.addEventListener('mousemove', onMouseMove, false);
+
+        // in first motion we use camera rotation by 60 degrees
+        function tween_1() {
+         var new_rotation=camera.rotation.z-(Math.PI/180)*60;
+         TweenMax.to(camera.rotation, motion_speed, {
+         // onStart:blur_on,
+          ease:ease_type, 
+          delay:motion_delay,
+          x:0, 
+          y:0,
+          z:new_rotation, 
+          onComplete:tween_2});
+        }
+
+
+        function onWindowResize() {
+              camera.aspect = window.innerWidth / window.innerHeight;
+              camera.updateProjectionMatrix();
+              renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+
+
+
+        // Follows the mouse event
+        function onMouseMove(event) {
+
+          // Update the mouse variable
+          event.preventDefault();
+          mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+          mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+         // Make the sphere follow the mouse
+          var vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
+          vector.unproject( camera );
+          var dir = vector.sub( camera.position ).normalize();
+          var distance = - camera.position.z / dir.z;
+          var pos = camera.position.clone().add( dir.multiplyScalar( distance ) );
+          group.position.copy(pos);
+
+       //   group.position.x +=  mouse.x * 0.1;
+       //   group.position.y +=  mouse.y * 0.1;
+          
+          // Make the sphere follow the mouse
+        //  mouseMesh.position.set(event.clientX, event.clientY, 0);
+        };
+
+
+        // To get motion blur effect, we start blurring only when animation begin by passing parameter onStart:blur_on to tween engine
+
+        function addLights(){
+           var ambientLight = new THREE.AmbientLight(0x999999 );
+            scene.add(ambientLight);
+            
+            var lights = [];
+            lights[0] = new THREE.DirectionalLight( 0xffffff, 1 );
+            lights[0].position.set( 1, 0, 0 );
+            lights[1] = new THREE.DirectionalLight( 0x11E8BB, 1 );
+            lights[1].position.set( 0.75, 1, 0.5 );
+            lights[2] = new THREE.DirectionalLight( 0x8200C9, 1 );
+            lights[2].position.set( -0.75, -1, 0.5 );
+            scene.add( lights[0] );
+            scene.add( lights[1] );
+            scene.add( lights[2] );
+        }
+
+
+
+
+        function animate() {
+          //var timestamp = new Date() * 0.0005;
+          deltaTime = clock.getDelta();
+         // console.log(mouseX)
+         // group.position.x = (mouseX - group.position.x)*.06;
+         group.position.x += (mouse.x - group.position.x)*.06;
+
+          requestAnimationFrame(animate);
+
+
+          render();
+        }
+
+        function render() {
+          
+        
+          if ( postprocessing.enabled ) {
+
+            // Render depth into depthRenderTarget
+            scene.overrideMaterial = depthMaterial;
+            renderer.render( scene, camera, depthRenderTarget, true );
+
+            // Render renderPass and SSAO shaderPass
+            scene.overrideMaterial = null;
+            effectComposer.render();
+
+          } else {
+
+            renderer.render( scene, camera );
+
+          }
+        }
+
+
+
+        init();
+
+      //  initGUI();
+        
+        animate();
+
+ </script>
+
+  </body>
+</html>
