@@ -120,6 +120,8 @@ canvas {
     showName();
   };
 
+  //document.getElementById("trigger").addEventListener('touchstart', handleEvent);
+  //on iOS, only 'click' works on an a tag
   document.getElementById("trigger").addEventListener('click', newVoice);
 
  //window.addEventListener('touchstart', newVoice);
@@ -341,37 +343,8 @@ var resizeCanvas = function() {
  // addClickListeners();
  
 })();
-/*
-function handleInactiveUser() {
-  var inactive = setTimeout(function(){
-    fauxClick(cW/2, cH/2);
-  }, 2000);
-  
-  function clearInactiveTimeout() {
-    clearTimeout(inactive);
-    document.removeEventListener("mousedown", clearInactiveTimeout);
-    document.removeEventListener("touchstart", clearInactiveTimeout);
-  }
- 
-  document.addEventListener("mousedown", clearInactiveTimeout);
-  document.addEventListener("touchstart", clearInactiveTimeout);
-}
- */
-/*
-function startFauxClicking() {
-  setTimeout(function(){
-    fauxClick(anime.random( cW * .2, cW * .8), anime.random(cH * .2, cH * .8));
-    startFauxClicking();
-  }, anime.random(200, 900));
-}
 
-function fauxClick(x, y) {
-  var fauxClick = new Event("mousedown");
-  fauxClick.pageX = x;
-  fauxClick.pageY = y;
-  document.dispatchEvent(fauxClick);
-}
-*/
+
 </script>
 </body>
 </html>
