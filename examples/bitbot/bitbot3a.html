@@ -299,7 +299,7 @@
 
           var numVerts = no_geom.vertices.length;
    
-          console.log(numVerts);
+         // console.log(numVerts);
      
           for(var i = 0; i < numVerts; i++)
           {
@@ -357,10 +357,13 @@
           renderer.gammaInput = true;
           renderer.gammaOutput = true;
 
+          document.addEventListener( 'mousedown', randomResponse, false );
+          document.addEventListener( 'touchstart', randomResponse, false );
+
 
           document.addEventListener( 'mousemove', recordMousePosition, false );
           document.addEventListener( 'touchmove', recordMousePosition, false );
-           window.addEventListener('resize', onWindowResize, false);
+          window.addEventListener('resize', onWindowResize, false);
 
            window.addEventListener('keyup', function(e) {
               if (e.keyCode === 89) {
@@ -385,6 +388,12 @@
               bloomPass.radius = Number(value);
           });
           gui.open();
+        }
+
+        function randomResponse(){
+          var num = Math.floor(Math.random()*2);
+          console.log(num);
+          (num == 0) ? playNo() : playYes();
         }
 
 
@@ -436,7 +445,7 @@
 
         // in this motion we are rotating the group of cubes by 90 degrees
         function tween_2() {
-          console.log('tween2')
+         // console.log('tween2')
           var new_rotation=bitBot.rotation.z-(Math.PI/180)*(Math.random()*90);
          // var new_rotation=bitBot.rotation.y+(Math.PI/180)*90;
           TweenMax.to(bitBot.rotation, motion_speed, {
@@ -449,7 +458,7 @@
         }
         // rotating camera by 60 degrees more
         function tween_3() {
-          console.log('tween3')
+         // console.log('tween3')
           var new_rotation=bitBot.rotation.z-(Math.PI/180)*(Math.random()*90);
           TweenMax.to(bitBot.rotation, motion_speed, {
            // onStart:blur_on,
