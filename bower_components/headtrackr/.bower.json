@@ -1,0 +1,14 @@
+{
+  "name": "headtrackr",
+  "homepage": "https://github.com/auduno/headtrackr",
+  "_release": "5f62f4c471",
+  "_resolution": {
+    "type": "branch",
+    "branch": "master",
+    "commit": "5f62f4c471d2b2ebae4f05c7b1123400c1bb520f"
+  },
+  "_source": "https://github.com/auduno/headtrackr.git",
+  "_target": "*",
+  "_originalSource": "headtrackr",
+  "_direct": true
+}

@@ -41,6 +41,7 @@
 	    <script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
 	    <script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
 	    <script src="../../bower_components/dat.gui/dat.gui.js"></script>
+	    <script src="../../bower_components/howler.js/dist/howler.min.js"></script>
 
 
 		<script src="../../bower_components/three.js/examples/js/loaders/RGBELoader.js"></script>
@@ -61,6 +62,8 @@
 		<script src="../../bower_components/three.js/examples/js/shaders/LuminosityHighPassShader.js"></script>
 		<script src="../../bower_components/three.js/examples/js/postprocessing/UnrealBloomPass.js"></script>
 
+		 <script src="js/bitbot.js"></script>
+
 
 		<script>
 
@@ -78,6 +81,8 @@
 				bloomRadius: 0.4
 			};
 			var camera, scene, renderer, controls, objects = [];
+			var clock;
+        	var botgroup;
 			var effectFXAA, bloomPass, renderScene;
 			var hdrCubeMap;
 			var composer;
@@ -97,16 +102,115 @@
 			var dZ=0;
 			var pos = new THREE.Vector3();
 
-			init();
-			animate();
+
+			function loadYes(){
+	          yesSound = new Howl({
+	            src: ['audio/bityes.mp3'],
+	            volume: 1.0
+	          });
+	          //sound.play();
+
+	        }
+
+	        function playYes(){
+	          yesSound.play();
+	          TweenMax.to(botgroup.yesBot.scale, .3, {
+	                            x: 3,
+	                            y: 3,
+	                            z: 3,
+	                            ease:"Power3.easeOut",
+	                            repeat: 1,
+	                            //repeatDelay: .3,
+	                            //delay: 1,
+	                            yoyo: true
+	                            
+
+	                          })
+	          TweenMax.to(botgroup.yesBot.rotation, .3, {
+	                           x: (Math.PI/180)*((Math.random()*40)-20),
+	                            y: (Math.PI/180)*(Math.random()*180),
+	                            //z: (Math.PI/180)*(Math.random()*180),
+	                            ease:"Power3.easeOut"
+	                            
+
+	                          })
+
+	          TweenMax.to(botgroup.bitBot.scale, .3, {
+	                            x: .3,
+	                            y: .3,
+	                            z: .3,
+	                            ease:"Power3.easeOut",
+	                            repeat: 1,
+	                            //repeatDelay: .3,
+	                            //delay: 1,
+	                            yoyo: true
+	                            
+
+	                          })
+
+	        }
+
+	        function loadNo(){
+	          noSound = new Howl({
+	            src: ['audio/bitno.mp3'],
+	            volume: 1.0
+	          });
+	          //sound.play();
+
+	        }
+
+	        function playNo(){
+	          noSound.play();
+	          console.log(botgroup.noBot);
+	          TweenMax.to(botgroup.noBot.scale, .3, {
+	                            x: 3,
+	                            y: 3,
+	                            z: 3,
+	                            ease:"Power3.easeOut",
+	                            repeat: 1,
+	                            //repeatDelay: .3,
+	                            //delay: 1,
+	                            yoyo: true
+	                            
+
+	                          })
+	          TweenMax.to(botgroup.noBot.rotation, .3, {
+	                            x: (Math.PI/180)*(Math.random()*180),
+	                            y: (Math.PI/180)*(Math.random()*180),
+	                            z: (Math.PI/180)*(Math.random()*180),
+	                            ease:"Power3.easeOut"
+	                            
+
+	                          })
+
+	          TweenMax.to(botgroup.bitBot.scale, .3, {
+	                            x: .3,
+	                            y: .3,
+	                            z: .3,
+	                            ease:"Power3.easeOut",
+	                            repeat: 1,
+	                            //repeatDelay: .3,
+	                            //delay: 1,
+	                            yoyo: true
+	                            
+
+	                          })
+	        }
+
+			
+
+
 
 			function init() {
+
+				clock = new THREE.Clock(true);
 
 				container = document.createElement( 'div' );
 				document.body.appendChild( container );
 
 				camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 2000 );
-				camera.position.set( 0.0, 35, 122 );
+				//camera.position.set( 0.0, 35, 122 );
+				camera.position.z = 10; 
 				//console.log(camera.position.z)
 
 				scene = new THREE.Scene();
@@ -138,6 +242,7 @@
 				var sky = new THREE.Mesh( skyGeo, skyMaterial );
 				scene.add( sky );
 */
+/*
 				//var geometry = new THREE.TorusKnotGeometry( 18, 8, 150, 20 );
 				var geometry = new THREE.SphereGeometry(10, 18, 6);
 				ball = new THREE.Mesh( geometry, standardMaterial );
@@ -147,6 +252,19 @@
 				ball.position.z = -5;
 				scene.add( ball );
 				objects.push( ball );
+*/
+				var material3 = new THREE.MeshStandardMaterial( {
+		          map: null,
+		          color: 0x33ffcc,
+		          metalness: 1.0,
+		          shading: THREE.FlatShading
+		        } );
+
+
+		          botgroup = new Bitbot();
+		          scene.add( botgroup ); 
+		          botgroup.position.z= -5;
+		          addLights();
 
 				// Lights
 
@@ -215,14 +333,23 @@
 				controls.target.set( 0, 0, 0 );
 				controls.update();
 */
-				//window.addEventListener( 'mousemove', recordMousePosition, false );
+				window.addEventListener( 'mousemove', recordMousePosition, false );
                 window.addEventListener( 'touchmove', recordMousePosition, false );
-                window.addEventListener( 'mousemove', onMouseMove, false );
+               // window.addEventListener( 'mousemove', onMouseMove, false );
                // window.addEventListener( 'mousedown', onPress, false );
                    // window.addEventListener( 'touchstart', onPress, false );
                     window.addEventListener( 'mouseup', onRelease, false );
                     window.addEventListener( 'touchend', onRelease, false );
 				window.addEventListener( 'resize', onWindowResize, false );
+
+				window.addEventListener('keyup', function(e) {
+	              if (e.keyCode === 89) {
+
+	                playYes();
+	              }else if (e.keyCode === 78) {
+	                playNo();
+	              }
+	            });
 
 				var gui = new dat.GUI();
 
@@ -261,6 +388,8 @@
 				var dir = vector.sub( camera.position ).normalize();
 				var distance = - camera.position.z / dir.z;
 				pos = camera.position.clone().add( dir.multiplyScalar( distance ) );
+
+				botgroup.position.copy(pos);
 				//ball.position.copy(pos);
 
 				//ball.position.copy(pos);
@@ -271,29 +400,47 @@
 			};
 
 			function recordMousePosition(e) {
-					e.preventDefault();
-					
-					//hover = true;
-					//castRay(e);
-					//if (pressing){
+
+              e.preventDefault();
+             // castRay(e);
+
+              if (e.touches){
+                mouse.x = (e.touches[0].clientX) / window.innerWidth  *  2 - 1;
+                mouse.y = (e.touches[0].clientY) / window.innerHeight * -2 + 1; 
+              }else{
+                mouse.x = (e.clientX) / window.innerWidth  *  2 - 1;
+                mouse.y = (e.clientY) / window.innerHeight * -2 + 1;     
+              } 
+
+              mouseX = e.clientX;
 
 
-						mouseX = e.clientX - windowHalfX;
-						mouseY = e.clientY - windowHalfY;
+             // Make the sphere follow the mouse
+              var vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
+              vector.unproject( camera );
+              var dir = vector.sub( camera.position ).normalize();
+              var distance = - camera.position.z / dir.z;
+              pos = camera.position.clone().add( dir.multiplyScalar( distance ) );
+        }
 
-					//	console.log("("+mouseX+","+ mouseY+")")
-					//	console.warn(ball.position.x)
-				//	}
-					/*
-					if (e.touches){
-					// uniforms.mouse.value.x = (e.touches[0].clientX) / window.innerWidth  *  2 - 1;
-					// uniforms.mouse.value.y = (e.touches[0].clientY) / window.innerHeight * -2 + 1; 
-					}else{
-					// uniforms.mouse.value.x = (e.clientX) / window.innerWidth  *  2 - 1;
-					// uniforms.mouse.value.y = (e.clientY) / window.innerHeight * -2 + 1;     
-					} 
-					*/
-	            }
+	         function tweenDepth(vertex, vect) {
+
+
+               TweenMax.to(vertex, Math.random()*3,{
+                   // z:depth,
+                    x:vect.x,
+                    y:vect.y,
+                    z:vect.z,
+                    delay: Math.random(),
+                    ease:"Power3.easeOut",
+                    onUpdate:function(){
+                        no_geom.verticesNeedUpdate = true;
+                        
+                  //  console.log('tweened');
+                }});
+
+
+      }
 
 			function onWindowResize() {
 
@@ -308,22 +455,43 @@
 				effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight );
 			}
 
+			function addLights(){
+	          scene.add( new THREE.AmbientLight( 0x222222 ) );
+
+	           var ambientLight = new THREE.AmbientLight(0x999999 );
+	            scene.add(ambientLight);
+	            
+	            var lights = [];
+	            lights[0] = new THREE.DirectionalLight( 0xffffff, 1 );
+	            lights[0].position.set( 1, 0, 0 );
+	            lights[1] = new THREE.DirectionalLight( 0x11E8BB, 1 );
+	            lights[1].position.set( 0.75, 1, 0.5 );
+	            lights[2] = new THREE.DirectionalLight( 0x8200C9, 1 );
+	            lights[2].position.set( -0.75, -1, 0.5 );
+	            scene.add( lights[0] );
+	            scene.add( lights[1] );
+	            scene.add( lights[2] );
+
+
+	        }
+
 			//
 
 			function animate() {
+				deltaTime = clock.getDelta();
 				//ball.position.x -= ( ball.position.x - mouseX) * .025;
 				//var last = 
 				//var dX = mouseX - ball.position.x;
 				//dX = dX.toFixed(2);
 			  	//var dY = mouseY - ball.position.y;
 			  	//console.error(dX)
-			  	dX = pos.x - ball.position.x;
-				dY = pos.y - ball.position.y;
-				dZ = pos.z - ball.position.z;
-			 
-			    ball.position.x += (dX / 5);
-			    ball.position.y += (dY / 5);
-			    ball.position.z += (dZ / 5);
+			  	dX = pos.x - botgroup.position.x;
+	        	dY = pos.y - botgroup.position.y;
+	        	dZ = pos.z - botgroup.position.z;
+	       
+	          botgroup.position.x += (dX / 5);
+	          botgroup.position.y += (dY / 5);
+	          botgroup.position.z += (dZ / 5);
 			  //console.warn(ball.position.x)
 			//  ball.position.y += (dY / 10);
 				requestAnimationFrame( animate );
@@ -374,6 +542,10 @@
 				composer.render();
 			}
 
+			init();
+	        loadNo();
+	        loadYes();
+	        animate();
 
 			
 

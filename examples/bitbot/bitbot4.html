@@ -82,6 +82,8 @@
     <script src="../../bower_components/three.js/examples/js/shaders/LuminosityHighPassShader.js"></script>
     <script src="../../bower_components/three.js/examples/js/postprocessing/UnrealBloomPass.js"></script>
 
+     <script src="js/bitbot.js"></script>
+
     <script>
 
         // setup the scene, camera, engine
@@ -91,9 +93,10 @@
         var _h=500;
 
         var renderer, camera;
-        var bitBot1, bitBot2, bitbot3, yesBot, noBot, clock;
-        var group = new THREE.Object3D();
-        var bitBot = new THREE.Object3D();
+        var clock;
+        var botgroup;
+       // var group = new THREE.Object3D();
+       // var bitBot = new THREE.Object3D();
         var mouse = {x: 0, y: 0};
         var pos = new THREE.Vector3();
 
@@ -107,6 +110,17 @@
         var mouse ={x:0, y:0};
         var mouseX;
 
+        var depthMaterial, effectComposer, depthRenderTarget;
+
+        var params = {
+          projection: 'normal',
+          background: false,
+          exposure: 1.0,
+          bloomStrength: 1.5,
+          bloomThreshold: 0.35,
+          bloomRadius: 0.4
+        };
+
         function loadYes(){
           yesSound = new Howl({
             src: ['audio/bityes.mp3'],
@@ -118,7 +132,7 @@
 
         function playYes(){
           yesSound.play();
-          TweenMax.to(yesBot.scale, .3, {
+          TweenMax.to(botgroup.yesBot.scale, .3, {
                             x: 3,
                             y: 3,
                             z: 3,
@@ -130,7 +144,7 @@
                             
 
                           })
-          TweenMax.to(yesBot.rotation, .3, {
+          TweenMax.to(botgroup.yesBot.rotation, .3, {
                            x: (Math.PI/180)*((Math.random()*40)-20),
                             y: (Math.PI/180)*(Math.random()*180),
                             //z: (Math.PI/180)*(Math.random()*180),
@@ -139,7 +153,7 @@
 
                           })
 
-          TweenMax.to(bitBot.scale, .3, {
+          TweenMax.to(botgroup.bitBot.scale, .3, {
                             x: .3,
                             y: .3,
                             z: .3,
@@ -165,7 +179,7 @@
 
         function playNo(){
           noSound.play();
-          TweenMax.to(noBot.scale, .3, {
+          TweenMax.to(botgroup.noBot.scale, .3, {
                             x: 3,
                             y: 3,
                             z: 3,
@@ -177,7 +191,7 @@
                             
 
                           })
-          TweenMax.to(noBot.rotation, .3, {
+          TweenMax.to(botgroup.noBot.rotation, .3, {
                             x: (Math.PI/180)*(Math.random()*180),
                             y: (Math.PI/180)*(Math.random()*180),
                             z: (Math.PI/180)*(Math.random()*180),
@@ -186,7 +200,7 @@
 
                           })
 
-          TweenMax.to(bitBot.scale, .3, {
+          TweenMax.to(botgroup.bitBot.scale, .3, {
                             x: .3,
                             y: .3,
                             z: .3,
@@ -210,6 +224,8 @@
           renderer.setSize(window.innerWidth, window.innerHeight);
           document.body.appendChild( renderer.domElement );
 
+          renderer.toneMapping = THREE.LinearToneMapping;
+
           controls = new THREE.OrbitControls(camera, renderer.domElement);
           //  controls = new THREE.OrbitControls( camera, renderer.domElement );
           /*  controls.enableDamping = true;
@@ -220,160 +236,29 @@
 
           // creating holder for cubes
 
-          group.add(bitBot)
-          
-          var geometry = new THREE.BoxGeometry( 1, 1, 1 ); 
-          // setup material
-          var colors=[0x20a0aa,0xfead13,0xed4039];
-          var material = new THREE.MeshBasicMaterial( { color: 0xffffff, vertexColors: THREE.FaceColors } );
-          for ( var i = 0; i < geometry.faces.length; i ++ ) {
-            geometry.faces[ i ].color.setHex( colors[Math.floor(i/4) ]);
-          }
-          /*
-          var cubes=[];
-          var cubes2=[];
-          // positions of cubes 
-          var cubes_pos=[
-          [-1,1,-1],[-1,1,1],[1,1,1],
-          [1,1,-1],[1,-1,-1],[1,-1,1],
-          [-1,-1,1],[-1,-1,-1]];
-
-          var cubes2_pos=[
-          [-2,0,0],
-          [2,0,0],
-          [0,0,-2],
-          [0,0,2],
-          [0,2,0],
-          [0,-2,0]];
-
-          var material2 = new THREE.MeshPhongMaterial({
-              color: 0x58ABFF,
-              shading: THREE.FlatShading
-            });
-          */
-          var material3 = new THREE.MeshPhongMaterial({
-              color: 0x58ABFF,
-              shading: THREE.FlatShading,
-              transparent: true, 
-              opacity: 1.0
-            });
+        //  group.add(bitBot)
 
 
-          /*
-
-          // generating cubes 
-          for ( var k = 0; k < cubes_pos.length; k ++ ) {
-            var cube = new THREE.Mesh( geometry, material2 );
-            cube.position.x=cubes_pos[k][0];
-            cube.position.y=cubes_pos[k][1];
-            cube.position.z=cubes_pos[k][2];
-
-            cube.rotation.x = (Math.PI/180)*45;
-            cube.rotation.y = (Math.PI/180)*45;
-           // cube.rotation.z = (Math.PI/180)*45;
-
-            cubes.push(cube);
-          //  group.add(cube);
-          }
-
-          for ( var k = 0; k < cubes2_pos.length; k ++ ) {
-            var cube = new THREE.Mesh( geometry, material2 );
-            cube.position.x=cubes2_pos[k][0];
-            cube.position.y=cubes2_pos[k][1];
-            cube.position.z=cubes2_pos[k][2];
-
-            cube.rotation.x = (Math.PI/180)*45;
-          //  cube.rotation.y = (Math.PI/180)*45;
-            cube.rotation.z = (Math.PI/180)*45;
-
-            cubes2.push(cube);
-          //  group.add(cube);
-          }
-        */
-
-        // var geom3 = new THREE.SphereGeometry(2, 6, 6);
-         var geom3 = new THREE.DodecahedronGeometry(2, 0)
-         // var geom3 = new THREE.SphereGeometry(2, 6, 6);
-          bitBot1 =  new THREE.Mesh(geom3, material3);
-          bitBot.add(bitBot1)
-
-        //   bitBot1.position.x = -4;
 
 
-          var angle = 90;
-         // var geom3 = new THREE.SphereGeometry(2, 6, 6);
-          bitBot2 =  new THREE.Mesh(geom3, material3);
-          bitBot.add(bitBot2)
-          bitBot2.rotation.x = (Math.PI/180)*angle;
-          bitBot2.rotation.y = (Math.PI/180)*angle;
-          bitBot2.rotation.z = (Math.PI/180)*angle;
+        var material3 = new THREE.MeshStandardMaterial( {
+          map: null,
+          color: 0x33ffcc,
+          metalness: 1.0,
+          shading: THREE.FlatShading
+        } );
 
 
-          var angle = 27;
-         // var geom3 = new THREE.SphereGeometry(2, 6, 6);
-          bitBot3 =  new THREE.Mesh(geom3, material3);
-          bitBot.add(bitBot3)
-        //  bitBot3.rotation.x = (Math.PI/180)*angle;
-          bitBot3.rotation.y = (Math.PI/180)*90;
-          bitBot3.rotation.z = (Math.PI/180)*90;
-
-       //   bitBot3.position.x = 4;
-          // setting start rotation for cubes
-        //  group.rotation.x=0.62;
-        //  group.rotation.y=-0.78;
-          var yes_geom = new THREE.OctahedronGeometry(1, 0);
-          no_geom = new THREE.SphereGeometry(1, 22, 22);
-
-          yesBot =  new THREE.Mesh(yes_geom, new THREE.MeshPhongMaterial({
-            color: 0xf4e842,
-            shading: THREE.FlatShading
-          }));
-        //  yesBot.position.x = 3;
-         group.add(yesBot)
-
-          noBot =  new THREE.Mesh(no_geom, new THREE.MeshPhongMaterial({
-            color: 0xfc3600,
-            shading: THREE.FlatShading
-          }));
-        //  noBot.position.x = -3;
-          group.add(noBot)
-
-
-          var numVerts = no_geom.vertices.length;
-   
-          console.log(numVerts);
-     
-          for(var i = 0; i < numVerts; i++)
-          {
-             // var v2 = no_geom.vertices[i].clone();
-              //v2 = v2.multiplyScalar( 2 );
-
-              var radius = 3;//(Math.random()*2)
-              if (i % 12 == 0){
-              //  no_geom.vertices[i].multiplyScalar( (radius) * Math.sin(angle));
-                no_geom.vertices[i].multiplyScalar(1.6);
-               // v2 = v2.multiplyScalar( 4 );
-              }else if (i % 6== 0){
-                no_geom.vertices[i].multiplyScalar(1.4);
-                //v2 = v2.multiplyScalar( 3 );
-              }else{
-                no_geom.vertices[i].multiplyScalar(.5);
-                //v2 = v2.multiplyScalar( 1.5 );
-              }
-             // tweenDepth(no_geom.vertices[i], v2);
-
-          }
-
-
-          // adding cubes to scene
-          scene.add( group ); 
+          botgroup = new Bitbot();
+          scene.add( botgroup ); 
+          botgroup.position.z= -5;
           addLights();
-
+ /*
 
           var axisHelper = new THREE.AxisHelper( 1.25 );
           scene.add( axisHelper );
-
-          /*
+*/
+        /* 
           // For motion blur effect we need to use shaders, thats why we need to use composer 
           var tri = new THREE.ShaderPass(THREE.TriangleBlurShader, 'texture');
           tri.enabled = true;
@@ -385,7 +270,27 @@
           composer.addPass(renderPass);
           composer.addPass(tri);
           composer.addPass(effectCopy);
-          */
+      */
+
+          renderScene = new THREE.RenderPass(scene, camera);
+
+          // renderScene.clear = true;
+          effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
+          effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight );
+
+          var copyShader = new THREE.ShaderPass(THREE.CopyShader);
+          copyShader.renderToScreen = true;
+
+          bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);//1.0, 9, 0.5, 512);
+          composer = new THREE.EffectComposer(renderer);
+          composer.setSize(window.innerWidth, window.innerHeight);
+          composer.addPass(renderScene);
+          composer.addPass(effectFXAA);
+          composer.addPass(bloomPass);
+          composer.addPass(copyShader);
+          //renderer.toneMapping = THREE.ReinhardToneMapping;
+          renderer.gammaInput = true;
+          renderer.gammaOutput = true;
 
           document.addEventListener( 'mousemove', recordMousePosition, false );
           document.addEventListener( 'touchmove', recordMousePosition, false );
@@ -448,114 +353,20 @@
 
       //  document.addEventListener('mousemove', onMouseMove, false);
 
-        // in first motion we use camera rotation by 60 degrees
-        function tween_1() {
-         var new_rotation=camera.rotation.z-(Math.PI/180)*60;
-         TweenMax.to(camera.rotation, motion_speed, {
-         // onStart:blur_on,
-          ease:ease_type, 
-          delay:motion_delay,
-          x:0, 
-          y:0,
-          z:new_rotation, 
-          onComplete:tween_2});
-        }
-        // in this motion we are rotating the group of cubes by 90 degrees
-        function tween_2() {
-          console.log('tween2')
-          var new_rotation=bitBot.rotation.z-(Math.PI/180)*(Math.random()*90);
-         // var new_rotation=bitBot.rotation.y+(Math.PI/180)*90;
-          TweenMax.to(bitBot.rotation, motion_speed, {
-          //  onStart:blur_on,
-            ease:ease_type, 
-           // delay:motion_delay, 
-            y:new_rotation, 
-           // onComplete:tween_3
-          });
-        }
-        // rotating camera by 60 degrees more
-        function tween_3() {
-          console.log('tween3')
-          var new_rotation=bitBot.rotation.z-(Math.PI/180)*(Math.random()*90);
-          TweenMax.to(bitBot.rotation, motion_speed, {
-           // onStart:blur_on,
-            ease:ease_type, 
-            delay:motion_delay,
-            x:0, 
-            y:0,
-            z:new_rotation, 
-           // onComplete:tween_4
-          });
-        }
-        // rotating each cube by 90 degrees
-        function tween_4() {
-          TweenMax.to(group.rotation, motion_speed, {
-           // onStart:blur_on,
-            delay:motion_delay, 
-            onComplete:tween_1});
-          for ( var k = 0; k < cubes.length; k ++ ) {
-            var new_rotation=cubes[k].rotation.x+(Math.PI/180)*90;
-            TweenMax.to(cubes[k].rotation, motion_speed, {
-              ease:ease_type,
-              delay:motion_delay,
-              x:new_rotation, 
-              y:0.,
-              z:0});
-          }
-
-        }
+        
 
         function onWindowResize() {
               camera.aspect = window.innerWidth / window.innerHeight;
               camera.updateProjectionMatrix();
+
+
+              composer.setSize( width, height );
+              effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight );
+      
               renderer.setSize(window.innerWidth, window.innerHeight);
             }
 
-        function tween_to_center(){
-
-          TweenMax.to(bitBot1.scale, .5, {
-                x: 1.2,
-                y: 1.2,
-                z: 1.2,
-                ease:ease_type,
-                repeat: -1,
-                //repeatDelay: 1,
-                //delay: .5,
-                yoyo: true
-                
-
-              })
-          TweenMax.to(bitBot2.scale, .5, {
-                x: 1.2,
-                y: 1.2,
-                z: 1.2,
-                ease:ease_type,
-                repeat: -1,
-               //repeatDelay: 1,
-                delay: .25,
-                yoyo: true,
-                onRepeat:tween_3
-                
-
-              })
-
-           TweenMax.to(bitBot3.scale, .5, {
-                x: 1.2, 
-                y: 1.2,
-                z: 1.2,
-                ease:ease_type,
-                repeat: -1,
-              //  repeatDelay: .25,
-                //delay: .5,
-                yoyo: true,
-                onRepeat:tween_2
-                
-
-              })
-
-
-        }
-
+        
         // Follows the mouse event
         function onMouseMove(event) {
 
@@ -570,7 +381,7 @@
           var dir = vector.sub( camera.position ).normalize();
           var distance = - camera.position.z / dir.z;
           var pos = camera.position.clone().add( dir.multiplyScalar( distance ) );
-          group.position.copy(pos);
+          botgroup.position.copy(pos);
 
        //   group.position.x +=  mouse.x * 0.1;
        //   group.position.y +=  mouse.y * 0.1;
@@ -583,6 +394,8 @@
         // To get motion blur effect, we start blurring only when animation begin by passing parameter onStart:blur_on to tween engine
 
         function addLights(){
+          scene.add( new THREE.AmbientLight( 0x222222 ) );
+
            var ambientLight = new THREE.AmbientLight(0x999999 );
             scene.add(ambientLight);
             
@@ -596,6 +409,8 @@
             scene.add( lights[0] );
             scene.add( lights[1] );
             scene.add( lights[2] );
+
+
         }
 
 
@@ -608,13 +423,13 @@
          // group.position.x = (mouseX - group.position.x)*.06;
        //  group.position.x += (mouse.x - group.position.x)*.06;
 
-         dX = pos.x - group.position.x;
-        dY = pos.y - group.position.y;
-        dZ = pos.z - group.position.z;
+         dX = pos.x - botgroup.position.x;
+        dY = pos.y - botgroup.position.y;
+        dZ = pos.z - botgroup.position.z;
        
-          group.position.x += (dX / 5);
-          group.position.y += (dY / 5);
-          group.position.z += (dZ / 5);
+          botgroup.position.x += (dX / 5);
+          botgroup.position.y += (dY / 5);
+          botgroup.position.z += (dZ / 5);
 
           requestAnimationFrame(animate);
 
@@ -628,12 +443,15 @@
           if ( postprocessing.enabled ) {
 
             // Render depth into depthRenderTarget
-            scene.overrideMaterial = depthMaterial;
+          /*  scene.overrideMaterial = depthMaterial;
             renderer.render( scene, camera, depthRenderTarget, true );
 
             // Render renderPass and SSAO shaderPass
             scene.overrideMaterial = null;
             effectComposer.render();
+*/
+            renderer.toneMappingExposure = Math.pow( params.exposure, 4.0 );
+            composer.render();
 
           } else {
 
@@ -647,7 +465,7 @@
         init();
         loadNo();
         loadYes();
-        tween_to_center();
+   
       //  initGUI();
         
         animate();

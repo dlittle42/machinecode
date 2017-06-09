@@ -1,0 +1,91 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+  	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  	<title>face capture</title>
+    <style>
+    #controls {
+      position: absolute;
+      top: 0px;
+      right: 0px;
+      background-color: rgba(46, 56, 66, 0.75);
+      color: #efefef;
+      display: flex;
+      flex-direction: column;
+    }
+
+    select {
+      border: none;
+      padding: 5px;
+      background-color: rgba(222, 222, 222, 0.5);
+      width: 100%;
+    }
+
+    .input-group {
+      flex: 1 1 auto;
+      border-left: solid #4c5c96 5px;
+      padding: 10px;
+    }
+
+    video{
+
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 200px;
+      height: 150px;
+    }
+    </style>
+  </head>
+  <body style="margin: 0px; padding: 0px; overflow: hidden;">
+   <div id="container">
+    <canvas id="inputCanvas" width="320" height="240" style="display:none"></canvas>
+    <video id="inputVideo" autoplay loop></video>
+     <div id="controls">
+       <div class="input-group">
+         <input type="checkbox" name="composer" />
+         <label for="composer">Use composer</label>
+       </div>
+       <div class="input-group">
+         <label for="shader">Shader</label>
+         <select name="shader">
+           <option value="shaderOff">No shader</option>
+           <option value="dotscreen">DotScreen</option>
+           <option value="pixelate">Pixelate</option>
+           <option value="martens">Martens</option>
+         </select>
+       </div>
+     </div>
+   </div>
+
+   <script src="../../bower_components/three.js/build/three.js"></script> 
+      <script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+      <script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+   <script type="text/javascript" src="../../bower_components/three.js/examples/js/shaders/CopyShader.js"></script>
+   <script type="text/javascript" src="../../bower_components/three.js/examples/js/shaders/DotScreenShader.js"></script>
+   <script type="text/javascript" src="../../bower_components/three.js/examples/js/postprocessing/EffectComposer.js"></script>
+   <script type="text/javascript" src="../../bower_components/three.js/examples/js/postprocessing/RenderPass.js"></script>
+   <script type="text/javascript" src="../../bower_components/three.js/examples/js/postprocessing/ShaderPass.js"></script>
+   <script type="text/javascript" src="../../bower_components/three.js/examples/js/postprocessing/MaskPass.js"></script>
+
+    <script type="text/javascript" src="../../bower_components/headtrackr/headtrackr.js"></script>
+
+
+    
+      <script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+      <script src="../../bower_components/dat.gui/dat.gui.js"></script>
+
+
+
+   
+    <script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
+   <script src="http://cdnjs.cloudflare.com/ajax/libs/gsap/latest/easing/EasePack.min.js"></script>
+
+
+
+   <script type="text/javascript" src="js/PixelateShader.js"></script>
+   <script type="text/javascript" src="js/MartensShader.js"></script>
+   <script type="text/javascript" src="app.js"></script>
+  </body>
+</html>

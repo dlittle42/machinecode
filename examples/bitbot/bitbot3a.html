@@ -97,8 +97,8 @@
         var mouse = {x: 0, y: 0};
         var pos = new THREE.Vector3();
 
-        var blur_prop= {deltaX:0, deltaY:0};
-        var max_blur=0.02;
+       // var blur_prop= {deltaX:0, deltaY:0};
+      //  var max_blur=0.02;
         var motion_speed=1;
         var motion_delay=0.2;
         var ease_type=Expo.easeInOut;
@@ -106,6 +106,15 @@
         var no_geom;
         var mouse ={x:0, y:0};
         var mouseX;
+
+        var params = {
+          projection: 'normal',
+          background: false,
+          exposure: 0.7,
+          bloomStrength: 0.5,
+          bloomThreshold: 0.5,
+          bloomRadius: 0.4
+        };
 
         function loadYes(){
           yesSound = new Howl({
@@ -205,18 +214,17 @@
           camera = new THREE.PerspectiveCamera( 45,  window.innerWidth / window.innerHeight, 0.1, 1000 );
           camera.position.z = 10; 
           // do not forget to add antialiasing, cubes looks very bad without it
-          renderer = new THREE.WebGLRenderer({ antialias: true } ); 
-          renderer.setClearColor(new THREE.Color(0x262626, 1.0));
+          renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true} );
+
+        renderer.setClearColor( new THREE.Color( 0x111111 ) );
+        renderer.toneMapping = THREE.LinearToneMapping;
           renderer.setSize(window.innerWidth, window.innerHeight);
           document.body.appendChild( renderer.domElement );
 
+          renderer.toneMapping = THREE.LinearToneMapping;
+
           controls = new THREE.OrbitControls(camera, renderer.domElement);
-          //  controls = new THREE.OrbitControls( camera, renderer.domElement );
-          /*  controls.enableDamping = true;
-            controls.dampingFactor = 0.25;
-            controls.minDistance = 60;
-            controls.maxDistance = 800;
-            */
+
 
           // creating holder for cubes
 
@@ -229,28 +237,7 @@
           for ( var i = 0; i < geometry.faces.length; i ++ ) {
             geometry.faces[ i ].color.setHex( colors[Math.floor(i/4) ]);
           }
-          /*
-          var cubes=[];
-          var cubes2=[];
-          // positions of cubes 
-          var cubes_pos=[
-          [-1,1,-1],[-1,1,1],[1,1,1],
-          [1,1,-1],[1,-1,-1],[1,-1,1],
-          [-1,-1,1],[-1,-1,-1]];
 
-          var cubes2_pos=[
-          [-2,0,0],
-          [2,0,0],
-          [0,0,-2],
-          [0,0,2],
-          [0,2,0],
-          [0,-2,0]];
-
-          var material2 = new THREE.MeshPhongMaterial({
-              color: 0x58ABFF,
-              shading: THREE.FlatShading
-            });
-          */
           var material3 = new THREE.MeshPhongMaterial({
               color: 0x58ABFF,
               shading: THREE.FlatShading,
@@ -259,37 +246,6 @@
             });
 
 
-          /*
-
-          // generating cubes 
-          for ( var k = 0; k < cubes_pos.length; k ++ ) {
-            var cube = new THREE.Mesh( geometry, material2 );
-            cube.position.x=cubes_pos[k][0];
-            cube.position.y=cubes_pos[k][1];
-            cube.position.z=cubes_pos[k][2];
-
-            cube.rotation.x = (Math.PI/180)*45;
-            cube.rotation.y = (Math.PI/180)*45;
-           // cube.rotation.z = (Math.PI/180)*45;
-
-            cubes.push(cube);
-          //  group.add(cube);
-          }
-
-          for ( var k = 0; k < cubes2_pos.length; k ++ ) {
-            var cube = new THREE.Mesh( geometry, material2 );
-            cube.position.x=cubes2_pos[k][0];
-            cube.position.y=cubes2_pos[k][1];
-            cube.position.z=cubes2_pos[k][2];
-
-            cube.rotation.x = (Math.PI/180)*45;
-          //  cube.rotation.y = (Math.PI/180)*45;
-            cube.rotation.z = (Math.PI/180)*45;
-
-            cubes2.push(cube);
-          //  group.add(cube);
-          }
-        */
 
         // var geom3 = new THREE.SphereGeometry(2, 6, 6);
          var geom3 = new THREE.DodecahedronGeometry(2, 0)
@@ -336,6 +292,8 @@
             shading: THREE.FlatShading
           }));
         //  noBot.position.x = -3;
+           noBot.geometry.verticesNeedUpdate = true;
+
           group.add(noBot)
 
 
@@ -373,19 +331,32 @@
           var axisHelper = new THREE.AxisHelper( 1.25 );
           scene.add( axisHelper );
 
-          /*
-          // For motion blur effect we need to use shaders, thats why we need to use composer 
-          var tri = new THREE.ShaderPass(THREE.TriangleBlurShader, 'texture');
-          tri.enabled = true;
-          var renderPass = new THREE.RenderPass(scene, camera);
-          var effectCopy = new THREE.ShaderPass(THREE.CopyShader);
-          effectCopy.renderToScreen = true;
-          var composer = new THREE.EffectComposer(renderer);
 
-          composer.addPass(renderPass);
-          composer.addPass(tri);
-          composer.addPass(effectCopy);
-          */
+          renderScene = new THREE.RenderPass(scene, camera);
+
+          // renderScene.clear = true;
+          effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
+          effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight );
+
+          var copyShader = new THREE.ShaderPass(THREE.CopyShader);
+          copyShader.renderToScreen = true;
+
+          bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);//1.0, 9, 0.5, 512);
+
+          bloomPass.threshold = params.bloomThreshold;
+          bloomPass.strength = params.bloomStrength;
+          bloomPass.radius = params.bloomRadius;
+
+          composer = new THREE.EffectComposer(renderer);
+          composer.setSize(window.innerWidth, window.innerHeight);
+          composer.addPass(renderScene);
+          composer.addPass(effectFXAA);
+          composer.addPass(bloomPass);
+          composer.addPass(copyShader);
+          //renderer.toneMapping = THREE.ReinhardToneMapping;
+          renderer.gammaInput = true;
+          renderer.gammaOutput = true;
+
 
           document.addEventListener( 'mousemove', recordMousePosition, false );
           document.addEventListener( 'touchmove', recordMousePosition, false );
@@ -399,6 +370,21 @@
                 playNo();
               }
             });
+
+
+           var gui = new dat.GUI();
+
+          gui.add( params, 'exposure', 0.1, 2 );
+          gui.add( params, 'bloomThreshold', 0.0, 1.0 ).onChange( function(value) {
+              bloomPass.threshold = Number(value);
+          });
+          gui.add( params, 'bloomStrength', 0.0, 3.0 ).onChange( function(value) {
+              bloomPass.strength = Number(value);
+          });
+          gui.add( params, 'bloomRadius', 0.0, 1.0 ).onChange( function(value) {
+              bloomPass.radius = Number(value);
+          });
+          gui.open();
         }
 
 
@@ -448,18 +434,6 @@
 
       //  document.addEventListener('mousemove', onMouseMove, false);
 
-        // in first motion we use camera rotation by 60 degrees
-        function tween_1() {
-         var new_rotation=camera.rotation.z-(Math.PI/180)*60;
-         TweenMax.to(camera.rotation, motion_speed, {
-         // onStart:blur_on,
-          ease:ease_type, 
-          delay:motion_delay,
-          x:0, 
-          y:0,
-          z:new_rotation, 
-          onComplete:tween_2});
-        }
         // in this motion we are rotating the group of cubes by 90 degrees
         function tween_2() {
           console.log('tween2')
@@ -487,27 +461,15 @@
            // onComplete:tween_4
           });
         }
-        // rotating each cube by 90 degrees
-        function tween_4() {
-          TweenMax.to(group.rotation, motion_speed, {
-           // onStart:blur_on,
-            delay:motion_delay, 
-            onComplete:tween_1});
-          for ( var k = 0; k < cubes.length; k ++ ) {
-            var new_rotation=cubes[k].rotation.x+(Math.PI/180)*90;
-            TweenMax.to(cubes[k].rotation, motion_speed, {
-              ease:ease_type,
-              delay:motion_delay,
-              x:new_rotation, 
-              y:0.,
-              z:0});
-          }
-
-        }
+     
 
         function onWindowResize() {
               camera.aspect = window.innerWidth / window.innerHeight;
               camera.updateProjectionMatrix();
+
+              composer.setSize( width, height );
+              effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight );
+
               renderer.setSize(window.innerWidth, window.innerHeight);
             }
 
@@ -590,12 +552,16 @@
             lights[0] = new THREE.DirectionalLight( 0xffffff, 1 );
             lights[0].position.set( 1, 0, 0 );
             lights[1] = new THREE.DirectionalLight( 0x11E8BB, 1 );
-            lights[1].position.set( 0.75, 1, 0.5 );
+           // lights[1].position.set( 0.75, 1, 0.5 );
+            lights[1].position.set( 0, 1, 5 );
             lights[2] = new THREE.DirectionalLight( 0x8200C9, 1 );
-            lights[2].position.set( -0.75, -1, 0.5 );
+           // lights[2].position.set( -0.75, -1, 0.5 );
+            lights[2].position.set( 0, -1, 1 );
+          
             scene.add( lights[0] );
             scene.add( lights[1] );
             scene.add( lights[2] );
+            
         }
 
 
@@ -604,13 +570,10 @@
         function animate() {
           //var timestamp = new Date() * 0.0005;
           deltaTime = clock.getDelta();
-         // console.log(mouseX)
-         // group.position.x = (mouseX - group.position.x)*.06;
-       //  group.position.x += (mouse.x - group.position.x)*.06;
 
-         dX = pos.x - group.position.x;
-        dY = pos.y - group.position.y;
-        dZ = pos.z - group.position.z;
+          dX = pos.x - group.position.x;
+          dY = pos.y - group.position.y;
+          dZ = pos.z - group.position.z;
        
           group.position.x += (dX / 5);
           group.position.y += (dY / 5);
@@ -625,21 +588,19 @@
         function render() {
           
         
-          if ( postprocessing.enabled ) {
+          renderer.toneMappingExposure = Math.pow( params.exposure, 4.0 );
 
-            // Render depth into depthRenderTarget
-            scene.overrideMaterial = depthMaterial;
-            renderer.render( scene, camera, depthRenderTarget, true );
 
-            // Render renderPass and SSAO shaderPass
-            scene.overrideMaterial = null;
-            effectComposer.render();
 
-          } else {
 
-            renderer.render( scene, camera );
 
-          }
+          var timer = Date.now() * 0.00025;
+
+          camera.lookAt( scene.position );
+
+
+           //renderer.render( scene, camera );
+          composer.render();
         }
 
 

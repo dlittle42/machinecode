@@ -454,15 +454,34 @@ Settings = {}, Settings.WIDTH = 100, Settings.HEIGHT = 100, Settings.DEPTH = 100
     function a() {
         this.updateRenderer = bind(this.updateRenderer, this), this.updateCamera = bind(this.updateCamera, this), this.__resize = bind(this.__resize, this), this.__stop = bind(this.__stop, this), this.__start = bind(this.__start, this);
         var a;
-        this.clock = new THREE.Clock, this.scene = new THREE.Scene, this.camera = new THREE.PerspectiveCamera(Settings.camera.fov, this.WIDTH / this.HEIGHT, Settings.camera.near, Settings.camera.far), this.camera.position.set(0, 0, Settings.DEPTH), this.camera.lookAt(this.scene.position), this.renderer = new THREE.WebGLRenderer({
+        this.clock = new THREE.Clock, 
+        this.scene = new THREE.Scene, 
+        this.camera = new THREE.PerspectiveCamera(Settings.camera.fov, this.WIDTH / this.HEIGHT, Settings.camera.near, Settings.camera.far), this.camera.position.set(0, 0, Settings.DEPTH), this.camera.lookAt(this.scene.position), this.renderer = new THREE.WebGLRenderer({
             antialias: Settings.renderer.antialias,
             alpha: Settings.renderer.alpha
-        }), this.renderer.setPixelRatio(this.RATIO), this.renderer.setSize(this.WIDTH, this.HEIGHT), document.body.appendChild(this.renderer.domElement), this.controls = new THREE.TrackballControls(this.camera, this.renderer.domElement), this.controls.rotateSpeed = 1, this.controls.zoomSpeed = 1, this.controls.noZoom = !1, this.controls.noPan = !0, this.controls.staticMoving = !1, this.controls.dynamicDampingFactor = .15, this.controls.minDistance = Settings.DEPTH / 1.5, this.controls.maxDistance = 1.9 * Settings.DEPTH, Settings.postProcessing && (this.depthMaterial = new THREE.MeshDepthMaterial, this.depthMaterial.depthPacking = THREE.RGBADepthPacking, this.depthMaterial.blending = THREE.NoBlending, a = {
-            minFilter: THREE.LinearFilter,
-            magFilter: THREE.LinearFilter
-        }, this.depthRenderTarget = new THREE.WebGLRenderTarget(this.WIDTH, this.HEIGHT, a), 
-        this.composer = new THREE.EffectComposer(this.renderer, this.renderTarget), 
-        this.composer.addPass(new THREE.RenderPass(this.scene, this.camera)), 
+        }), 
+        this.renderer.setPixelRatio(this.RATIO), 
+        this.renderer.setSize(this.WIDTH, this.HEIGHT), 
+        document.body.appendChild(this.renderer.domElement), 
+        this.controls = new THREE.TrackballControls(this.camera, this.renderer.domElement), 
+        this.controls.rotateSpeed = 1, 
+        this.controls.zoomSpeed = 1, 
+        this.controls.noZoom = !1, 
+        this.controls.noPan = !0, 
+        this.controls.staticMoving = !1, 
+        this.controls.dynamicDampingFactor = .15, 
+        this.controls.minDistance = Settings.DEPTH / 1.5, 
+        this.controls.maxDistance = 1.9 * Settings.DEPTH, 
+        Settings.postProcessing && (this.depthMaterial = new THREE.MeshDepthMaterial, 
+            this.depthMaterial.depthPacking = THREE.RGBADepthPacking, 
+            this.depthMaterial.blending = THREE.NoBlending, 
+            a = {
+             minFilter: THREE.LinearFilter,
+             magFilter: THREE.LinearFilter
+            }, 
+            this.depthRenderTarget = new THREE.WebGLRenderTarget(this.WIDTH, this.HEIGHT, a), 
+            this.composer = new THREE.EffectComposer(this.renderer, this.renderTarget), 
+            this.composer.addPass(new THREE.RenderPass(this.scene, this.camera)), 
         //this.ssao = new THREE.ShaderPass(THREE.SSAO), 
         /*
         this.ssao = new THREE.ShaderPass(THREE.SSAOShader), 

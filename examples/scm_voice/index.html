@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>SCM voice</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="IE=11" />
+
+<link rel="shortcut icon" href="favicon.ico">
+<link href="http://fonts.googleapis.com/css?family=Source+Sans+Pro|Quicksand:400,700|Source+Code+Pro|Cantarell" rel=stylesheet type=text/css>
+
+<style>
+
+body{
+  width: 100vw;
+  height: 100vh;
+  background: #ff0;
+  font-family: Quicksand,sans-serif;
+  margin:0;
+  padding:0;
+}
+
+#title{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 80%;
+  flex-direction: column;
+}
+
+h1{
+  text-align: center;
+  font-size: 64px;
+  margin-bottom: 0;
+}
+
+.letter-effect {
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-flex-direction: row;
+  -ms-flex-direction: row;
+  flex-direction: row;
+  -webkit-align-items: center;
+  -ms-flex-align: center;
+  align-items: center;
+  -webkit-flex-wrap: wrap;
+  -ms-flex-wrap: wrap;
+  flex-wrap: wrap
+}
+
+.letter-effect span{
+  opacity:0;
+}
+
+canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    cursor: pointer;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: -1;
+}
+
+#trigger{
+  width: 100vw;
+  height: 100vh;
+/*  background-color: rgba(0,0,0,.2); */
+  position: absolute;
+  top:0;
+  left:0;
+}
+
+</style>
+
+</head>
+<body>
+
+<div id="container"></div>
+<div id="title">
+  <h1 class="name">nobody</h1>
+  <p>A program by Derek Little</p>
+  
+</div>
+<a id="trigger"></a>
+<canvas id="c"></canvas>
+
+<script src="../../bower_components/jquery/dist/jquery.min.js"></script>
+<script src="js/charming.min.js"></script>
+<script src="js/anime.min.js"></script>
+<script src="js/textfx.js"></script>
+<script type="text/javascript" src="setting/index.js"></script>
+<script>
+
+
+  var voiceList = setting.voices;
+  var randomVoice = voiceList[Math.floor(Math.random()*voiceList.length)];
+
+  var msg = new SpeechSynthesisUtterance();
+ // console.log("!!"+msg);
+  msg.text = 'Super Computing Machine';
+  msg.onboundary = function(event) {
+     // console.log('The msg boundary is to be spoken.')
+  };
+
+          
+  // Queue this utterance.
+
+  // make sure voices are loaded before playing. ?? get it to work on repeat???
+  window.speechSynthesis.onvoiceschanged = function () {
+
+    var voices = window.speechSynthesis.getVoices();
+
+    //console.dir(voices);
+    msg.voice = voices.filter(function(voice) { return voice.name == randomVoice })[0];
+    window.speechSynthesis.speak(msg);
+    showName();
+  };
+
+  document.getElementById("trigger").addEventListener('click', newVoice);
+
+ //window.addEventListener('touchstart', newVoice);
+ //window.addEventListener('mousedown', newVoice);
+
+  function newVoice(e){
+
+    handleEvent(e);
+  // alert('new voice')
+   /* var saying = Math.floor(Math.random()*setting.phrases.length)
+    msg.text = setting.phrases[saying].salutation + '     '+ setting.phrases[saying].comment;
+  */
+    var voices = window.speechSynthesis.getVoices();
+    randomVoice = voiceList[Math.floor(Math.random()*voiceList.length)];
+   // console.log(randomVoice)
+    msg.voice = voices.filter(function(voice) { return voice.name == randomVoice })[0];
+    window.speechSynthesis.speak(msg);
+    showName();
+  }
+
+
+function showName(){
+ // $('h1').text(randomVoice);
+ txt.hide('fx7', function(){
+    console.log('hide complete')
+
+    $('h1').html(randomVoice);
+   // console.log($('h1'))
+    txt._init();
+
+    txt.show('fx7', function(){
+      console.log('show complete')
+    });
+  });
+ 
+  
+}
+
+
+var txt = new TextFx(document.querySelector('.name'));
+
+ txt.hide('fx7', function(){
+    console.log('first hide complete')
+  });
+
+
+/// background /////
+var c = document.getElementById("c");
+var ctx = c.getContext("2d");
+var cH;
+var cW;
+var bgColor = "#ff0";
+var animations = [];
+var circles = [];
+
+var colorPicker = (function() {
+  var colors = ["#FF0", "#FF0000", "#2980B9", "#00e500"];
+  var index = 0;
+  function next() {
+    index = index++ < colors.length-1 ? index : 0;
+    return colors[index];
+  }
+  function current() {
+    return colors[index]
+  }
+  return {
+    next: next,
+    current: current
+  }
+})();
+
+function removeAnimation(animation) {
+  var index = animations.indexOf(animation);
+  if (index > -1) animations.splice(index, 1);
+}
+
+function calcPageFillRadius(x, y) {
+  var l = Math.max(x - 0, cW - x);
+  var h = Math.max(y - 0, cH - y);
+  return Math.sqrt(Math.pow(l, 2) + Math.pow(h, 2));
+}
+
+function addClickListeners() {
+  document.getElementById("title").addEventListener("touchstart", handleEvent);
+  document.getElementById("title").addEventListener("mousedown", handleEvent);
+};
+
+function handleEvent(e) {
+    if (e.touches) { 
+      e.preventDefault();
+      e = e.touches[0];
+    }
+    var currentColor = colorPicker.current();
+    var nextColor = colorPicker.next();
+    var targetR = calcPageFillRadius(e.pageX, e.pageY);
+    var rippleSize = Math.min(200, (cW * .4));
+    var minCoverDuration = 750;
+    
+    var pageFill = new Circle({
+      x: e.pageX,
+      y: e.pageY,
+      r: 0,
+      fill: nextColor
+    });
+    var fillAnimation = anime({
+      targets: pageFill,
+      r: targetR,
+      duration:  Math.max(targetR / 2 , minCoverDuration ),
+      easing: "easeOutQuart",
+      complete: function(){
+        bgColor = pageFill.fill;
+        removeAnimation(fillAnimation);
+      }
+    });
+    
+    var ripple = new Circle({
+      x: e.pageX,
+      y: e.pageY,
+      r: 0,
+      fill: currentColor,
+      stroke: {
+        width: 3,
+        color: currentColor
+      },
+      opacity: 1
+    });
+    var rippleAnimation = anime({
+      targets: ripple,
+      r: rippleSize,
+      opacity: 0,
+      easing: "easeOutExpo",
+      duration: 900,
+      complete: removeAnimation
+    });
+    /*
+    var particles = [];
+    for (var i=0; i<32; i++) {
+      var particle = new Circle({
+        x: e.pageX,
+        y: e.pageY,
+        fill: currentColor,
+        r: anime.random(24, 48)
+      })
+      particles.push(particle);
+    }
+    var particlesAnimation = anime({
+      targets: particles,
+      x: function(particle){
+        return particle.x + anime.random(rippleSize, -rippleSize);
+      },
+      y: function(particle){
+        return particle.y + anime.random(rippleSize * 1.15, -rippleSize * 1.15);
+      },
+      r: 0,
+      easing: "easeOutExpo",
+      duration: anime.random(1000,1300),
+      complete: removeAnimation
+    });
+    */
+    animations.push(fillAnimation, rippleAnimation);
+
+}
+
+function extend(a, b){
+  for(var key in b) {
+    if(b.hasOwnProperty(key)) {
+      a[key] = b[key];
+    }
+  }
+  return a;
+}
+
+var Circle = function(opts) {
+  extend(this, opts);
+}
+
+Circle.prototype.draw = function() {
+  ctx.globalAlpha = this.opacity || 1;
+  ctx.beginPath();
+  ctx.arc(this.x, this.y, this.r, 0, 2 * Math.PI, false);
+  if (this.stroke) {
+    ctx.strokeStyle = this.stroke.color;
+    ctx.lineWidth = this.stroke.width;
+    ctx.stroke();
+  }
+  if (this.fill) {
+    ctx.fillStyle = this.fill;
+    ctx.fill();
+  }
+  ctx.closePath();
+  ctx.globalAlpha = 1;
+}
+
+var animate = anime({
+  duration: Infinity,
+  update: function() {
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, cW, cH);
+    animations.forEach(function(anim) {
+      anim.animatables.forEach(function(animatable) {
+        animatable.target.draw();
+      });
+    });
+  }
+});
+
+var resizeCanvas = function() {
+  cW = window.innerWidth;
+  cH = window.innerHeight;
+  c.width = cW * devicePixelRatio;
+  c.height = cH * devicePixelRatio;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+};
+
+(function init() {
+  resizeCanvas();
+
+  window.addEventListener("resize", resizeCanvas);
+ // addClickListeners();
+ 
+})();
+/*
+function handleInactiveUser() {
+  var inactive = setTimeout(function(){
+    fauxClick(cW/2, cH/2);
+  }, 2000);
+  
+  function clearInactiveTimeout() {
+    clearTimeout(inactive);
+    document.removeEventListener("mousedown", clearInactiveTimeout);
+    document.removeEventListener("touchstart", clearInactiveTimeout);
+  }
+ 
+  document.addEventListener("mousedown", clearInactiveTimeout);
+  document.addEventListener("touchstart", clearInactiveTimeout);
+}
+ */
+/*
+function startFauxClicking() {
+  setTimeout(function(){
+    fauxClick(anime.random( cW * .2, cW * .8), anime.random(cH * .2, cH * .8));
+    startFauxClicking();
+  }, anime.random(200, 900));
+}
+
+function fauxClick(x, y) {
+  var fauxClick = new Event("mousedown");
+  fauxClick.pageX = x;
+  fauxClick.pageY = y;
+  document.dispatchEvent(fauxClick);
+}
+*/
+</script>
+</body>
+</html>
