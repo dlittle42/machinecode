@@ -64,7 +64,8 @@
 </div>
 
 <script   src="https://code.jquery.com/jquery-3.1.0.min.js"   integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s="   crossorigin="anonymous"></script>
-<script src="../../bower_components/howler.js/howler.min.js"></script>
+<script src="../../bower_components/howler.js/dist/howler.js"></script>
+
 <script src="../../bower_components/three.js/build/three.js"></script>
 <script src="../../bower_components/three.js/examples/js/loaders/OBJLoader.js"></script>
 <script src="../../bower_components/three.js/examples/js/loaders/MTLLoader.js"></script>
@@ -84,7 +85,7 @@
      //setup audio ///////////
 
     var bearAudio = new Howl({
-      urls: ['audio/bear.mp3'],
+      src: ['audio/bear.mp3'],
       volume: 0.5,
       sprite: {
         roar_one: [0, 1000],

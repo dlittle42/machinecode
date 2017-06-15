@@ -195,11 +195,11 @@
 		function createObjects() {
 
 			// Ground
-	/*		pos.set( 0, - 0.5, 0 );
+		pos.set( 0, - 0.5, 0 );
 			quat.set( 0, 0, 0, 1 );
 			var ground = createParalellepipedWithPhysics( 40, 1, 40, 0, pos, quat, new THREE.MeshPhongMaterial( { color: 0xFFFFFF } ) );
 			ground.receiveShadow = true;
-			*/
+		
 	
 /*
 			// Tower 1
@@ -516,8 +516,11 @@
 				var threeObject1 = Ammo.castObject( rb1.getUserPointer(), Ammo.btVector3 ).threeObject;
 
 				if ( ! threeObject0 && ! threeObject1 ) {
+					//console.log('continue thru threeObject')
 					continue;
 				}
+				console.log('continuing')
+
 
 				var userData0 = threeObject0 ? threeObject0.userData : null;
 				var userData1 = threeObject1 ? threeObject1.userData : null;
@@ -528,9 +531,15 @@
 				var collided0 = userData0 ? userData0.collided : false;
 				var collided1 = userData1 ? userData1.collided : false;
 
+				console.log('userdata is...')
+				console.log(userData0);
+
 				if ( ( ! breakable0 && ! breakable1 ) || ( collided0 && collided1 ) ) {
+					//console.log('continue thru breakable/collided')
 					continue;
 				}
+
+				
 
 				var contact = false;
 				var maxImpulse = 0;
@@ -538,6 +547,7 @@
 					var contactPoint = contactManifold.getContactPoint( j );
 					if ( contactPoint.getDistance() < 0 ) {
 						contact = true;
+			
 						var impulse = contactPoint.getAppliedImpulse();
 						if ( impulse > maxImpulse ) {
 							maxImpulse = impulse;

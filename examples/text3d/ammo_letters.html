@@ -873,11 +873,17 @@
 		function staticEffect(){
             var renderPass = new THREE.RenderPass(scene, camera);
             var effectFilm = new THREE.FilmPass(0.8, 0.325, 1400, false);
-            effectFilm.renderToScreen = true;
+            //effectFilm.renderToScreen = true;
 
             composer = new THREE.EffectComposer(renderer);
             composer.addPass(renderPass);
             composer.addPass(effectFilm);
+
+            
+            var colorifyPass = new THREE.ShaderPass( THREE.ColorifyShader );
+			colorifyPass.uniforms[ "color" ].value = new THREE.Color( 0xffff00 );
+			colorifyPass.renderToScreen = true;
+			composer.addPass( colorifyPass );
 
 
             // setup the control gui

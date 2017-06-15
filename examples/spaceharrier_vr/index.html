@@ -663,17 +663,18 @@ function addLights() {
 
 
 function createBlaster(event){
-
-  var geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+/*
+  var geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
 var material = new THREE.MeshNormalMaterial();
-//blaster = new THREE.Mesh(geometry, material);
+var cube = new THREE.Mesh(geometry, material);
+scene.add(cube);
+cube.position.set(0, controls.userHeight, -10);
 
-
-
+*/
   if (manager.mode == 3) event.preventDefault();
  // manager.enterVRMode_();
  // console.log(manager.mode)
- // console.log('createBlaster')
+  console.log('createBlaster')
   /*
   if (manager.mode == 3){
     camera.fov = 25;
@@ -693,12 +694,6 @@ var material = new THREE.MeshNormalMaterial();
   //blaster.position.y = 0;//player.position.y;
   blaster.scale.set( .2, .2, 1.0 );
   blaster.time = lastRender;
-  
-  //var distVector = playerVector.multiplyScalar(2);
-
-
-  //projector.unprojectVector( vector, camera );
-  //blaster.raycaster = new THREE.Raycaster(new THREE.Vector3(playerVector.x, playerVector.y, playerVector.z), new THREE.Vector3(distVector.x, playerVector.y, distVector.z));
 
   //var camDir = camera.getWorldDirection();
 //  var scaleCam = camDir.multiplyScalar(1.1);
@@ -706,48 +701,18 @@ var material = new THREE.MeshNormalMaterial();
  // blaster.position.set(player.position.x, controls.userHeight + player.position.y, player.position.z - .1);
 
 
-//  var vector = new THREE.Vector3();
-//  vector.setFromMatrixPosition( player.matrixWorld );
+  var vector = new THREE.Vector3();
+  vector.setFromMatrixPosition( player.matrixWorld );
 
-  blaster.position.set(playerVector.x , playerVector.y, playerVector.z );
+  blaster.position.set(vector.x , vector.y, vector.z );
   scene.add(blaster);
 
   blasterArr.push(blaster);
 
-  var camVector = new THREE.Vector3();
-
-  var camDir1 = camera.getWorldDirection(camVector).multiplyScalar(20);
-  var camDir = new THREE.Vector3(camDir1.x, controls.userHeight, camDir1.z);//.multiplyScalar(20);
- // camDir.setY(controls.userHeight)
- // console.log(camDir)
- //var camDir = new THREE.Vector3(0, .1, -4)
-// var horizon = new THREE.Vector3(camDir.x, .02, camDir.z);
- //var scaleCam = horizon.multiplyScalar(2);
-
- blaster.blasterDir = camDir;//scaleCam;
- blaster.lookAt(camDir)
-
- blaster.raycaster = new THREE.Raycaster(new THREE.Vector3(playerVector.x, playerVector.y, playerVector.z),  blaster.blasterDir);
-
-  blaster.from = blaster.position;//new THREE.Vector3( 2, 2, 2 );
-  blaster.to = blaster.blasterDir;//new THREE.Vector3( 0, controls.userHeight, -40);
-  var direction = blaster.to.clone().sub(blaster.from);
-  var length = direction.length();
-
-  //blaster.raycaster = new THREE.Raycaster(new THREE.Vector3(playerVector.x, playerVector.y, playerVector.z),  blaster.blasterDir);
- 
-  var arrowHelper = new THREE.ArrowHelper(direction.normalize(), blaster.from, length, 0xff0000 );
-  arrowHelper.time = lastRender;
-  scene.add( arrowHelper );
-
-  arrowArr.push( arrowHelper);
-
-
-
-
   playSound();
 
 }
+
 
 
 
