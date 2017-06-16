@@ -28,7 +28,7 @@
     
     #score {
         position: absolute;
-        top: 10px;
+        top: 50px;
         right: 10px;
         z-index: 102;
     }
@@ -58,13 +58,13 @@ WebVRConfig = {
      */
 
     // Forces availability of VR mode.
-    //FORCE_ENABLE_VR: true, // Default: false.
+    // FORCE_ENABLE_VR: true, // Default: false.
     // Complementary filter coefficient. 0 for accelerometer, 1 for gyro.
     //K_FILTER: 0.98, // Default: 0.98.
     // How far into the future to predict during fast motion.
     //PREDICTION_TIME_S: 0.040, // Default: 0.040 (in seconds).
     // Flag to disable touch panner. In case you have your own touch controls
-    //TOUCH_PANNER_DISABLED: true, // Default: false.
+    // TOUCH_PANNER_DISABLED: true, // Default: false.
     // Enable yaw panning only, disabling roll and pitch. This can be useful for
     // panoramas with nothing interesting above or below.
     YAW_ONLY: false, // Default: false.
@@ -135,6 +135,7 @@ var helper;
 var blasterArr = [];
 var blasterSpeed = .3; //5;
 var info = document.getElementById('info');
+var touchEnabled = false;
 
 var score_display = document.getElementById('score');
 var score = 0;
@@ -144,6 +145,10 @@ var textureLoader;
 var clock = new THREE.Clock();
 var playerVector = new THREE.Vector3();
 var camVector = new THREE.Vector3();
+var camDir = new THREE.Vector3();
+var heroTexture;
+
+var direction = new THREE.Vector3();
 
 var mouseCoords = new THREE.Vector2();
 var raycaster = new THREE.Raycaster();
@@ -408,6 +413,8 @@ function init() {
     window.addEventListener('resize', onResize, true);
     window.addEventListener('vrdisplaypresentchange', onResize, true);
     document.addEventListener('mousemove', onDocumentMouseMove, false);
+
+    //  window.addEventListener('orientationchange', doOnOrientationChange);
     //  document.addEventListener('click', createBlaster, true);
     // document.addEventListener('touchstart', createBlaster, true);
 
@@ -442,6 +449,8 @@ function setPlayerTexture(playerTexture) {
 
     player.scale.set(.5, .5, 1.0); // imageWidth, imageHeight
 */
+    heroTexture = playerTexture;
+
     pivot = new THREE.Object3D();
     pivot.position.set(0, controls.userHeight, 0);
     scene.add(pivot);
@@ -540,46 +549,46 @@ function animate() {
     // console.log(playerblock.position)
 
     // _v3.copy(mouse);
-/*
-    var camDir = camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(1);
-    //  var camVect = new THREE.Vector3(camDir.x, controls.userHeight, camDir.z);
-    var camVect = new THREE.Vector3(camDir.x, camDir.y, camDir.z);
+    /*
+        var camDir = camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(1);
+        //  var camVect = new THREE.Vector3(camDir.x, controls.userHeight, camDir.z);
+        var camVect = new THREE.Vector3(camDir.x, camDir.y, camDir.z);
 
-    //_v3.copy(mouse)
-    // _v3.copy(mouse).sub(playerblock.position).multiplyScalar(.5);
-    var vector = new THREE.Vector3(-mouse.x * 10, -mouse.y * 10, -1).unproject(camera);
+        //_v3.copy(mouse)
+        // _v3.copy(mouse).sub(playerblock.position).multiplyScalar(.5);
+        var vector = new THREE.Vector3(-mouse.x * 10, -mouse.y * 10, -1).unproject(camera);
 
-    var direction = camVect.clone().sub(playerblock.position).add(vector);
-
-
-
-
-    // _v3.copy(mouse).sub(playerblock.position).multiplyScalar(.5);
-    // _v3.y = 0;
+        var direction = camVect.clone().sub(playerblock.position).add(vector);
 
 
 
-   
-    //   var xpos = pivot.position.x - playerblock.position.x;
-    //   var ypos = pivot.position.y - playerblock.position.y;
-    //   var zpos = pivot.position.z - playerblock.position.z - 1;
-   
-    var speed = 5;
-    var xpos = direction.x * speed;
-    var ypos = direction.y * speed;
-    var zpos = direction.z * speed;
+
+        // _v3.copy(mouse).sub(playerblock.position).multiplyScalar(.5);
+        // _v3.y = 0;
 
 
-    //  var xpos = mouse.x - playerblock.position.x;
-    //  var ypos = controls.userHeight + mouse.y - playerblock.position.y;
 
-    //console.log(_v3)
-    //  playerBody.setLinearVelocity(new Ammo.btVector3(xpos*5,ypos*5,0));
-    //// // playerBody.setLinearVelocity(new Ammo.btVector3(xpos*5,ypos*5,zpos*5));
-    playerBody.setLinearVelocity(new Ammo.btVector3(xpos, ypos, zpos));
+       
+        //   var xpos = pivot.position.x - playerblock.position.x;
+        //   var ypos = pivot.position.y - playerblock.position.y;
+        //   var zpos = pivot.position.z - playerblock.position.z - 1;
+       
+        var speed = 5;
+        var xpos = direction.x * speed;
+        var ypos = direction.y * speed;
+        var zpos = direction.z * speed;
 
-    console.log(playerblock.position)
-    */
+
+        //  var xpos = mouse.x - playerblock.position.x;
+        //  var ypos = controls.userHeight + mouse.y - playerblock.position.y;
+
+        //console.log(_v3)
+        //  playerBody.setLinearVelocity(new Ammo.btVector3(xpos*5,ypos*5,0));
+        //// // playerBody.setLinearVelocity(new Ammo.btVector3(xpos*5,ypos*5,zpos*5));
+        playerBody.setLinearVelocity(new Ammo.btVector3(xpos, ypos, zpos));
+
+        console.log(playerblock.position)
+        */
 
     playerFollow();
 
@@ -637,7 +646,14 @@ function playerFollow() {
 
 
     // get mouse position and add some accelerometer
-    var vector = new THREE.Vector3(-mouse.x * 10 - accYsmooth, -mouse.y * 10 + accZsmooth, -1).unproject(camera);
+    //  console.log(-mouse.x * 10)
+    var vector;
+    if (touchEnabled) {
+        vector = new THREE.Vector3(-mouse.x * 10 - accYsmooth, -mouse.y * 10 + accZsmooth, -1).unproject(camera);
+    } else {
+        vector = new THREE.Vector3(-accYsmooth, accZsmooth, -1).unproject(camera);
+    }
+
 
     var direction = camVect.clone().sub(playerblock.position).add(vector);
 
@@ -654,8 +670,18 @@ function playerFollow() {
 
 function onResize(e) {
     effect.setSize(window.innerWidth, window.innerHeight);
+    //  camDir = new THREE.Vector3(0,0,-1);
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
+ /*   var dir = playerblock.position; //camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(1);
+    // playerblock.position.set(0,0,-1);
+    var str = JSON.stringify(dir); //, null, 4)
+    console.log(str);
+    score_display.innerHTML = str;
+*/
+    // removePlayer();
+    // createPlayer(heroTexture);
+    // alert(str)
 }
 
 
@@ -668,10 +694,10 @@ function setupStage() {
             vrDisplay = displays[0];
             if (vrDisplay.stageParameters) {
                 setStageDimensions(vrDisplay.stageParameters);
-                // if (forceVR && manager.isVRcompatible){
-                //  manager.enterVRMode_();
-                // console.log(manager)
-                // }
+                if (forceVR && manager.isVRcompatible) {
+                    manager.enterVRMode_();
+                    console.log(manager)
+                }
             }
             vrDisplay.requestAnimationFrame(animate);
         }
@@ -698,16 +724,31 @@ function setupStage() {
                 accZsmooth = factor * accZsmooth + (1 - factor) * accZ;
                 accYsmooth = factor * accYsmooth + (1 - factor) * accY;
 
-                if (debug) info.innerHTML = 'accZ:' + accZ.toFixed(2) + ', accZsm:' + accZsmooth.toFixed(2) + ', accY:' + accYsmooth.toFixed(2);
+
 
                 movement = 2;
 
                 if (manager.mode == 1) {
+                    //  info.innerHTML += ' mode 1'
                     xA = -accYsmooth * movement;
                     yA = -accZsmooth * .4; // *movement;
                 } else {
-                    yA = accZsmooth * .5; // *movement;
+                    // info.innerHTML += ' player='+player.position;
+                    //  ?????????????????????
+                    //  accZsmooth =-7.75;
+                    //  accYsmooth =-7.75;
+                    mouse.x = 0;
+                    mouse.y = 0;
+
+
+                    yA = accZsmooth * .75; // *movement;
                     xA = -accYsmooth * .5
+                }
+
+
+                if (debug) {
+                    info.innerHTML = 'accZ:' + accZ.toFixed(2) + ', accZsm:' + accZsmooth.toFixed(2) + ', accY:' + accYsmooth.toFixed(2);
+                    info.innerHTML += ' mode:' + manager.mode + ',compat:' + manager.isVRcompatible;
                 }
 
                 /*   }else{
@@ -727,6 +768,19 @@ function setupStage() {
     });
 
 }
+/*
+function doOnOrientationChange() {
+    switch(window.orientation) {  
+      case -90 || 90:
+        alert('landscape');
+        break; 
+      default:
+        alert('portrait');
+        break; 
+    }
+}
+  
+*/
 
 
 function onDocumentMouseMove(event) {
@@ -735,16 +789,17 @@ function onDocumentMouseMove(event) {
 
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-    mouseCoords.set(
-        (event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1
-    );
+    /*
+        mouseCoords.set(
+            (event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1
+        );
+        */
 
     if (debug) info.innerHTML = 'x:' + mouse.x.toFixed(2) + ', y:' + mouse.y.toFixed(2);
     //   if (debug) info.innerHTML = 'x:' + mouseCoords.x.toFixed(2) + ', y:' + mouseCoords.y.toFixed(2);
 
     //controlPlayer(-mouse.x.toFixed(2)*10)
-    controlPlayer(mouse.x, mouse.y / 2)
+    // controlPlayer(mouse.x, mouse.y / 2)
 
 }
 
@@ -765,7 +820,7 @@ function controlPlayer(xAcc, yAcc) {
 }
 
 
-
+/*
 
 function createBlaster(event) {
 
@@ -804,10 +859,10 @@ function createBlaster(event) {
 
     //   var camVector = new THREE.Vector3();
 
-    var camDir = camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(20);
-    var camVect = new THREE.Vector3(camDir.x, controls.userHeight, camDir.z);
+    var bulletDir = camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(20);
+    var bulletVect = new THREE.Vector3(bulletDir.x, controls.userHeight, bulletDir.z);
 
-    var direction = camVect.clone().sub(blaster.position);
+    var direction = bulletVect.clone().sub(blaster.position);
     var length = direction.length();
     var arrowHelper = new THREE.ArrowHelper(direction.normalize(), blaster.position, length, 0xff0000);
 
@@ -823,7 +878,7 @@ function createBlaster(event) {
     playSound();
 
 }
-
+*/
 
 
 function setupGround() {
@@ -989,9 +1044,7 @@ function createObject(mass, halfExtents, pos, quat, material, name) {
 function createObjects() {
     pos.set(0, -0.5, 0);
     quat.set(0, 0, 0, 1);
-    var ground = createParalellepipedWithPhysics(40, 1, 40, 0, pos, quat, new THREE.MeshPhongMaterial({
-        color: 0xFFFFFF
-    }));
+    var ground = createParalellepipedWithPhysics(40, 1, 40, 0, pos, quat, checkerTexture);
     ground.receiveShadow = true;
     ground.name = "ground";
 
@@ -1246,13 +1299,19 @@ function createMaterial(color, wire) {
 }
 
 function initInput() {
-
-    window.addEventListener('mousedown', shoot, false);
+    //window.addEventListener('mousedown', shoot, false);
     window.addEventListener('touchstart', shoot, false);
+    window.addEventListener('mousedown', shoot, false);
+
 
 }
 
-function shoot() {
+function shoot(e) {
+    // alert(e)
+    //alert(e.type);
+    if (e.type == "touchstart") touchEnabled = true;
+    //  e.preventDefault();
+    //  e.stopPropagation();
 
     console.log(playerBody)
         //console.log(playerBody.getLinearVelocity())
@@ -1286,11 +1345,11 @@ function shoot() {
 
     // playerVector.setFromMatrixPosition(player.matrixWorld);
 
-    var camDir = camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(20);
-    //  var camVect = new THREE.Vector3(camDir.x, controls.userHeight, camDir.z);
-    var camVect = new THREE.Vector3(camDir.x, camDir.y, camDir.z);
+    var bulletDir = camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(20);
+    //  var camVect = new THREE.Vector3(bulletDir.x, controls.userHeight, bulletDir.z);
+    var bulletVect = new THREE.Vector3(bulletDir.x, bulletDir.y + controls.userHeight, bulletDir.z);
 
-    var direction = camVect.clone().sub(playerblock.position);
+    var direction = bulletVect.clone().sub(playerblock.position);
     var length = direction.length();
     var arrowHelper = new THREE.ArrowHelper(direction.normalize(), playerblock.position, length, 0xff0000);
 
@@ -1341,6 +1400,8 @@ function shoot() {
     ballBody.setLinearVelocity(new Ammo.btVector3(pos.x, pos.y, pos.z));
 
     playSound();
+
+
 }
 
 
@@ -1584,6 +1645,17 @@ function removeDebris(object) {
     scene.remove(object);
 
     physicsWorld.removeRigidBody(object.userData.physicsBody);
+
+}
+
+function removePlayer() {
+
+    //console.log(object)
+    alert('removePlayer')
+
+    scene.remove(playerblock);
+
+    physicsWorld.removeRigidBody(playerBody);
 
 }
 
