@@ -28,7 +28,7 @@
     
     #score {
         position: absolute;
-        top: 50px;
+        top: 10px;
         right: 10px;
         z-index: 102;
     }
@@ -208,6 +208,8 @@ var accYsmooth = 0;
 var factor = .98;
 
 var _v3 = new THREE.Vector3;
+
+var arrowArr = [];
 
 
 var Colors = {
@@ -413,6 +415,8 @@ function init() {
     window.addEventListener('resize', onResize, true);
     window.addEventListener('vrdisplaypresentchange', onResize, true);
     document.addEventListener('mousemove', onDocumentMouseMove, false);
+
+    document.addEventListener( 'keypress', onDocumentKeyPress, false );
 
     //  window.addEventListener('orientationchange', doOnOrientationChange);
     //  document.addEventListener('click', createBlaster, true);
@@ -649,9 +653,11 @@ function playerFollow() {
     //  console.log(-mouse.x * 10)
     var vector;
     if (touchEnabled) {
-        vector = new THREE.Vector3(-mouse.x * 10 - accYsmooth, -mouse.y * 10 + accZsmooth, -1).unproject(camera);
-    } else {
         vector = new THREE.Vector3(-accYsmooth, accZsmooth, -1).unproject(camera);
+    } else {
+
+        vector = new THREE.Vector3(-mouse.x * 10, -mouse.y * 10, -1).unproject(camera);
+        //  vector = new THREE.Vector3(-mouse.x * 10 - accYsmooth, -mouse.y * 10 + accZsmooth, -1).unproject(camera);
     }
 
 
@@ -673,7 +679,7 @@ function onResize(e) {
     //  camDir = new THREE.Vector3(0,0,-1);
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
- /*   var dir = playerblock.position; //camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(1);
+    /*   var dir = playerblock.position; //camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(1);
     // playerblock.position.set(0,0,-1);
     var str = JSON.stringify(dir); //, null, 4)
     console.log(str);
@@ -748,7 +754,7 @@ function setupStage() {
 
                 if (debug) {
                     info.innerHTML = 'accZ:' + accZ.toFixed(2) + ', accZsm:' + accZsmooth.toFixed(2) + ', accY:' + accYsmooth.toFixed(2);
-                    info.innerHTML += ' mode:' + manager.mode + ',compat:' + manager.isVRcompatible;
+                    info.innerHTML += ' mode:' + manager.mode;
                 }
 
                 /*   }else{
@@ -782,6 +788,27 @@ function doOnOrientationChange() {
   
 */
 
+function onDocumentKeyPress(event) {
+
+    var keyCode = event.which;
+    console.log(keyCode)
+
+    // press ''
+
+    if (keyCode == 100) {
+
+        if (debug==true){
+            setDebug(false);
+        }else{
+            setDebug(true);
+        }
+
+        event.preventDefault();
+
+    } 
+
+}
+
 
 function onDocumentMouseMove(event) {
 
@@ -789,11 +816,11 @@ function onDocumentMouseMove(event) {
 
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-    /*
-        mouseCoords.set(
-            (event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1
-        );
-        */
+
+    mouseCoords.set(
+        (event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1
+    );
+
 
     if (debug) info.innerHTML = 'x:' + mouse.x.toFixed(2) + ', y:' + mouse.y.toFixed(2);
     //   if (debug) info.innerHTML = 'x:' + mouseCoords.x.toFixed(2) + ', y:' + mouseCoords.y.toFixed(2);
@@ -1355,6 +1382,7 @@ function shoot(e) {
 
 
     arrowHelper.time = lastRender;
+    arrowArr.push(arrowHelper);
     scene.add(arrowHelper);
 
 
@@ -1407,7 +1435,9 @@ function shoot(e) {
 
 function setDebug(bool) {
     debug = bool;
-    if (bool == false) info.innerHTML = null;
+    if (debug == false){
+        info.innerHTML = null;
+    } 
 }
 
 
