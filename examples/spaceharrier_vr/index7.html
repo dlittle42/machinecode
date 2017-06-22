@@ -27,6 +27,7 @@
         top: 10px;
         left: 10px;
         z-index: 101;
+        display: none;
     }
     
     #score {
@@ -455,7 +456,7 @@ function playBkgd() {
 
 function loadSound() {
     sound = new Howl({
-        src: ['../_audio/boing.mp3'],
+        src: ['audio/boing.mp3'],
         volume: volume
     });
    // sound.play();
@@ -2213,7 +2214,7 @@ function resetGame(){
 
 loadBkgd();
 loadGetReady();
-//playBkgd();
+playBkgd();
 loadSound();
 loadArgh();
 loadExplode();
