@@ -50,10 +50,10 @@
      //   S.x += iGlobalTime*5.0; 
        // float z = (sin(((time * 0.5 * speed));
 
-        vec3 newPosition = vec3(position.x,position.y,z);
+       // vec3 newPosition = vec3(position.x,position.y,z);
 
-       // gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition,1.0);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+       // gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition,1.0);
 
         
       }
@@ -61,7 +61,7 @@
   
   <script id="fragmentShader" type="x-shader/x-fragment">
       uniform vec3 color;
-      uniform vec3 color1;
+      uniform vec3 color1; 
       uniform vec3 color2;
 
     //  uniform float color1;
@@ -95,21 +95,32 @@
 
     gl_FragColor = vec4(color,1.0);
     */
-/*
-        vec2 st = gl_FragCoord.xy/vUv.xy;
 
-        vec2 translate = vec2(cos(time),sin(time));
-        st += translate*0.35;
+        
+        float delta = time * speed;
+      //  vec2 st = gl_FragCoord.xy/vUv.xy;
+
+      //  vec2 translate = vec2(cos(time),sin(time));
+       // st += translate*0.35;
 
         //color1 = vec3(0.0,0.0,0.0);
       //  color1 = vec3(st.x,st.y,0.0);
 
         vec2 center = -1.0 + 2.0 * vUv;
        // vec2 uv = floor(center.xy * scale*sin(time));
-        vec2 uv = floor(center.xy * scale);
+       // vec2 uv = floor(center.xy * scale)+delta;
+       // vec2 uv = center;//floor(center.xy * scale);
+        vec2 uv = center.xy * scale;
+      //  console.log(uv)
+   //   uv.x = center.x * scale;
+   //   uv.y = center.y * scale;
+        uv.y+=delta;
 
+
+
+/*
         
-        if(mod(uv.x + uv.y, 2.0) > 0.5){
+        if(floor(mod(uv.x + uv.y, 2.0)) > 0.5){
           //color1.x += time*5.0;
           gl_FragColor = vec4(color1, 1.0);
          //gl_FragColor = vec4(vec3(color1.r,color1.g,color1.b), 1.0);
@@ -121,19 +132,31 @@
           //gl_FragColor = vec4(vec3(st.x, color2.g , sin(color2.b + time) * 0.75), 1.0);
         }
 */
+         gl_FragColor = vec4(color1, 1.0);
+    
+        if (floor(mod(uv.y, 2.0)) < 1.0) {
+            if (mod(uv.x, 2.0) > 1.0)
+                gl_FragColor = vec4(color2, 1.0);
+        } else {
+            if (mod(uv.x, 2.0) < 1.0)
+                gl_FragColor = vec4(color2, 1.0);
+        }
 
+
+
+/*
         float delta = time * speed;
 
 
 
         ////------
 
-         bool a = int(mod(gl_FragCoord.x + delta, size)) == 0;
+         bool a = int(mod(gl_FragCoord.x, size)) == 0;
          bool b = int(mod(gl_FragCoord.y + delta, size)) == 0;
      
         gl_FragColor = ((a && !b) || (!a && b)) ? vec4(color1, 1.0) : vec4(color2, 1.0);
 
-
+*/
         ///-----
         
 
@@ -173,7 +196,7 @@ var gui;
 var options  = {
                 
 
-        speed            : 30.0,
+        speed            : 2.0,
 
         segments         : 324,
 
