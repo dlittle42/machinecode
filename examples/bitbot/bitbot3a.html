@@ -299,7 +299,7 @@
 
           var numVerts = no_geom.vertices.length;
    
-         // console.log(numVerts);
+          console.log(numVerts);
      
           for(var i = 0; i < numVerts; i++)
           {
@@ -476,7 +476,7 @@
               camera.aspect = window.innerWidth / window.innerHeight;
               camera.updateProjectionMatrix();
 
-              composer.setSize( width, height );
+              composer.setSize( window.innerWidth , window.innerHeight);
               effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight );
 
               renderer.setSize(window.innerWidth, window.innerHeight);

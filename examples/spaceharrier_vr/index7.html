@@ -573,7 +573,6 @@ function init() {
 
     setupStage();
 
-
     var loader2 = new THREE.TextureLoader();
     loader2.load('img/blaster.png', function(texture) {
         blasterMaterial = new THREE.SpriteMaterial({
@@ -589,6 +588,7 @@ function init() {
         }
 
     });
+    
     /*
         stats = new Stats();
         stats.domElement.style.position = 'absolute';
@@ -818,6 +818,7 @@ function animate() {
 
     }
 
+
     if (pressTimer) {
         pressCounter++;
        // console.log(pressCounter)
@@ -909,6 +910,7 @@ function onResize(e) {
 // stageParameters, rearrange the scene.
 function setupStage() {
     navigator.getVRDisplays().then(function(displays) {
+
         if (displays.length > 0) {
             vrDisplay = displays[0];
             if (vrDisplay.stageParameters) {
