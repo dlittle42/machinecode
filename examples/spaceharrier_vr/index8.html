@@ -10,14 +10,14 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <style>
     body {
-        width: 100%;
-        height: 100%;
-        background-color: #bd8ef8;
-        color: #fff;
         margin: 0px;
         padding: 0;
         overflow: hidden;
         display: flex;
+        width: 100%;
+        height: 100%;
+        background-color: #bd8ef8;
+        color: #fff;
         align-items: center;
         justify-content: center;
     }
@@ -245,7 +245,7 @@ var annie, hero;
 
 var score_display = document.getElementById('score');
 var score = 0;
-var sound, getReady, explode, argh, bkgdMusic;
+var bang, getReady, explode, argh, bkgdMusic;
 
 var textureLoader;
 var clock = new THREE.Clock();
@@ -336,25 +336,10 @@ var arrowArr = [];
         fontName = "Slukoni";//"optimer", // helvetiker, optimer, gentilis, droid sans, droid serif
         fontWeight = "Medium";//"bold"; // normal bold
 
-    var mirror = false;
 
-    var fontMap = {
 
-        "helvetiker": 0,
-        "optimer": 1,
-        "gentilis": 2,
-        "droid/droid_sans": 3,
-        "droid/droid_serif": 4,
-        "slukoni": 5
 
-    };
 
-    var weightMap = {
-
-        "regular": 0,
-        "bold": 1
-
-    };
 
 
 var Colors = {
@@ -437,10 +422,91 @@ var checkerTexture = new THREE.ShaderMaterial({
 // custom global variables
 var annie, hero; // animators
 
+var invisibleMat =  new THREE.MeshBasicMaterial( { 
+    color: 0x00ff00, 
+    side: THREE.BackSide,  
+    wireframe: false,
+    transparent: true,
+    depthWrite: false,
+    opacity: 0
+});
 
 
 
 var volume = 0.4;
+
+// load Textures, then font
+var loadingManager = new THREE.LoadingManager();
+
+loadingManager.onStart = function ( url, itemsLoaded, itemsTotal ) {
+
+    console.log( 'Started loading file: ' + url + '.\nLoaded ' + itemsLoaded + ' of ' + itemsTotal + ' files.' );
+
+};
+
+loadingManager.onLoad = function ( ) {
+
+    console.log('loading manager complete')
+
+    loadFont();
+
+};
+
+
+loadingManager.onProgress = function ( url, itemsLoaded, itemsTotal ) {
+
+    console.log( 'Loading file: ' + url + '.\nLoaded ' + itemsLoaded + ' of ' + itemsTotal + ' files.' );
+
+};
+
+loadingManager.onError = function ( url ) {
+
+    console.log( 'There was an error loading ' + url );
+
+};
+
+var textureLoader = new THREE.TextureLoader( loadingManager );
+
+var titleTexture = textureLoader.load( "img/spaceharrier_title.png");
+var heroTexture = textureLoader.load( "img/hero-spritesheet.png" );
+var explosionTexture = textureLoader.load( "img/explosion_sprite_small.png" );
+var enemyTexture = textureLoader.load( "img/Space_Harrier_enemy_Mukadensu.png" );
+var blasterTexture = textureLoader.load( "img/blaster.png" );
+
+function loadSounds(){
+
+    bkgdMusic = new Howl({
+        preload: true,
+        src: ['audio/sh-theme.mp3'],
+        volume: volume
+    });
+
+    bang = new Howl({
+        preload: true,
+        src: ['audio/boing.mp3'],
+        volume: volume
+    });
+
+    getReady = new Howl({
+        preload: true,
+        src: ['audio/ready.mp3'],
+        volume: volume
+    });
+
+    explode = new Howl({
+        preload: true,
+        src: ['audio/explode.mp3'],
+        volume: volume
+    });
+
+    argh = new Howl({
+        preload: true,
+        src: ['audio/sharrierAAArg.mp3'],
+        volume: volume
+    });
+
+}
+
 
 function loadBkgd() {
     bkgdMusic = new Howl({
@@ -466,8 +532,8 @@ function loadSound() {
 
 
 
-function playSound() {
-    sound.play();
+function playBang() {
+    bang.play();
 }
 
 function loadGetReady() {
@@ -518,10 +584,30 @@ function muteAll() {
     howler.mute();
 }
 
+function init(){
+   /* loadBkgd();
+    loadGetReady();
+    //playBkgd();
+    loadSound();
+    loadArgh();
+    loadExplode();
+*/
+    loadSounds();
+    playBkgd();
+    createScene();
+    initPhysics();
+    createGround();
+    createTitleScreen();
+    initInput();
+    
+}
 
-function init() {
 
-    setDebug(true)
+function createScene() {
+
+    setDebug(true);
+
+
 
     renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -563,48 +649,15 @@ function init() {
     };
     manager = new WebVRManager(renderer, effect, params);
 
-
-    /*
-        loader = new THREE.TextureLoader();
-        //setPlayerTexture calls setupStage which triggers animate
-        loader.load('img/Space_Harrier_player_sprite.png', setPlayerTexture);
-    */
-    
-
-
-
-
     setupStage();
 
-    var loader2 = new THREE.TextureLoader();
-    loader2.load('img/blaster.png', function(texture) {
-        blasterMaterial = new THREE.SpriteMaterial({
-            map: texture,
-            color: 0xffffff
-        });
-        // createBlaster();
-
-        // needs a delay??
-        if (forceVR && manager.isVRCompatible) {
-            manager.enterVRMode_();
-            console.log(manager)
-        }
-
-    });
-    
     /*
         stats = new Stats();
         stats.domElement.style.position = 'absolute';
         stats.domElement.style.top = '0px';
         renderer.domElement.appendChild(stats.domElement);
     */
-
-
     createLights();
-    createTitleScreen();
-   // createLetter('V');
-    
-    // setupGround();
 
     window.addEventListener('resize', onResize, true);
     window.addEventListener('vrdisplaypresentchange', onResize, true);
@@ -613,46 +666,36 @@ function init() {
 }
 
 function createTitleScreen(){
-    var loader = new THREE.TextureLoader();
-    loader.load('img/spaceharrier_title.png', function(texture) {
-      //  var titleTexture = texture;
-      //  console.log(texture.image.width)// and texture.image.height
-      var titleMaterial = new THREE.MeshBasicMaterial({
-        map: texture,
-            color: 0xffffff,
-            transparent: true
-        });
 
-/*
-        var titleMaterial = new THREE.SpriteMaterial({
-            map: texture,
-            color: 0xffffff
-        });
-*/
-       // title = new THREE.Sprite(titleMaterial);
+    var titleMaterial = new THREE.MeshBasicMaterial({
+        map: titleTexture,
+        color: 0xffffff,
+        transparent: true
+    });
 
-       
-        title = new THREE.Mesh(new THREE.PlaneGeometry(2, 1, 1, 1), titleMaterial);
+     title = new THREE.Mesh(new THREE.PlaneGeometry(2, 1, 1, 1), titleMaterial);
       //  title.scale.set(2, 1, 1)
-        title.position.set(0, controls.userHeight, -5)
-        scene.add(title);
+    title.position.set(0, controls.userHeight, -5)
+    scene.add(title);
 
         
 
 
-        TweenMax.to(title.position, 1,{
+    TweenMax.to(title.position, 1,{
 
-            z:-2,
+        z:-2,
 
-            ease:"Power3.easeOut",
-            onUpdate:function(){
-               // no_geom.verticesNeedUpdate = true;
-                
-          //  console.log('tweened');
-        }});
+        ease:"Power3.easeOut",
+        onUpdate:function(){
+           // no_geom.verticesNeedUpdate = true;
+            
+      //  console.log('tweened');
+    }});
 
-        loadFont();
-    });
+    createLetter('V')
+    createLetter('R')
+
+    
 }
 
 function removeTitleScreen(){
@@ -677,7 +720,7 @@ function initPhysics() {
 }
 
 function addPlayer() {
-    player = new Player("img/hero-spritesheet.png", 0, true);
+    player = new Player(0, true);
 
 
     pivot = new THREE.Object3D();
@@ -691,27 +734,16 @@ function addPlayer() {
 
 function Explosion(vector) {
 
-    var explosionTexture = new THREE.TextureLoader().load("img/explosion_sprite_small.png");
+    //var explosionTexture = new THREE.TextureLoader().load("img/explosion_sprite_small.png");
     var expSprite = new TextureAnimator(explosionTexture, 7, 1, 7, 75);
     expSprite.animBehavior = "loop";
 
-    explosionblock = new THREE.Mesh(new THREE.BoxGeometry(.5, .5, .5, 1, 1, 1), createMaterial(0xff0000, true, 1, false));
+  //  explosionblock = new THREE.Mesh(new THREE.BoxGeometry(.5, .5, .5, 1, 1, 1), createMaterial(0xff0000, true, 1, false));
+    explosionblock = new THREE.Mesh(new THREE.BoxGeometry(.5, .5, .5, 1, 1, 1), invisibleMat);
     explosionblock.castShadow = true;
     explosionblock.receiveShadow = true;
     explosionblock.name = "explosion";
 
-
-
-
-    //annie = new TextureAnimator( explosionTexture, 10, 1, 10, 75 ); // texture, #horiz, #vert, #total, duration.
-   /* var explosionMaterial = new THREE.MeshBasicMaterial({
-        map: explosionTexture,
-        side: THREE.DoubleSide,
-        color: 0xffffff
-    });*/
-   
-        // var explosionGeometry = new THREE.PlaneGeometry(1.16, .78, 1, 1);
-        //  var explosion = new THREE.Mesh(explosionGeometry, explosionMaterial);
 
     var explosionMaterial = new THREE.SpriteMaterial({
         map: explosionTexture,
@@ -726,7 +758,7 @@ function Explosion(vector) {
 
 
     // explosion.position.set(0,controls.userHeight,-5);
-    explosion.scale.set(2, 2, 1.0); 
+    explosion.scale.set(2.5, 2, 1.0); 
     explosionblock.position.copy(vector);
     scene.add(explosionblock);
     explosionblock.add(explosion)
@@ -926,6 +958,13 @@ function onResize(e) {
 // Get the HMD, and if we're dealing with something that specifies
 // stageParameters, rearrange the scene.
 function setupStage() {
+
+    if (forceVR && manager.isVRCompatible) {
+        manager.enterVRMode_();
+        console.log(manager)
+    }
+
+
     navigator.getVRDisplays().then(function(displays) {
 
         if (displays.length > 0) {
@@ -1033,13 +1072,13 @@ function setupPointer(){
             visible: true,
             restPoint: -1, //Defines the reticle's resting point when no object has been targeted
             color: 0xcc0000,
-            innerRadius: 0.0001,
-            outerRadius: 0.003,
+            innerRadius: 0.021,
+            outerRadius: 0.026,
             hover: {
                 color: 0xcc0000,
-                innerRadius: 0.02,
-                outerRadius: 0.024,
-                speed: 5,
+                innerRadius: 0.06,
+                outerRadius: 0.07,
+                speed: 10,
                 vibrate: 50 //Set to 0 or [] to disable
             }
         },
@@ -1047,8 +1086,8 @@ function setupPointer(){
             visible: false,
             duration: 2.5,
             color: 0x00fff6,
-            innerRadius: 0.045,
-            outerRadius: 0.06,
+            innerRadius: 0.071,
+            outerRadius: 0.081,
             vibrate: 0, //Set to 0 or [] to disable
             clickCancelFuse: false //If users clicks on targeted object fuse is canceled
         }
@@ -1121,7 +1160,7 @@ function createLights() {
     scene.add(ambientLight);
 
     var light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(-10, 18, 5);
+    light.position.set(0, 18, 5);
     light.castShadow = true;
     var d = 14;
     light.shadow.camera.left = -d;
@@ -1129,11 +1168,15 @@ function createLights() {
     light.shadow.camera.top = d;
     light.shadow.camera.bottom = -d;
 
+  //  light.shadow.bias = -0.000222;
+
     light.shadow.camera.near = 2;
     light.shadow.camera.far = 50;
 
     light.shadow.mapSize.x = 1024;
     light.shadow.mapSize.y = 1024;
+
+
 
     scene.add(light);
 }
@@ -1155,9 +1198,22 @@ function createParalellepipedWithPhysics(sx, sy, sz, mass, pos, quat, material) 
 function createGround(){
     pos.set(0, -0.5, 0);
     quat.set(0, 0, 0, 1);
-    var ground = createParalellepipedWithPhysics(40, 1, 40, 0, pos, quat, checkerTexture);
+    var ground = createParalellepipedWithPhysics(100, 1, 100, 0, pos, quat, checkerTexture);
     ground.receiveShadow = true;
     ground.name = "ground";
+
+
+    //var planeMaterial = new THREE.ShadowMaterial( { opacity: 0.1 } );
+    var shadowMaterial = new THREE.ShadowMaterial( { color: 0xeeeeee } );
+    shadowMaterial.opacity = 0.5;
+
+  //  var plane = new THREE.Mesh( new THREE.PlaneGeometry(400, 400, 10, 10), createMaterial(0xffffff));
+    var plane = new THREE.Mesh( new THREE.PlaneBufferGeometry(400, 400, 10, 10), shadowMaterial);
+    plane.position.y = 0.1;
+    plane.rotation.x = -Math.PI / 2;
+    plane.receiveShadow = true;
+    plane.name="shadowplane"
+    scene.add( plane );
 }
 
 function createObjects() {
@@ -1174,6 +1230,8 @@ function createObjects() {
     tower.castShadow = true;
     tower.name = "tower";
 
+    addToReticulum(tower);
+
 
 
     pos.set(0, 1, -5);
@@ -1184,6 +1242,7 @@ function createObjects() {
     brick.castShadow = true;
     brick.receiveShadow = true;
     brick.name = "brick";
+    addToReticulum(brick);
 
     pos.set(Math.random()*4-2, Math.random()*10, Math.random()*10 - 5);
     quat.set(0, 0, 0, 1);
@@ -1193,6 +1252,7 @@ function createObjects() {
     brick.castShadow = true;
     brick.receiveShadow = true;
     brick.name = "brick";
+    addToReticulum(brick);
 
 
     createWall(0,0);
@@ -1238,27 +1298,8 @@ function createWall(xpos, zpos) {
             brick.castShadow = true;
             brick.receiveShadow = true;
             brick.name = "brick";
-            brick.userData.reticulumReady = true;
-
-
-            Reticulum.add( brick, {
-       
-                clickCancelFuse: true, // Overrides global setting for fuse's clickCancelFuse
-                reticleHoverColor: 0x00fff6, // Overrides global reticle hover color
-                fuseVisible: false, // Overrides global fuse visibility
-                fuseDuration: 1.5, // Overrides global fuse duration
-                fuseColor: 0xcc0000, // Overrides global fuse color
-                onGazeOver: function(){
-                    // do something when user targets object
-                    //this.material.emissive.setHex( 0xffcc00 );
-                    console.log('onGazeOver')
-                },
-                onGazeOut: function(){
-                    // do something when user moves reticle off targeted object
-                    //this.material.emissive.setHex( 0xcc0000 );
-                    console.log('onGazeOut')
-                }
-            });
+            addToReticulum(brick);
+            
 
             if (oddRow && (i == 0 || i == nRow - 2)) {
                 pos.z += 0.75 * brickLength;
@@ -1288,13 +1329,16 @@ function createEnemies() {
 
 
 
-function Player(img, xpos, sprite) {
+function Player(xpos, sprite) {
+
 
     playerGroup = new THREE.Object3D();
 
+
     //var playerTexture = new THREE.TextureLoader().load( "img/player_small_128.png" );
-    var playerTexture = new THREE.TextureLoader().load(img);
-    if (sprite) hero = new TextureAnimator(playerTexture, 4, 4, 3, 75);
+   // var playerTexture = new THREE.TextureLoader().load(img);
+   // if (sprite) hero = new TextureAnimator(playerTexture, 4, 4, 3, 75);
+    if (sprite) hero = new TextureAnimator(heroTexture, 4, 4, 3, 75);
     //annie = new TextureAnimator( playerTexture, 10, 1, 10, 75 ); // texture, #horiz, #vert, #total, duration.
 
     pos.set(0, controls.userHeight, -1);
@@ -1303,13 +1347,25 @@ function Player(img, xpos, sprite) {
     var playerMass = 2000;
 
     var sx = .25;
-    var sy = .25;
+    var sy = .4;
     var sz = .25;
 
   //  playerblock = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz, 1, 1, 1), createMaterial(0xff0000, true));
-    playerblock = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz, 1, 1, 1), createMaterial(0xff0000, false,1, false));
+/*  var mat = new THREE.MeshPhongMaterial({
+                      color: 0xffffff,
+                      shading: THREE.FlatShading,
+    side: THREE.BackSide,  
+    wireframe: false,
+     depthWrite: false,
+    transparent: true,
+    opacity: 0
+});
+*/
+   // playerblock = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz, 1, 1, 1), createMaterial(0xff0000, false,.5, true));
+    playerblock = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz, 1, 1, 1), invisibleMat);
+
     playerblock.castShadow = true;
-    playerblock.receiveShadow = true;
+  //  playerblock.receiveShadow = true;
     playerblock.name = "player";
    // playerblock.visibile = false;
     playerGroup.add(playerblock)
@@ -1317,7 +1373,7 @@ function Player(img, xpos, sprite) {
    // playerblock.visible = false;
 
     var playerMaterial = new THREE.SpriteMaterial({
-        map: playerTexture,
+        map: heroTexture,
         color: 0xffffff
     });
     /*
@@ -1329,13 +1385,14 @@ function Player(img, xpos, sprite) {
         */
     playerMaterial.transparent = true;
 
+
     // playerMaterial.map.offset = new THREE.Vector2(0.25 * 1, 0);
     // playerMaterial.map.repeat = new THREE.Vector2(1 / 4, 1);
     //fixes flicker when planes intersect
-    playerMaterial.depthTest = true
-    playerMaterial.depthWrite = false
-    playerMaterial.polygonOffset = true
-    playerMaterial.polygonOffsetFactor = -4
+  //  playerMaterial.depthTest = true
+  //  playerMaterial.depthWrite = false
+  //  playerMaterial.polygonOffset = true
+  //  playerMaterial.polygonOffsetFactor = -4
         /// end fix
 
     /// the actual character ////      
@@ -1344,7 +1401,9 @@ function Player(img, xpos, sprite) {
 
     var player = new THREE.Sprite(playerMaterial);
 
+
     player.scale.set(.5, .5, 1.0); // imageWidth, imageHeight
+   // player.scale.set(.25, .25, 1.0);
     playerGroup.add(player);
 
     var playerShape = new Ammo.btBoxShape(new Ammo.btVector3(sx * 0.5, sy * 0.5, sz * 0.5));
@@ -1475,18 +1534,32 @@ function Player(img, xpos, sprite) {
 function Enemy() {
 
 
-    var enemyTexture = new THREE.TextureLoader().load( "img/enemy.png" );
+   // var enemyTexture = new THREE.TextureLoader().load( "img/enemy.png" );
+  //  var enemyTexture = new THREE.TextureLoader().load( "img/Space_Harrier_enemy_Mukadensu.png" );
  
     pos.set(Math.random() * 10 - 5, controls.userHeight, Math.random()*10 -20);
     quat.set(0, 0, 0, 1);
 
     var enemyMass = 10;
 
-    var sx = .4;
-    var sy = .25;
+    var sx = .8;
+    var sy = .6;
     var sz = .25;
+/*
+     var mat = new THREE.MeshBasicMaterial( { 
+        color: 0xffff00, 
+        side: THREE.BackSide,  
+        wireframe: true,
+        transparent: true,
+       // depthWrite: false,
+        opacity: 1
+    });
+    */
 
-    enemyblock = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz, 1, 1, 1), createMaterial(0xff0000, true, 1, false));
+  //  enemyblock = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz, 1, 1, 1), createMaterial(0xff0000, false, 1, true));
+  //  enemyblock = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz, 1, 1, 1), invisibleMat);
+    var enemyRadius = .3;
+    enemyblock =  new THREE.Mesh(new THREE.SphereGeometry(enemyRadius, 8, 8 ), invisibleMat);
     enemyblock.castShadow = true;
     enemyblock.receiveShadow = true;
     enemyblock.name = "enemy";
@@ -1513,11 +1586,14 @@ function Enemy() {
 
     var enemy = new THREE.Sprite(enemyMaterial);
 
-    enemy.scale.set(.75, .5, 1.0); // imageWidth, imageHeight
+    enemy.scale.set(1, .5, 1.0); // imageWidth, imageHeight
     enemyblock.add(enemy);
 
-    var enemyShape = new Ammo.btBoxShape(new Ammo.btVector3(sx * 0.5, sy * 0.5, sz * 0.5));
+    var enemyShape = new Ammo.btSphereShape(enemyRadius);
     enemyShape.setMargin(margin);
+
+   // var enemyShape = new Ammo.btBoxShape(new Ammo.btVector3(sx * 0.5, sy * 0.5, sz * 0.5));
+   // enemyShape.setMargin(margin);
 
     var enemyBody = createRigidBody(enemyblock, enemyShape, enemyMass, pos, quat);
     enemyBody.setFriction(0.9);
@@ -1732,11 +1808,24 @@ function shoot(e) {
         var ballRadius = 0.2;
 
         // var ball = new THREE.Mesh(new THREE.SphereGeometry(ballRadius, 14, 10), ballMaterial);
-        var ball = new THREE.Mesh(new THREE.SphereGeometry(ballRadius, 2, 2), createMaterial(0x33ffff, true, 1, false));
+      //  var ball = new THREE.Mesh(new THREE.SphereGeometry(ballRadius, 2, 2), createMaterial(0x33ffff, true, 1, false));
+        var ball = new THREE.Mesh(new THREE.SphereGeometry(ballRadius, 2, 2), invisibleMat);
         ball.castShadow = true;
         ball.receiveShadow = true;
         ball.name = "bullet";
 
+
+        var blasterMaterial = new THREE.SpriteMaterial({
+            map: blasterTexture,
+            color: 0xffffff
+        });
+        // createBlaster();
+
+        // needs a delay??
+        if (forceVR && manager.isVRCompatible) {
+            manager.enterVRMode_();
+            console.log(manager)
+        }
 
 
         var blaster = new THREE.Sprite(blasterMaterial);
@@ -1765,7 +1854,7 @@ function shoot(e) {
         pos.multiplyScalar(24);
         ballBody.setLinearVelocity(new Ammo.btVector3(pos.x, pos.y, pos.z));
 
-        playSound();
+        playBang();
     }
 
 }
@@ -2082,22 +2171,23 @@ function TextureAnimator(texture, tilesHoriz, tilesVert, numTiles, tileDispDurat
 
 function loadFont() {
 
-                var loader = new THREE.FontLoader();
-                var typefile = 'fonts/' + fontName + '_' + fontWeight + '.typeface.json';
-                console.log(typefile);
-                loader.load( typefile, function ( response ) {
+    var loader = new THREE.FontLoader();
+    var typefile = 'fonts/' + fontName + '_' + fontWeight + '.typeface.json';
+    console.log(typefile);
+    loader.load( typefile, function ( response ) {
 
-                    font = response;
+        font = response;
 
-                   // refreshText();
+       // refreshText();
 
-                    //generateLetters();
-                    createLetter('V')
-                    createLetter('R')
+        //generateLetters();
+       // createLetter('V')
+       // createLetter('R')
+        init();
 
-                } );
+    } );
 
-            }
+}
 
 function createLetter(letter, speed){
                 console.log(letter)
@@ -2142,37 +2232,38 @@ function createLetter(letter, speed){
 
                 var letter = new THREE.Mesh( textGeo, createMaterial( 0x333333 ) );
                 letterArr.push(letter);
+                letter.castShadow=true;
 
                 scene.add(letter);
 
                 Reticulum.add( letter, {
-            clickCancelFuse: true, // Overrides global setting for fuse's clickCancelFuse
-            reticleHoverColor: 0x00fff6, // Overrides global reticle hover color
-            fuseVisible: true, // Overrides global fuse visibility
-            fuseDuration: 1.5, // Overrides global fuse duration
-            fuseColor: 0xcc0000, // Overrides global fuse color
-            onGazeOver: function(){
-                // do something when user targets object
-                //this.material.emissive.setHex( 0xffcc00 );
-                console.log('onGazeOver')
-            },
-            onGazeOut: function(){
-                // do something when user moves reticle off targeted object
-                //this.material.emissive.setHex( 0xcc0000 );
-                console.log('onGazeOut')
-            },
-            onGazeLong: function(){
-                // do something user targetes object for specific time
-              //  this.material.emissive.setHex( 0x0000cc );
-                console.log('onGazeLong')
-            },
-            onGazeClick: function(){
-                // have the object react when user clicks / taps on targeted object
-               // this.material.emissive.setHex( 0x0000cc );
-                console.log('onGazeClick')
-                startGame();
-            }
-        });
+                        clickCancelFuse: true, // Overrides global setting for fuse's clickCancelFuse
+                        reticleHoverColor: 0x00fff6, // Overrides global reticle hover color
+                        fuseVisible: true, // Overrides global fuse visibility
+                        fuseDuration: 1.5, // Overrides global fuse duration
+                        fuseColor: 0xcc0000, // Overrides global fuse color
+                        onGazeOver: function(){
+                            // do something when user targets object
+                            //this.material.emissive.setHex( 0xffcc00 );
+                            console.log('onGazeOver')
+                        },
+                        onGazeOut: function(){
+                            // do something when user moves reticle off targeted object
+                            //this.material.emissive.setHex( 0xcc0000 );
+                            console.log('onGazeOut')
+                        },
+                        onGazeLong: function(){
+                            // do something user targetes object for specific time
+                          //  this.material.emissive.setHex( 0x0000cc );
+                            console.log('onGazeLong')
+                        },
+                        onGazeClick: function(){
+                            // have the object react when user clicks / taps on targeted object
+                           // this.material.emissive.setHex( 0x0000cc );
+                            console.log('onGazeClick')
+                            startGame();
+                        }
+                    });
                 
                     console.log(xpos)
                     letter.position.x = Math.random()*4- 2;
@@ -2234,6 +2325,32 @@ function cleanupPhysics(){
     rigidBodies = [];
     
 }
+function addToReticulum(obj){
+
+    obj.userData.reticulumReady = true;
+
+
+    Reticulum.add( obj, {
+
+        clickCancelFuse: true, // Overrides global setting for fuse's clickCancelFuse
+        reticleHoverColor: 0x00fff6, // Overrides global reticle hover color
+        fuseVisible: false, // Overrides global fuse visibility
+        fuseDuration: 1.5, // Overrides global fuse duration
+        fuseColor: 0xcc0000, // Overrides global fuse color
+      /*  onGazeOver: function(){
+            // do something when user targets object
+            //this.material.emissive.setHex( 0xffcc00 );
+            console.log('onGazeOver')
+        },
+        onGazeOut: function(){
+            // do something when user moves reticle off targeted object
+            //this.material.emissive.setHex( 0xcc0000 );
+            console.log('onGazeOut')
+        }
+        */
+    });
+
+}
 
 function removeFromReticulum(obj){
      Reticulum.remove( obj );
@@ -2263,23 +2380,7 @@ function resetGame(){
    // console.log(physicsWorld)
 }
 
-loadBkgd();
-loadGetReady();
-//playBkgd();
-loadSound();
-loadArgh();
-loadExplode();
-init();
-initPhysics();
-initInput();
-createGround();
-/*
-addPlayer();
-createObjects();
-initInput();
-*/
 
-//addExplosion();
 
 document.getElementById('reset').addEventListener('click', resetGame, false)
 
