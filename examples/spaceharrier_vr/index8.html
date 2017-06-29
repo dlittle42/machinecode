@@ -37,6 +37,12 @@
         z-index: 102;
     }
 
+    .stats{
+        position: absolute;
+        left: 0;
+        bottom: 0;
+    }
+
  
     /*
 * {cursor: none;}
@@ -224,7 +230,7 @@ WebVRConfig = {
 var forceVR = true;//false; //true;
 var debug = false; //true;
 
-var renderer, scene, camera, controls, effect, manager, loader, stats, title;
+var renderer, scene, camera, controls, effect, manager, loader, stats, title, coins;
 var playerGroup, playerblock, playerBody, playerState;
 var pivot, player, player_sprite;
 var mouse = new THREE.Vector2();
@@ -240,12 +246,14 @@ var touchEnabled = false;
 var gameOn = false;
 var pressTimer = false;
 var pressCounter = 0;
+var freeze = false;
+var enemyAttackRange = 1000;
 
 var annie, hero;
 
 var score_display = document.getElementById('score');
 var score = 0;
-var bang, getReady, explode, argh, bkgdMusic;
+var bang, getReady, explode, argh, bkgdMusic, laser, startgame;
 
 var textureLoader;
 var clock = new THREE.Clock();
@@ -446,7 +454,7 @@ loadingManager.onStart = function ( url, itemsLoaded, itemsTotal ) {
 
 loadingManager.onLoad = function ( ) {
 
-    console.log('loading manager complete')
+    console.log('loading manager complete');
 
     loadFont();
 
@@ -468,10 +476,12 @@ loadingManager.onError = function ( url ) {
 var textureLoader = new THREE.TextureLoader( loadingManager );
 
 var titleTexture = textureLoader.load( "img/spaceharrier_title.png");
+var coinsTexture = textureLoader.load( "img/insert_coins.png");
 var heroTexture = textureLoader.load( "img/hero-spritesheet.png" );
 var explosionTexture = textureLoader.load( "img/explosion_sprite_small.png" );
 var enemyTexture = textureLoader.load( "img/Space_Harrier_enemy_Mukadensu.png" );
 var blasterTexture = textureLoader.load( "img/blaster.png" );
+var enemyBlasterTexture = textureLoader.load( "img/enemy_blaster.png" );
 
 function loadSounds(){
 
@@ -505,30 +515,28 @@ function loadSounds(){
         volume: volume
     });
 
-}
-
-
-function loadBkgd() {
-    bkgdMusic = new Howl({
-        src: ['audio/sh-theme.mp3'],
-        volume: volume
+    laser = new Howl({
+        preload: true,
+        src: ['audio/projectile.wav'],
+        volume: 1
     });
-   // sound.play();
+
+    startgame = new Howl({
+        preload: true,
+        src: ['audio/sharrierCoin.mp3'],
+        volume: 1
+    });
 
 }
+
+
+
 
 function playBkgd() {
     bkgdMusic.play();
 }
 
-function loadSound() {
-    sound = new Howl({
-        src: ['audio/boing.mp3'],
-        volume: volume
-    });
-   // sound.play();
 
-}
 
 
 
@@ -536,48 +544,28 @@ function playBang() {
     bang.play();
 }
 
-function loadGetReady() {
 
-    getReady = new Howl({
-        src: ['audio/ready.mp3'],
-        volume: volume
-    });
-    //getReady.play();
-
-}
 
 function playGetReady() {
     getReady.play();
 }
 
 
-function loadExplode() {
-
-    explode = new Howl({
-        src: ['audio/explode.mp3'],
-        volume: volume
-    });
-    //explode.play();
-
-}
-
 function playExplode() {
     explode.play();
-}
-
-function loadArgh() {
-
-    argh = new Howl({
-        src: ['audio/sharrierAAArg.mp3'],
-        volume: volume
-    });
-    //explode.play();
-
 }
 
 
 function playArgh() {
     argh.play();
+}
+
+function playLaser() {
+    laser.play();
+}
+
+function playCoin() {
+    startgame.play();
 }
 
 function muteAll() {
@@ -593,11 +581,13 @@ function init(){
     loadExplode();
 */
     loadSounds();
-    playBkgd();
+    //playBkgd();
+
     createScene();
     initPhysics();
     createGround();
     createTitleScreen();
+   // createStartButton();
     initInput();
     
 }
@@ -651,13 +641,23 @@ function createScene() {
 
     setupStage();
 
-    /*
+    
         stats = new Stats();
         stats.domElement.style.position = 'absolute';
-        stats.domElement.style.top = '0px';
-        renderer.domElement.appendChild(stats.domElement);
-    */
+        stats.domElement.style.bottom = '0px';
+        stats.domElement.style.top = null;
+        stats.domElement.className= 'stats';
+        document.body.appendChild(stats.domElement);
+ 
     createLights();
+
+
+    setTimeout(function(){ 
+        if (forceVR && manager.isVRCompatible) {
+            manager.enterVRMode_();
+            console.log(manager)
+        }
+    }, 50);
 
     window.addEventListener('resize', onResize, true);
     window.addEventListener('vrdisplaypresentchange', onResize, true);
@@ -665,18 +665,128 @@ function createScene() {
 
 }
 
+function createStartButton(){
+    var canvas1 = document.createElement('canvas');
+    var context1 = canvas1.getContext('2d');
+    canvas1.width = 100;
+    canvas1.height = 100;
+    var x = 0;
+    var y = 50;
+    context1.font = "20px Arial";
+    context1.lineWidth = 1;
+    context1.fillStyle = "rgba(255,0,0,0.95)";
+    context1.strokeStyle = 'blue';
+    var text = 'Hello, world!';
+    context1.fillText(text, 0, 50);
+   // context1.strokeText(text, 0, 50);
+    
+    // canvas contents will be used for a texture
+    var texture1 = new THREE.Texture(canvas1) 
+    texture1.needsUpdate = true;
+      
+    var material1 = new THREE.MeshBasicMaterial( {map: texture1, side:THREE.DoubleSide } );
+   // material1.transparent = true;
+
+    var mesh1 = new THREE.Mesh(
+        new THREE.PlaneGeometry(100, 100),
+        material1
+      );
+    mesh1.position.set(0,2,-80);
+    scene.add( mesh1 );
+    
+}
+
 function createTitleScreen(){
 
+    console.log('create ttile')
     var titleMaterial = new THREE.MeshBasicMaterial({
         map: titleTexture,
         color: 0xffffff,
         transparent: true
     });
 
-     title = new THREE.Mesh(new THREE.PlaneGeometry(2, 1, 1, 1), titleMaterial);
+    title = new THREE.Mesh(new THREE.PlaneGeometry(2, 1, 1, 1), titleMaterial);
       //  title.scale.set(2, 1, 1)
-    title.position.set(0, controls.userHeight, -5)
+    title.position.set(0, controls.userHeight+.1, -5);
+    title.castShadow = true;
     scene.add(title);
+
+
+
+
+    var coinsMaterial = new THREE.MeshBasicMaterial({
+        map: coinsTexture,
+        color: 0xffffff,
+        transparent: true,
+        opacity: 1
+    });
+
+
+    coins = new THREE.Mesh(new THREE.PlaneGeometry(2.5, .3, 1, 1), coinsMaterial);
+    coins.position.set(0, controls.userHeight-.3, 2);
+    coins.scale.set(.2,.2,.2)
+    scene.add(coins);
+
+    Reticulum.add( coins, {
+                        clickCancelFuse: true, // Overrides global setting for fuse's clickCancelFuse
+                        reticleHoverColor: 0x00fff6, // Overrides global reticle hover color
+                        fuseVisible: true, // Overrides global fuse visibility
+                        fuseDuration: 1.5, // Overrides global fuse duration
+                        fuseColor: 0xcc0000, // Overrides global fuse color
+                        onGazeOver: function(){
+                            // do something when user targets object
+                            //this.material.emissive.setHex( 0xffcc00 );
+                            console.log('onGazeOver')
+                        },
+                        onGazeOut: function(){
+                            // do something when user moves reticle off targeted object
+                            //this.material.emissive.setHex( 0xcc0000 );
+                            console.log('onGazeOut')
+                        },
+                        onGazeLong: function(){
+                            // do something user targetes object for specific time
+                          //  this.material.emissive.setHex( 0x0000cc );
+                            console.log('onGazeLong')
+                            //startGame();
+                        },
+                        onGazeClick: function(){
+                            // have the object react when user clicks / taps on targeted object
+                           // this.material.emissive.setHex( 0x0000cc );
+                            console.log('onGazeClick')
+                            startGame();
+                        }
+                    });
+
+    TweenMax.to(coins.position, 1,{
+
+        z:-1,
+        delay: 1,
+        ease:"Power3.easeOut",
+        onUpdate:function(){
+           // no_geom.verticesNeedUpdate = true;
+            
+      //  console.log('tweened');
+    }});
+
+    console.log(coins.material)
+
+    TweenMax.to(coins.material, .2, {
+            opacity: 0,
+            delay: 2,
+            repeat: 5,
+            yoyo: true
+    });
+
+    TweenMax.to(coins.position, 1,{
+
+        z:-1,
+        delay: 1,
+        ease:"Power3.easeOut",
+        onUpdate:function(){
+           // no_geom.verticesNeedUpdate = true;
+            
+      //  console.log('tweened');
+    }});
 
         
 
@@ -699,11 +809,13 @@ function createTitleScreen(){
 }
 
 function removeTitleScreen(){
+    removeFromReticulum(coins);
     for (var n=0; n<letterArr.length;n++){
         scene.remove(letterArr[n])
-        removeFromReticulum(letterArr[n]);
     }
     scene.remove(title)
+    scene.remove(coins)
+
 }
 
 function initPhysics() {
@@ -721,11 +833,13 @@ function initPhysics() {
 
 function addPlayer() {
     player = new Player(0, true);
+    player.animate('fly');
 
-
+/*
     pivot = new THREE.Object3D();
     pivot.position.set(0, controls.userHeight, 0);
-    scene.add(pivot);
+  //  scene.add(pivot);
+  */
 
     // createPlayer(playerTexture);
 
@@ -842,30 +956,38 @@ function animate() {
 
     var deltaTime = clock.getDelta();
 
+
     //animate checkerboard texture
     uniforms.time.value = clock.getElapsedTime();
 
-    if (gameOn){
-        hero.update(700 * deltaTime);
-        //  if (annie) annie.update(700 * deltaTime);
-        for (var n = 0; n < explosionArr.length; n++) {
-           // console.log(explosionArr[n])
-            explosionArr[n].sprite.update(700 * deltaTime);
+    if (!freeze){
+        if (gameOn){
+            hero.update(700 * deltaTime);
+            //  if (annie) annie.update(700 * deltaTime);
+            for (var n = 0; n < explosionArr.length; n++) {
+               // console.log(explosionArr[n])
+                explosionArr[n].sprite.update(700 * deltaTime);
+
+            }
+
+            for (var n = 0; n < enemyPool.length; n++) {
+               // console.log(explosionArr[n])
+               enemyPool[n].update();
+
+
+            }
+
+            playerFollow();
+
+            
+
 
         }
 
-        for (var n = 0; n < enemyPool.length; n++) {
-           // console.log(explosionArr[n])
-            enemyPool[n].update();
+        updatePhysics(deltaTime);
 
-
-        }
-
-        playerFollow();
-
-
+        controls.update(deltaTime);
     }
-
 
     if (pressTimer) {
         pressCounter++;
@@ -876,26 +998,17 @@ function animate() {
         }
     }
 
-    updatePhysics(deltaTime);
-
-    controls.update(deltaTime);
     Reticulum.update();
+
 
     time += deltaTime;
 
 
     // Render the scene through the manager.
     manager.render(scene, camera);
-    effect.render(scene, camera);
+   // effect.render(scene, camera);
 
-    
-
-    if (pivot) {
-        pivot.rotation.copy(camera.rotation);
-       // console.log(camera.rotation)
-        pivot.updateMatrix();
-    }
-
+   
     /*
 
         for (var i = 0; i < floor.length; i++) {
@@ -911,7 +1024,7 @@ function animate() {
 
     */
 
-    // stats.update();
+    stats.update();
 
     vrDisplay.requestAnimationFrame(animate);
 }
@@ -959,13 +1072,12 @@ function onResize(e) {
 // stageParameters, rearrange the scene.
 function setupStage() {
 
-    if (forceVR && manager.isVRCompatible) {
-        manager.enterVRMode_();
-        console.log(manager)
-    }
+   console.log(navigator)
 
 
     navigator.getVRDisplays().then(function(displays) {
+
+
 
         if (displays.length > 0) {
             vrDisplay = displays[0];
@@ -974,6 +1086,7 @@ function setupStage() {
                 if (forceVR && manager.isVRcompatible) {
                     manager.enterVRMode_();
                     console.log(manager)
+                    alert('manager fire 2')
                 }
             }
             vrDisplay.requestAnimationFrame(animate);
@@ -987,7 +1100,10 @@ function setupStage() {
         //    console.log(util.isMobile)
         // bad mobile detection
         if (window.innerWidth < 769) {
+            manager.enterVRMode_()
             console.log('isDeviceMotion')
+            alert('isDeviceMotion')
+
 
             window.addEventListener("devicemotion", function(event) {
 
@@ -1050,19 +1166,7 @@ function setupStage() {
     });
 
 }
-/*
-function doOnOrientationChange() {
-    switch(window.orientation) {  
-      case -90 || 90:
-        alert('landscape');
-        break; 
-      default:
-        alert('portrait');
-        break; 
-    }
-}
-  
-*/
+
 
 function setupPointer(){
    Reticulum.init(camera, {
@@ -1258,7 +1362,7 @@ function createObjects() {
     createWall(0,0);
     createWall(-10, 20);
     
-    createEnemies();
+    
 }
 
 function createWall(xpos, zpos) {
@@ -1333,6 +1437,7 @@ function Player(xpos, sprite) {
 
 
     playerGroup = new THREE.Object3D();
+    playerGroup.name = "player";
 
 
     //var playerTexture = new THREE.TextureLoader().load( "img/player_small_128.png" );
@@ -1366,7 +1471,7 @@ function Player(xpos, sprite) {
 
     playerblock.castShadow = true;
   //  playerblock.receiveShadow = true;
-    playerblock.name = "player";
+ //   playerblock.name = "player";
    // playerblock.visibile = false;
     playerGroup.add(playerblock)
 
@@ -1536,8 +1641,11 @@ function Enemy() {
 
    // var enemyTexture = new THREE.TextureLoader().load( "img/enemy.png" );
   //  var enemyTexture = new THREE.TextureLoader().load( "img/Space_Harrier_enemy_Mukadensu.png" );
+    var px = Math.random() * 6 - 3;
+    var py = controls.userHeight/2 + Math.random() * 2;
+    var pz = Math.random()*20 -60
  
-    pos.set(Math.random() * 10 - 5, controls.userHeight, Math.random()*10 -20);
+    pos.set(px, py, pz);
     quat.set(0, 0, 0, 1);
 
     var enemyMass = 10;
@@ -1606,23 +1714,41 @@ function Enemy() {
     pos.multiplyScalar(2 + Math.random()*3);
     enemyBody.setLinearVelocity(new Ammo.btVector3(0, 0, pos.z));
 
-    enemyPool.push(this)
+    enemyPool.push(this);
 
 
     this.mesh = enemy;
     this.block = enemyblock;
     this.body = enemyBody;
     this.start = 0;
+    this.blastInt = Math.floor(Math.random()*enemyAttackRange)+500;
+
+
 
     this.dist = Math.random() * 60;
 
     this.update = function() {
-      //  console.log('enemy update: pos.z = '+ this.block.position.z)
+        //console.log('enemy update: pos.z = '+ this.block.position.z)
+        this.start++;
+        if (this.start>this.blastInt && this.block.position.z<-5){
+            this.start = 0;
+            console.warn('shoot')
+            this.shoot();
+        }
+     /*   var dur = (sec - this.born);
+        var mod = (dur%5).toFixed(2)
+        console.log(mod)
+        if ((sec - this.born)%5 === 2){
+            sec =0;
+            console.warn('shoot')
+        }
+*/
+
         if (this.block.position.z>0){
 
                 //////
           var tr = new Ammo.btTransform();
-            tr.setOrigin(new Ammo.btVector3(Math.random() * 20 - 10, controls.userHeight, -20));
+            tr.setOrigin(new Ammo.btVector3(Math.random() * 20 - 10, controls.userHeight, -60));
             this.body.setWorldTransform( tr ); 
         
             // apply your new transform to the rigid body //  
@@ -1641,6 +1767,63 @@ function Enemy() {
 
     this.shoot = function() {
 
+        var direction = new THREE.Vector3();
+        direction.subVectors(playerGroup.position, this.block.position).normalize();
+
+        // Creates a ball and throws it
+        var ballMass = 35;
+        var ballRadius = 0.2;
+
+        // var ball = new THREE.Mesh(new THREE.SphereGeometry(ballRadius, 14, 10), ballMaterial);
+        //var ball = new THREE.Mesh(new THREE.SphereGeometry(ballRadius, 8, 8), createMaterial(0x33ffff));
+        var ball = new THREE.Mesh(new THREE.SphereGeometry(ballRadius, 8, 8), invisibleMat);
+        ball.castShadow = true;
+       // ball.receiveShadow = true;
+        ball.name = "laser";
+
+
+        var blasterMaterial = new THREE.SpriteMaterial({
+            map: enemyBlasterTexture,
+            color: 0xffffff
+        });
+        // createBlaster();
+
+
+
+        var blaster = new THREE.Sprite(blasterMaterial);
+        blaster.scale.set(.5, .5, 1.0);
+        ball.add(blaster)
+
+
+        var ballShape = new Ammo.btSphereShape(ballRadius);
+        ballShape.setMargin(margin);
+        // pos.copy(raycaster.ray.direction);
+        // pos.add(raycaster.ray.origin);
+
+        pos.copy(direction);
+        // pos.add(playerVector);
+       // console.log(this.block.position)
+        pos.add(this.block.position);
+
+
+        quat.set(0, 0, 0, 1);
+        var ballBody = createRigidBody(ball, ballShape, ballMass, pos, quat);
+
+        pos.copy(direction);
+        pos.multiplyScalar(10);
+        //ballBody.setLinearVelocity(new Ammo.btVector3(0, 0, pos.z));
+        ballBody.setLinearVelocity(new Ammo.btVector3(pos.x, pos.y, pos.z));
+
+        playLaser();
+
+        ///  playerblock.position.copy(pos)
+
+/*
+        // pos.copy(raycaster.ray.direction);
+        pos.copy(direction);
+        pos.multiplyScalar(24);
+        ballBody.setLinearVelocity(new Ammo.btVector3(pos.x, pos.y, pos.z));
+*/
     }
 
     this.flicker = function() {
@@ -1777,13 +1960,20 @@ function endCounter(){
 }
 
 function shoot(e) {
-    pressTimer = true;
-    if (gameOn == false){
-      //  startGame();
-    }else{
+/*
+    for (var n = 0; n < enemyPool.length; n++) {
+           // console.log(explosionArr[n])
+            enemyPool[n].shoot();
 
 
-        console.log(pressCounter)
+        }
+*/
+    
+    if (gameOn){
+
+        pressTimer = true;
+
+       // console.log(pressCounter)
         // alert(e)
         //alert(e.type);
         if (e.type == "touchstart") touchEnabled = true;
@@ -1821,12 +2011,6 @@ function shoot(e) {
         });
         // createBlaster();
 
-        // needs a delay??
-        if (forceVR && manager.isVRCompatible) {
-            manager.enterVRMode_();
-            console.log(manager)
-        }
-
 
         var blaster = new THREE.Sprite(blasterMaterial);
         blaster.scale.set(.5, .5, 1.0);
@@ -1855,6 +2039,12 @@ function shoot(e) {
         ballBody.setLinearVelocity(new Ammo.btVector3(pos.x, pos.y, pos.z));
 
         playBang();
+    } else{
+
+        // quick fix game start on desktop, need raycaster
+        if (window.innerWidth > 769){
+            startGame();
+        }
     }
 
 }
@@ -2026,7 +2216,8 @@ function testCollisionRules(attacker, victim) {
         score_display.innerHTML = score;
 
     } else {
-        // console.log(attacker.name + " hit " + victim.name);
+        console.log('not bullet: '+ attacker.name + " hit " + victim.name);
+       
     }
 
 
@@ -2041,6 +2232,7 @@ function testCollisionRules(attacker, victim) {
             objectsToRemove[numObjectsToRemove++] = attacker;
             playArgh();
             player.animate('fall');
+          //  freeze = true;
         }
     }
 
@@ -2236,36 +2428,6 @@ function createLetter(letter, speed){
 
                 scene.add(letter);
 
-                Reticulum.add( letter, {
-                        clickCancelFuse: true, // Overrides global setting for fuse's clickCancelFuse
-                        reticleHoverColor: 0x00fff6, // Overrides global reticle hover color
-                        fuseVisible: true, // Overrides global fuse visibility
-                        fuseDuration: 1.5, // Overrides global fuse duration
-                        fuseColor: 0xcc0000, // Overrides global fuse color
-                        onGazeOver: function(){
-                            // do something when user targets object
-                            //this.material.emissive.setHex( 0xffcc00 );
-                            console.log('onGazeOver')
-                        },
-                        onGazeOut: function(){
-                            // do something when user moves reticle off targeted object
-                            //this.material.emissive.setHex( 0xcc0000 );
-                            console.log('onGazeOut')
-                        },
-                        onGazeLong: function(){
-                            // do something user targetes object for specific time
-                          //  this.material.emissive.setHex( 0x0000cc );
-                            console.log('onGazeLong')
-                        },
-                        onGazeClick: function(){
-                            // have the object react when user clicks / taps on targeted object
-                           // this.material.emissive.setHex( 0x0000cc );
-                            console.log('onGazeClick')
-                            startGame();
-                        }
-                    });
-                
-                    console.log(xpos)
                     letter.position.x = Math.random()*4- 2;
                     letter.position.y = Math.random()*8 - 4;
                     letter.position.z = Math.random()*20;
@@ -2290,7 +2452,7 @@ function createLetter(letter, speed){
                     TweenMax.to(letter.position, dur,{
                        // z:depth,
                         x:xpos,
-                        y:1.1,
+                        y:1.2,
                         z:-2,
                         delay: 1,//delay,
                         ease:"Power3.easeOut",
@@ -2357,23 +2519,36 @@ function removeFromReticulum(obj){
 }
 
 function startGame(){
-    gameOn = true;
-    playGetReady()
+    
+    playCoin();
     addPlayer();
     createObjects();
-    console.error(Reticulum)
-   // document.getElementById('intro').style.display = "none";
+
     removeTitleScreen();
-    player.animate('fly');
+
+    setTimeout(function(){
+
+        playGetReady()
+        //addPlayer();
+        createEnemies();
+        
+       // console.error(Reticulum)
+       // document.getElementById('intro').style.display = "none";
+        
+        
+        gameOn = true;
+    }, 2000);
+    
  
 
 }
 
 function resetGame(){
     gameOn = false;
+    freeze = false;
   //  console.log(rigidBodies.length)
     cleanupPhysics();
-    scene.remove(pivot);
+   // scene.remove(pivot);
    // camera.rotation.set(0,0,0)
    // document.getElementById('intro').style.display = "flex";
     createTitleScreen();
