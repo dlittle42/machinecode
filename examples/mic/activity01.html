@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Mic level</title>
+
+  <style>
+          html, body{
+  height: 100%;
+  overflow: hidden;
+  width: 100%;
+}
+
+video{
+  left: 50%;
+  position: absolute;
+  transform: scaleY(1) translate(-50%, -50%);
+  top: 50%;
+}
+
+.flip{
+  transform: scale(-1, -1) translate(50%, 50%);
+
+}
+
+#vol{
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  color: red;
+  font-size: 24px;
+  z-index: 99;
+}
+
+#viz{
+  position: absolute;
+  top: 40px;
+  left: 0px;
+
+  z-index: 98;
+}
+    
+  </style>
+</head>
+<body>
+  <div class="content">
+    <div id="vol">Volume is</div>
+    <div id="viz">
+      <canvas class="visualizer" width="640" height="100"></canvas> 
+    </div>
+    <video></video>
+
+  </div>
+
+  
+</body>
+
+<script>
+    navigator.getUserMedia  = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+
+var video = document.createElement('video');
+video.style.width =  document.width + 'px';
+video.style.height = document.height + 'px';
+video.setAttribute('autoplay', '');
+video.setAttribute('muted', '');
+video.setAttribute('playsinline', '');
+
+var canvas = document.querySelector('.visualizer');
+var canvasCtx = canvas.getContext("2d");
+
+
+
+
+
+
+var intendedWidth = document.querySelector('.content').clientWidth;
+ var WIDTH = intendedWidth;//canvas.width;
+    var HEIGHT = 100;//canvas.height;
+
+
+canvas.setAttribute('width',intendedWidth);
+
+
+ //canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
+    canvasCtx.fillStyle = "red";
+    canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+
+//var visualSelect = document.getElementById("visual");
+
+var drawVisual;
+
+
+var FFT_SIZE = 1024;
+var spectrum = [];
+var volume = 0;
+var vol = 0;
+var peak_volume = 0;
+
+//var audioContext = null;
+var usingWebAudio = true;
+
+
+var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+/*
+try {
+  if (typeof AudioContext !== 'undefined') {
+      audioContext = new AudioContext();
+  } else if (typeof webkitAudioContext !== 'undefined') {
+      audioContext = new webkitAudioContext();
+  } 
+} catch(e) {
+    usingWebAudio = false;
+}
+*/
+//alert(usingWebAudio)
+//var audioContext = new AudioContext();
+var SAMPLE_RATE = audioContext.sampleRate;
+
+var self = this;
+
+var info = document.getElementById('vol');
+
+
+
+var facingMode = "user";
+
+var constraints = {
+  audio: true,
+  video: {
+    facingMode: facingMode
+  }
+}
+
+navigator.mediaDevices.getUserMedia(constraints).then(function success(stream) {
+  video.srcObject = stream;
+
+
+
+  /*
+
+    var analyser = audioContext.createAnalyser();
+    analyser.minDecibels = -90;
+    analyser.maxDecibels = -10;
+    analyser.smoothingTimeConstant = 0.85;
+
+   
+
+    analyser.fftSize = 256;
+    var bufferLength = analyser.frequencyBinCount;
+    
+   // console.log(bufferLength);
+  //  var dataArray = new Uint8Array(bufferLength);
+
+    canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
+
+    var draw = function() {
+      drawVisual = requestAnimationFrame(draw);
+
+      self.spectrum = new Uint8Array(analyser.frequencyBinCount);
+
+      analyser.getByteFrequencyData(self.spectrum);
+
+
+      canvasCtx.fillStyle = 'rgb(0, 0, 0)';
+      canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+
+      var barWidth = (WIDTH / bufferLength) * 2.5;
+      var barHeight;
+     
+      var x = 0;
+
+      for(var i = 0; i < bufferLength; i++) {
+       // barHeight = dataArray[i];
+        barHeight = self.spectrum[i];
+       // barHeight = Math.random()*100;
+     //    console.log(barHeight)
+
+        canvasCtx.fillStyle = 'rgb(' + (120) + ',50,50)';
+        canvasCtx.fillRect(x,HEIGHT-barHeight/2,barWidth,barHeight/2);
+
+        x += barWidth + 1;
+      }
+    };
+
+    draw();
+   // var input = audioContext.createMediaStreamSource(stream);
+
+
+   //     input.connect(analyser);
+*/
+
+        // analyser extracts frequency, waveform, and other data
+        var analyser = audioContext.createAnalyser();
+        
+        analyser.smoothingTimeConstant = 0.2;
+        analyser.fftSize = 256;//FFT_SIZE;
+  
+
+        var node = audioContext.createScriptProcessor(FFT_SIZE*2, 1, 1);
+      //  alert(node.bufferSize);
+
+       // alert(node)
+
+        node.onaudioprocess = function () {
+         // alert('script process')
+          // bitcount returns array which is half the FFT_SIZE
+          self.spectrum = new Uint8Array(analyser.frequencyBinCount);
+          
+
+          // getByteFrequencyData returns the amplitude for each frequency
+          analyser.getByteFrequencyData(self.spectrum);
+
+           
+          // getByteTimeDomainData gets volumes over the sample time
+          //analyser.getByteTimeDomainData(dataArray);
+          self.vol = self.getRMS(self.spectrum);
+          // get peak
+          if (self.vol > self.peak_volume) self.peak_volume = self.vol;
+          self.volume = self.vol;
+          console.log(self.vol)
+          info.innerHTML = Math.random()*100;//self.vol;
+
+
+          var bufferLength = analyser.frequencyBinCount;
+          canvasCtx.fillStyle = 'rgb(0, 0, 0)';
+          canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+
+          var barWidth = (640 / bufferLength) * 2.5;
+          var barHeight;
+         
+          var x = 0;
+
+          for(var i = 0; i < bufferLength; i++) {
+            barHeight = self.spectrum[i];
+           // barHeight = Math.random()*100;
+         //    console.log(barHeight)
+
+            canvasCtx.fillStyle = 'rgb(' + (120) + ',50,50)';
+            canvasCtx.fillRect(x,HEIGHT-barHeight/2,barWidth,barHeight/2);
+
+            x += barWidth + 1;
+          }
+
+        };
+
+        var input = audioContext.createMediaStreamSource(stream);
+
+
+        input.connect(analyser);
+
+        analyser.connect(node);
+      //  alert(analyser)
+        node.connect(audioContext.destination);
+
+
+
+});//.catch(handleMicConnectError);
+
+function handleMicConnectError(e) {
+  console.warn('Could not connect microphone. Possible rejected by the user or is blocked by the browser.');
+  alert(e);
+}
+
+//A more accurate way to get overall volume
+getRMS = function (spectrum) {
+
+          var rms = 0;
+          for (var i = 0; i < spectrum.length; i++) {
+            rms += spectrum[i] * spectrum[i];
+          }
+          rms /= spectrum.length;
+          rms = Math.sqrt(rms);
+          return rms;
+    }
+
+document.body.appendChild(video);
+
+video.addEventListener('click', function() {
+  if (facingMode == "user") {
+    facingMode = "environment";
+   // video.className = "flip";
+
+  } else {
+    facingMode = "user";
+    //video.className = "";
+  }
+  
+  constraints = {
+    audio: false,
+    video: {
+      facingMode: facingMode
+    }
+  }  
+  
+  navigator.mediaDevices.getUserMedia(constraints).then(function success(stream) {
+    if (facingMode == "environment") {
+      video.className = "flip";
+
+    } else {
+      video.className = "";
+    }
+    video.srcObject = stream; 
+
+  });
+});
+  </script>
+
+</html>
