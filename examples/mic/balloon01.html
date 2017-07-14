@@ -1,0 +1,762 @@
+
+<html lang="en">
+    <head>
+        <title>Ammo Balloons</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <style>
+            body {
+                color: #61443e;
+                font-family:Monospace;
+                font-size:13px;
+                text-align:center;
+
+                background-color: #bfd1e5;
+                margin: 0px;
+                overflow: hidden;
+            }
+
+          
+
+            a {
+
+                color: #a06851;
+            }
+
+        </style>
+    </head>
+    <body>
+
+        <div id="container"><br /><br /><br /><br /><br />Loading...</div>
+
+        <script src="node_modules/three/build/three.min.js"></script>
+<script src="../../bower_components/three.js/examples/js/libs/ammo.js"></script>
+<script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+<script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+<script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+<script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
+
+
+        <script>
+
+		// Detects webgl
+		if ( ! Detector.webgl ) {
+		    Detector.addGetWebGLMessage();
+		    document.getElementById( 'container' ).innerHTML = "";
+		}
+
+		// - Global variables -
+
+		// Graphics variables
+		var container, stats;
+		var camera, controls, scene, renderer;
+		var textureLoader;
+		var clock = new THREE.Clock();
+
+		// Physics variables
+		var gravityConstant = 2.2;
+		var collisionConfiguration;
+		var dispatcher;
+		var broadphase;
+		var solver;
+		var softBodySolver;
+		var physicsWorld;
+		var rigidBodies = [];
+		var margin = 0.05;
+		var hinge;
+		var ropeArr=[];
+		var transformAux1 = new Ammo.btTransform();
+
+		var time = 0;
+		var armMovement = 0;
+
+		var incVelo = false;
+		var ground;
+
+		var mouse = new THREE.Vector2(), INTERSECTED;
+		var raycaster = new THREE.Raycaster();
+		/*
+		var ballMaterial = new THREE.MeshPhongMaterial( { 
+			color: 0x202020,
+			transparent: false,//true,
+			//opacity: .8 
+		} );*/
+		var pos = new THREE.Vector3();
+		var quat = new THREE.Quaternion();
+		var balloons = [];
+		var objects = [];
+
+		var pointerDown = false;
+        var pressing = false;
+
+        var focusObj;
+        var initMaterial;
+        var pointerX = 0;
+        var pointerY = 0;
+        var pointerInit = 0;
+        var hover = false;
+
+        var color = {
+              "black": new THREE.MeshPhongMaterial({
+                color: 0x222222
+              }),
+              "white": new THREE.MeshPhongMaterial({
+                color: 0xffffff
+              }),
+              "red": new THREE.MeshPhongMaterial({
+                color: 0xf25346
+              }),
+              "blue": new THREE.MeshPhongMaterial({
+                color: 0x68c3c0
+              })
+            }
+
+		// - Main code -
+
+		init();
+		animate();
+
+
+		// - Functions -
+
+		function init() {
+
+			initGraphics();
+
+			initPhysics();
+
+			createObjects();
+
+			initInput();
+
+		}
+
+		function initGraphics() {
+
+			container = document.getElementById( 'container' );
+
+			camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.2, 2000 );
+
+			scene = new THREE.Scene();
+
+			camera.position.x = -7;
+			camera.position.y = 5;
+			camera.position.z =  8;
+
+			controls = new THREE.OrbitControls( camera );
+			controls.target.y = 2;
+
+			renderer = new THREE.WebGLRenderer({
+		        antialias: true,
+		        precision: "mediump"
+		    });
+			renderer.setClearColor( 0xbfd1e5 );
+			renderer.setPixelRatio( window.devicePixelRatio );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			renderer.shadowMap.enabled = true;
+
+			textureLoader = new THREE.TextureLoader();
+
+			var ambientLight = new THREE.AmbientLight( 0x404040 );
+			scene.add( ambientLight );
+
+			var light = new THREE.DirectionalLight( 0xffffff, 1 );
+			light.position.set( -10, 10, 5 );
+			light.castShadow = true;
+			var d = 10;
+			light.shadow.camera.left = -d;
+			light.shadow.camera.right = d;
+			light.shadow.camera.top = d;
+			light.shadow.camera.bottom = -d;
+
+			light.shadow.camera.near = 2;
+			light.shadow.camera.far = 50;
+
+			light.shadow.mapSize.x = 1024;
+			light.shadow.mapSize.y = 1024;
+
+			scene.add( light );
+
+
+			container.innerHTML = "";
+
+			container.appendChild( renderer.domElement );
+
+			stats = new Stats();
+			stats.domElement.style.position = 'absolute';
+			stats.domElement.style.top = '0px';
+			container.appendChild( stats.domElement );
+
+			//
+
+			window.addEventListener( 'resize', onWindowResize, false );
+
+		}
+
+		function initPhysics() {
+
+			// Physics configuration
+
+			collisionConfiguration = new Ammo.btSoftBodyRigidBodyCollisionConfiguration();
+			dispatcher = new Ammo.btCollisionDispatcher( collisionConfiguration );
+			broadphase = new Ammo.btDbvtBroadphase();
+			solver = new Ammo.btSequentialImpulseConstraintSolver();
+			softBodySolver = new Ammo.btDefaultSoftBodySolver();
+			physicsWorld = new Ammo.btSoftRigidDynamicsWorld( dispatcher, broadphase, solver, collisionConfiguration, softBodySolver);
+			physicsWorld.setGravity( new Ammo.btVector3( 0, gravityConstant, 0 ) );
+			physicsWorld.getWorldInfo().set_m_gravity( new Ammo.btVector3( 0, gravityConstant, 0 ) );
+
+		}
+
+		function createObjects() {
+
+		//	var pos = new THREE.Vector3();
+			var quat = new THREE.Quaternion();
+
+			// Ground
+			pos.set( 0, - 0.5, 0 );
+			quat.set( 0, 0, 0, 1 );
+			ground = createParalellepiped( 40, 1, 40, 0, pos, quat, new THREE.MeshPhongMaterial( { color: 0xFFFFFF } ) );
+			ground.castShadow = true;
+			ground.receiveShadow = true;
+			textureLoader.load( "textures/grid.png", function( texture ) {
+				texture.wrapS = THREE.RepeatWrapping;
+				texture.wrapT = THREE.RepeatWrapping;
+				texture.repeat.set( 40, 40 );
+				ground.material.map = texture;
+				ground.material.needsUpdate = true;
+			} );
+
+			var xspace = 2;
+			var total = 10;
+
+			for (k=0;k<total;k++){
+				var width = (k*xspace) - (xspace*total)/2;
+				//createBalloon(width,3,0)
+				var newBalloon = new Balloon(width, 3, 0);
+			}
+
+	
+
+/*
+			window.addEventListener('mousedown', onDocumentMouseDown, false);
+			window.addEventListener('mousemove', onDocumentMouseMove, false);
+    		window.addEventListener('mouseup', onMouseUp, false);
+*/
+
+    		document.addEventListener( 'mousemove', recordMousePosition, false );
+            document.addEventListener( 'touchmove', recordMousePosition, false );
+            document.addEventListener( 'mousedown', onPress, false );
+            document.addEventListener( 'touchstart', onPress, false );
+            document.addEventListener( 'mouseup', onRelease, false );
+            document.addEventListener( 'touchend', onRelease, false );
+
+		}
+
+		function recordMousePosition(e) {
+			e.preventDefault();
+			hover = true;
+			castRay(e);
+        
+        }
+
+        function onPress(e) {
+            pointerDown = true;
+           // circle.inflate = true;
+           // e.preventDefault();
+            castRay(e);
+            //recordMousePosition(e);
+            //pressing = true;
+        }
+        function onRelease(e) {
+            e.preventDefault();
+            //circle.inflate = false;
+            pointerDown = false;
+            hover = false;
+            if (typeof focusObj=='object'){
+
+            	focusObj.resetColor();
+            	
+            	focusObj = null;
+            }  
+           // pressing =false;
+        }
+
+
+
+	    function castRay(evt){
+                
+            if (evt.touches){
+               // console.log('got touches')
+                mouse.x = ( evt.touches[0].clientX / renderer.domElement.clientWidth ) * 2 - 1;
+                mouse.y = - ( evt.touches[0].clientY / renderer.domElement.clientHeight ) * 2 + 1;
+                pointerX = evt.touches[ 0 ].clientX - ( window.innerWidth / 2); 
+                pointerY = evt.touches[ 0 ].clientY - ( window.innerHeight/ 2); 
+                pointerInit = pointerX; 
+            }else{
+               // console.log('is mouse')
+                mouse.x = ( evt.clientX / renderer.domElement.clientWidth ) * 2 - 1;
+                mouse.y = - ( evt.clientY / renderer.domElement.clientHeight ) * 2 + 1;
+                pointerX = evt.clientX - ( window.innerWidth / 2); 
+                pointerY = evt.clientY - ( window.innerHeight/ 2); 
+            }
+            
+            raycaster.setFromCamera( mouse, camera );
+
+            var intersects = raycaster.intersectObjects( objects );
+            if (pointerDown){
+                if ( intersects.length > 0 ) {
+                    focusObj = intersects[0].object;
+                    console.log(focusObj.initColor)
+                    colorTo(focusObj, color['blue']);
+
+                    pos.copy( raycaster.ray.direction );
+					//console.log(raycaster.ray.direction)
+					pos.multiplyScalar( 3 );
+               
+                    focusObj.phys.setLinearVelocity(new Ammo.btVector3(pos.x, pos.y, pos.z));
+                }
+                /*else{
+                    if (typeof focusObj=='object') {
+                        colorTo(focusObj, color['black']);
+                    } 
+                }*/
+            }else if (!pointerDown && hover){
+
+               /* if ( intersects.length > 0 ) {
+                    focusObj = intersects[0].object;
+
+                    colorTo(intersects[ 0 ].object, color['red'], .2);
+
+                    TweenMax.to(intersects[0].object.scale, 1, {
+                    	x: 1.5,
+                    	y: 1.5,
+                    	z: 1.5,
+                    	ease:"Power3.easeOut"
+
+                    })
+
+                }else{
+					 if (typeof focusObj=='object') {
+
+                    	TweenMax.to(focusObj.scale, .5, {
+                        	x: 1,
+                        	y: 1,
+                        	z: 1,
+                        	ease:"Power3.easeOut"
+
+                        })
+
+                        colorTo(focusObj, color['white'], .2);
+                       // uniforms.line_color.value = new THREE.Color(color['white'])
+                    } 
+                }
+                */
+            }
+        }
+
+        function colorTo(target, value, speed=.5) {
+          var target = target;
+          console.log('cur: '+ target.material.color.getHex() + " to "+ value.color.getHex())
+     
+          var initial = new THREE.Color(target.material.color);//new THREE.Color(target.material.color.getHex());
+          var value = new THREE.Color(value.color.getHex());
+          TweenMax.to(initial, speed, {
+            r: value.r,
+            g: value.g,
+            b: value.b,
+            
+            onUpdate: function () {
+              target.material.color = initial;
+             // uniforms.line_color.value = initial;
+            }
+          });
+        }
+
+        function Balloon(xp,yp,zp){
+
+			//circle = new THREE.Object3D();
+			this.mesh = new THREE.Object3D();
+			this.name = "balloon"
+
+        	this.mass = 40.0;
+			this.radius = 0.6;
+			/*var ballMaterial = new THREE.MeshPhongMaterial( { 
+				color: 0x202020,
+				transparent: false,//true,
+				//opacity: .8 
+			} );
+			*/
+
+			this.ballMaterial = createMaterial();
+
+			this.ball = new THREE.Mesh( new THREE.SphereGeometry( this.radius, 20, 20 ), this.ballMaterial );
+
+			this.ball.castShadow = true;
+			this.ball.receiveShadow = true;
+			this.ballShape = new Ammo.btSphereShape( this.radius );
+			this.ballShape.setMargin( margin );
+			pos.set( xp, yp, zp );
+			quat.set( 0, 0, 0, 1 );
+			this.balloonBody = createRigidBody( this.ball, this.ballShape, this.mass, pos, quat );
+			this.ball.userData.physicsBody.setFriction( .2 );
+			//this.mesh.add(this.ball);
+
+			this.ball.phys = this.balloonBody;
+			this.ball.initColor = this.ballMaterial;
+			console.log(this.ball.initColor.color.getHex())
+
+			//balloons.push(this.balloonBody)
+			//objects.push(this.ball)
+			console.log(this)
+			balloons.push(this)
+			objects.push(this.ball)
+
+			// The rope
+			// Rope graphic object
+			var ropeNumSegments = 10;
+			var ropeLength = 4;
+			var ropeMass = 3;
+			var ballPos = this.ball.position.clone();
+			//ropePos.y -= ballRadius;
+
+			var ropePos = ground.position.clone();
+			ropePos.y +=.5;
+			ropePos.x = xp;
+
+			var segmentLength = ropeLength / ropeNumSegments;
+			var ropeGeometry = new THREE.BufferGeometry();
+			var ropeMaterial = new THREE.LineBasicMaterial( { color: 0x000000 } );
+			var ropePositions = [];
+			var ropeIndices = [];
+
+			for ( var i = 0; i < ropeNumSegments + 1; i++ ) {
+				ropePositions.push( ropePos.x, ropePos.y + i * segmentLength, ropePos.z );
+			}
+
+			for ( var i = 0; i < ropeNumSegments; i++ ) {
+				ropeIndices.push( i, i + 1 );
+			}
+
+			ropeGeometry.setIndex( new THREE.BufferAttribute( new Uint16Array( ropeIndices ), 1 ) );
+			ropeGeometry.addAttribute( 'position', new THREE.BufferAttribute( new Float32Array( ropePositions ), 3 ) );
+			ropeGeometry.computeBoundingSphere();
+			this.rope = new THREE.LineSegments( ropeGeometry, ropeMaterial );
+			this.rope.castShadow = true;
+			this.rope.receiveShadow = true;
+			scene.add( this.rope );
+
+			ropeArr.push(this.rope)
+
+			// Rope physic object
+			var softBodyHelpers = new Ammo.btSoftBodyHelpers();
+			var ropeStart = new Ammo.btVector3( ropePos.x, ropePos.y, ropePos.z );
+			var ropeEnd = new Ammo.btVector3( ballPos.x, ballPos.y, ballPos.z );
+			var ropeSoftBody = softBodyHelpers.CreateRope( physicsWorld.getWorldInfo(), ropeStart, ropeEnd, ropeNumSegments - 1, 0 );
+			var sbConfig = ropeSoftBody.get_m_cfg();
+			sbConfig.set_viterations( 10 );
+			sbConfig.set_piterations( 10 );
+			ropeSoftBody.setTotalMass( ropeMass, false );
+			Ammo.castObject( ropeSoftBody, Ammo.btCollisionObject ).getCollisionShape().setMargin( margin * 3 );
+			physicsWorld.addSoftBody( ropeSoftBody, 1, -1 );
+			this.rope.userData.physicsBody = ropeSoftBody;
+			// Disable deactivation
+			ropeSoftBody.setActivationState( 4 );
+
+			// Glue the rope extremes to the ball and the arm
+			var influence = 1;
+			ropeSoftBody.appendAnchor( 0, ground.userData.physicsBody, true, influence );
+			ropeSoftBody.appendAnchor( ropeNumSegments, this.ball.userData.physicsBody, true, influence );
+
+
+	     //   circle.add(this);
+
+		
+	        this.animate = function(){
+	        	/*
+	        	if (this.ball == focusObj ){
+		        
+		        	if (this.ball.scale.x>.4){
+			        	this.ball.scale.x -= 0.02;
+			        	this.ball.scale.y -= 0.02;
+			        	this.ball.scale.z -= 0.02;
+			        }
+		        	//this.rotation.y -= 0.0030;
+		        }else if (this.ball.scale.x<1){
+		        	this.ball.scale.x += 0.02;
+		        	this.ball.scale.y += 0.02;
+		        	this.ball.scale.z += 0.02;
+		        }
+		        */
+	        }
+
+	        this.ball.resetColor = function(){
+	        	console.log('--resetColor--')
+	        	console.log('from '+ this.material.color.getHex() +' to '+ this.initColor.color.getHex())
+	        //	console.log(this.getColor.color.getHex())
+	        	
+	        	//console.log(color['red'])
+	        	console.log('-- end resetColor --')
+	        	//colorTo(this, this.initColor);
+	        	colorTo(this, color['red']);
+
+
+
+	        }
+	 
+		  	
+		}
+
+		
+
+
+		function createRandomColor() {
+			return Math.floor( Math.random() * ( 1 << 24 ) );
+		}
+		function createMaterial() {
+			return new THREE.MeshLambertMaterial( { 
+				color: createRandomColor(),
+				//color: 0xff3300,
+				transparent: true,
+				opacity: .5
+				 } );
+		}
+
+
+
+		function onDocumentMouseDown( event ) {
+
+				mouse.x = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
+				mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
+
+				raycaster.setFromCamera( mouse, camera );
+/*
+				// Creates a ball and throws it
+				var ballMass = 35;
+				var ballRadius = 0.4;
+
+				var ball = new THREE.Mesh( new THREE.SphereGeometry( ballRadius, 14, 10 ), ballMaterial );
+				ball.castShadow = true;
+				ball.receiveShadow = true;
+				ball.name = "bullet";
+				var ballShape = new Ammo.btSphereShape( ballRadius );
+				ballShape.setMargin( margin );
+				pos.copy( raycaster.ray.direction );
+				pos.add( raycaster.ray.origin );
+				quat.set( 0, 0, 0, 1 );
+				var ballBody = createRigidBody( ball, ballShape, ballMass, pos, quat );
+
+				pos.copy( raycaster.ray.direction );
+				pos.multiplyScalar( 24 );
+				ballBody.setLinearVelocity( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
+*/
+
+				vector = new THREE.Vector3( 0, 0, -1 );
+				vector.applyQuaternion( camera.quaternion ).add( camera.position );
+
+				console.log(vector);
+
+				//scaledVector=vector.clone().multiplyScalar(0.95);
+
+				//console.log("scaled:"+scaledVector.y);
+
+				var intersects = raycaster.intersectObjects( objects );
+
+				if ( intersects.length > 0 ) {
+					intersects[ 0 ].object.material.color.setHex( 0xe02323 );
+					console.log(intersects[ 0 ])
+				}
+
+				pos.copy( raycaster.ray.direction );
+				console.log(raycaster.ray.direction)
+				pos.multiplyScalar( 5 );
+
+				for (var n=0; n<balloons.length; n++){
+					balloons[n].setLinearVelocity(new Ammo.btVector3(pos.x, pos.y, pos.z));
+				}
+
+			
+		}
+
+		function createParalellepiped( sx, sy, sz, mass, pos, quat, material ) {
+
+			var threeObject = new THREE.Mesh( new THREE.BoxGeometry( sx, sy, sz, 1, 1, 1 ), material );
+			var shape = new Ammo.btBoxShape( new Ammo.btVector3( sx * 0.5, sy * 0.5, sz * 0.5 ) );
+			shape.setMargin( margin );
+
+			createRigidBody( threeObject, shape, mass, pos, quat );
+
+			return threeObject;
+
+		}
+
+		function createRigidBody( threeObject, physicsShape, mass, pos, quat ) {
+
+			threeObject.position.copy( pos );
+			threeObject.quaternion.copy( quat );
+
+			var transform = new Ammo.btTransform();
+			transform.setIdentity();
+			transform.setOrigin( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
+			transform.setRotation( new Ammo.btQuaternion( quat.x, quat.y, quat.z, quat.w ) );
+			var motionState = new Ammo.btDefaultMotionState( transform );
+
+			var localInertia = new Ammo.btVector3( 0, 0, 0 );
+			physicsShape.calculateLocalInertia( mass, localInertia );
+
+			var rbInfo = new Ammo.btRigidBodyConstructionInfo( mass, motionState, physicsShape, localInertia );
+			var body = new Ammo.btRigidBody( rbInfo );
+
+			threeObject.userData.physicsBody = body;
+
+			scene.add( threeObject );
+
+			if ( mass > 0 ) {
+				rigidBodies.push( threeObject );
+
+				// Disable deactivation
+				body.setActivationState( 4 );
+			}
+
+			physicsWorld.addRigidBody( body );
+
+			return body;
+
+		}
+
+		function createRandomColor() {
+			return Math.floor( Math.random() * ( 1 << 24 ) );
+		}
+
+		function createMaterial() {
+			return new THREE.MeshPhongMaterial( { color: createRandomColor() } );
+		}
+
+		function initInput() {
+
+			window.addEventListener( 'keydown', function( event ) {
+
+				switch ( event.keyCode ) {
+					// Q
+					case 81:
+						armMovement = 1;
+					break;
+
+					// A
+					case 65:
+						armMovement = - 1;
+					break;
+				}
+
+			}, false );
+
+			window.addEventListener( 'keyup', function( event ) {
+
+				armMovement = 0;
+
+			}, false );
+
+		}
+
+		function onWindowResize() {
+
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+
+			renderer.setSize( window.innerWidth, window.innerHeight );
+
+		}
+
+		function animate() {
+
+			requestAnimationFrame( animate );
+
+			render();
+			stats.update();
+
+		}
+
+		function render() {
+
+			var deltaTime = clock.getDelta();
+/*
+			pos.copy(ballBody);
+
+			if (incVelo){
+				
+        		pos.z += 5;
+        		
+			}else{
+				pos.z -= 5;
+			}
+
+			ballBody.setLinearVelocity(new Ammo.btVector3(pos.x, pos.y, pos.z));
+*/
+
+			for (var n = 0; n < balloons.length; n++) {
+               // console.log(explosionArr[n])
+               balloons[n].animate();
+
+
+            }
+
+			updatePhysics( deltaTime );
+
+			controls.update( deltaTime );
+
+			renderer.render( scene, camera );
+
+			time += deltaTime;
+
+		}
+
+		function updatePhysics( deltaTime ) {
+
+			// Hinge control
+		//	hinge.enableAngularMotor( true, 1.5 * armMovement, 50 );
+
+			// Step world
+			physicsWorld.stepSimulation( deltaTime, 10 );
+
+			for ( var z = 0; z < ropeArr.length; z ++ ) {
+
+				// Update rope
+				var softBody = ropeArr[z].userData.physicsBody;
+				var ropePositions = ropeArr[z].geometry.attributes.position.array;
+				var numVerts = ropePositions.length / 3;
+				var nodes = softBody.get_m_nodes();
+				var indexFloat = 0;
+				for ( var i = 0; i < numVerts; i ++ ) {
+
+					var node = nodes.at( i );
+					var nodePos = node.get_m_x();
+					ropePositions[ indexFloat++ ] = nodePos.x();
+					ropePositions[ indexFloat++ ] = nodePos.y();
+					ropePositions[ indexFloat++ ] = nodePos.z();
+
+				}
+				ropeArr[z].geometry.attributes.position.needsUpdate = true;
+
+				// Update rigid bodies
+				for ( var i = 0, il = rigidBodies.length; i < il; i++ ) {
+					var objThree = rigidBodies[ i ];
+					var objPhys = objThree.userData.physicsBody;
+					var ms = objPhys.getMotionState();
+					if ( ms ) {
+
+						ms.getWorldTransform( transformAux1 );
+						var p = transformAux1.getOrigin();
+						var q = transformAux1.getRotation();
+						objThree.position.set( p.x(), p.y(), p.z() );
+						objThree.quaternion.set( q.x(), q.y(), q.z(), q.w() );
+
+					}
+				}
+			}
+
+		}
+
+        </script>
+
+    </body>
+</html>
