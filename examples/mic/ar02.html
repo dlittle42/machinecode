@@ -132,7 +132,7 @@ renderer.shadowMap.enabled = true;
 
 	// Create a camera
 	//camera = new THREE.Camera();
-	camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.2, 2000 );
+	camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.2, 2000 );
 	scene.add(camera);
 
 	////////////////////////////////////////////////////////////////////////////////
@@ -218,7 +218,7 @@ renderer.shadowMap.enabled = true;
 	var markerRoot = new THREE.Group
 	scene.add(markerRoot)
 
-	//markerRoot.scale.set(.1,.1,.1)
+	markerRoot.scale.set(.5,.5,.5)
 	
 	// add a torus knot
 	// var geometry	= new THREE.CubeGeometry(1,1,1);
