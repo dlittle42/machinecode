@@ -232,6 +232,7 @@ renderer.shadowMap.enabled = true;
 	// markerRoot.add( mesh );
 
 	;(function(){
+		/*
 		var geometry	= new THREE.TorusKnotGeometry(0.3,0.1,64,16); // make it slightly larger for better view
 		var material	= new THREE.MeshNormalMaterial();
 		var material	= new THREE.MeshLambertMaterial();
@@ -242,9 +243,11 @@ renderer.shadowMap.enabled = true;
 		markerRoot.add( mesh );
 		// point the directionalLight to the marker
 		directionalLight.target = mesh
+		*/
+		directionalLight.target = new THREE.Vector3(0, 1, 0);
 
 		onRenderFcts.push(function(){
-			mesh.rotation.x += 0.04;
+			//mesh.rotation.x += 0.04;
 
 			var deltaTime = clock.getDelta();
 
@@ -269,7 +272,7 @@ renderer.shadowMap.enabled = true;
 		var material = new THREE.ShadowMaterial();
 		material.opacity = 0.7; //! bug in threejs. can't set in constructor
 
-		var geometry = new THREE.PlaneGeometry(3, 3)
+		var geometry = new THREE.PlaneGeometry(10, 10)
 		var planeMesh = new THREE.Mesh( geometry, material);
 		planeMesh.receiveShadow = true;
 		planeMesh.depthWrite = false;

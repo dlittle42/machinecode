@@ -657,7 +657,7 @@ function playExplode() {
         	playBlaster();
 
             mouseCoords.set(
-                (event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1
+                (event.clientX / window.innerWidth) , -(event.clientY / window.innerHeight) 
             );
 
             raycaster.setFromCamera(mouseCoords, camera);

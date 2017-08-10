@@ -23,11 +23,44 @@
                 color: #a06851;
             }
 
+            #container{
+            	position: absolute;
+            	top: 0;
+            	left: 0;
+            	width: 100vw;
+            	height: 100vh;
+            }
+
+            #vol{
+			  position: absolute;
+			  top: 10px;
+			  right: 10px;
+			  color: red;
+			  font-size: 24px;
+			  z-index: 99;
+			}
+
+			#viz{
+			  position: absolute;
+			  top: 40px;
+			  left: 0px;
+
+			  z-index: 98;
+			}
+
         </style>
     </head>
     <body>
 
-        <div id="container"><br /><br /><br /><br /><br />Loading...</div>
+    	<div class="content">
+		    <div id="vol">Volume is</div>
+		    <div id="viz">
+		      <canvas class="visualizer" width="640" height="100"></canvas> 
+		    </div>
+	        <div id="container">
+	        	<br /><br /><br /><br /><br />Loading...
+	        </div>
+        </div>
 
         <script src="node_modules/three/build/three.min.js"></script>
 <script src="../../bower_components/three.js/examples/js/libs/ammo.js"></script>
@@ -111,6 +144,81 @@
               })
             }
 
+           //////
+
+           navigator.getUserMedia  = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+
+
+			var canvas = document.querySelector('.visualizer');
+			var canvasCtx = canvas.getContext("2d");
+
+
+
+
+
+
+			var intendedWidth = document.querySelector('.content').clientWidth;
+			 var WIDTH = intendedWidth;//canvas.width;
+			    var HEIGHT = 100;//canvas.height;
+
+
+			canvas.setAttribute('width',intendedWidth);
+
+
+			 //canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
+			    canvasCtx.fillStyle = "red";
+			    canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+
+			//var visualSelect = document.getElementById("visual");
+
+			var drawVisual;
+
+
+			var FFT_SIZE = 1024;
+			var spectrum = [];
+			var volume = 0;
+			var vol = 0;
+			var peak_volume = 0;
+
+			//var audioContext = null;
+			var usingWebAudio = true;
+
+
+			var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+			/*
+			try {
+			  if (typeof AudioContext !== 'undefined') {
+			      audioContext = new AudioContext();
+			  } else if (typeof webkitAudioContext !== 'undefined') {
+			      audioContext = new webkitAudioContext();
+			  } 
+			} catch(e) {
+			    usingWebAudio = false;
+			}
+			*/
+			//alert(usingWebAudio)
+			//var audioContext = new AudioContext();
+			var SAMPLE_RATE = audioContext.sampleRate;
+
+			var self = this;
+
+			var info = document.getElementById('vol');
+
+
+
+			var facingMode = "user";
+
+			var constraints = {
+			  audio: true,
+			  video: false
+			/*  video: {
+			    facingMode: facingMode
+			  }
+			  */
+			}
+
+           /////
+
 		// - Main code -
 
 		init();
@@ -127,9 +235,111 @@
 
 			createObjects();
 
+			setupMedia();
+
 			//initInput();
 
 		}
+
+		function setupMedia(){
+
+
+			navigator.mediaDevices.getUserMedia(constraints).then(function success(stream) {
+			 // video.srcObject = stream;
+
+
+			        // analyser extracts frequency, waveform, and other data
+			        var analyser = audioContext.createAnalyser();
+			        
+			        analyser.smoothingTimeConstant = 0.2;
+			        analyser.fftSize = 256;//FFT_SIZE;
+			  
+
+			        var node = audioContext.createScriptProcessor(FFT_SIZE*2, 1, 1);
+			      //  alert(node.bufferSize);
+
+			       // alert(node)
+
+			        node.onaudioprocess = function () {
+			         // alert('script process')
+			          // bitcount returns array which is half the FFT_SIZE
+			          self.spectrum = new Uint8Array(analyser.frequencyBinCount);
+			          
+
+			          // getByteFrequencyData returns the amplitude for each frequency
+			          analyser.getByteFrequencyData(self.spectrum);
+
+			           
+			          // getByteTimeDomainData gets volumes over the sample time
+			          //analyser.getByteTimeDomainData(dataArray);
+			          self.vol = self.getRMS(self.spectrum);
+			          // get peak
+			          if (self.vol > self.peak_volume) self.peak_volume = self.vol;
+			          self.volume = Math.floor(self.vol);
+			        //  console.log(Math.floor(self.vol));
+			          info.innerHTML = Math.floor(self.vol);
+
+
+
+			          var bufferLength = analyser.frequencyBinCount;
+			          canvasCtx.fillStyle = 'rgb(0, 0, 0)';
+			          canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+
+			          var barWidth = (640 / bufferLength) * 2.5;
+			          var barHeight;
+			         
+			          var x = 0;
+
+			          var maxVol = 0;
+
+			          for(var i = 0; i < bufferLength; i++) {
+			            barHeight = self.spectrum[i];
+			            /*
+			            if (self.spectrum[i] > self.spectrum[i-1]){
+			            	maxVol = self.spectrum[i];
+			            }
+			            */
+			           // barHeight = Math.random()*100;
+			         //    console.log(barHeight)
+
+			            canvasCtx.fillStyle = 'rgb(' + (120) + ',50,50)';
+			            canvasCtx.fillRect(x,HEIGHT-barHeight/2,barWidth,barHeight/2);
+
+			            x += barWidth + 1;
+			          }
+
+			        };
+
+			        var input = audioContext.createMediaStreamSource(stream);
+
+
+			        input.connect(analyser);
+
+			        analyser.connect(node);
+			      //  alert(analyser)
+			        node.connect(audioContext.destination);
+
+
+
+			});//.catch(handleMicConnectError);
+		}
+
+		function handleMicConnectError(e) {
+		  console.warn('Could not connect microphone. Possible rejected by the user or is blocked by the browser.');
+		  alert(e);
+		}
+
+		//A more accurate way to get overall volume
+		function getRMS(spectrum) {
+
+		          var rms = 0;
+		          for (var i = 0; i < spectrum.length; i++) {
+		            rms += spectrum[i] * spectrum[i];
+		          }
+		          rms /= spectrum.length;
+		          rms = Math.sqrt(rms);
+		          return rms;
+		    }
 
 		function initGraphics() {
 
@@ -420,14 +630,14 @@
 			//balloons.push(this.balloonBody)
 			//objects.push(this.ball)
 			console.log(this)
-			balloons.push(this)
+			balloons.push(this.balloonBody)
 			objects.push(this.ball)
 
 			// The rope
 			// Rope graphic object
 			var ropeNumSegments = 10;
 			var ropeLength = 4;
-			var ropeMass = 3;
+			var ropeMass = 30;
 			var ballPos = this.ball.position.clone();
 			//ropePos.y -= ballRadius;
 
@@ -692,10 +902,23 @@
 
 			var deltaTime = clock.getDelta();
 
+			var wind = Math.floor(self.vol)/20;
+			console.log(wind)
+
+			//pos.copy( camera.direction );
+
+			var camDir = camera.getWorldDirection(new THREE.Vector3());//.multiplyScalar(1);
+    		//var camVect = new THREE.Vector3(camDir.x, camDir.y, camDir.z);
+			camDir.multiplyScalar( wind );
 
 			for (var n = 0; n < balloons.length; n++) {
                // console.log(explosionArr[n])
-               balloons[n].animate();
+              // balloons[n].animate();
+           
+                if (wind > 1){ 
+                	balloons[n].setLinearVelocity(new Ammo.btVector3(camDir.x, camDir.y, camDir.z));
+                }
+     
 
 
             }

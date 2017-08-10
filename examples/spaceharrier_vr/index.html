@@ -244,6 +244,7 @@ var blasterSpeed = .3; //5;
 var info = document.getElementById('info');
 var touchEnabled = false;
 var gameOn = false;
+var gameSetupComplete = false;
 var pressTimer = false;
 var pressCounter = 0;
 var freeze = false;
@@ -832,6 +833,9 @@ function initPhysics() {
 }
 
 function addPlayer() {
+
+    console.log('addPlayer')
+
     player = new Player(0, true);
     player.animate('fly');
 
@@ -2519,31 +2523,38 @@ function removeFromReticulum(obj){
 }
 
 function startGame(){
+    console.log('startGame')
+
+    if (!gameSetupComplete){
     
-    playCoin();
-    addPlayer();
-    createObjects();
+        playCoin();
+        addPlayer();
+        createObjects();
 
-    removeTitleScreen();
+        removeTitleScreen();
+        gameSetupComplete = true;
 
-    setTimeout(function(){
+        setTimeout(function(){
 
-        playGetReady()
-        //addPlayer();
-        createEnemies();
-        
-       // console.error(Reticulum)
-       // document.getElementById('intro').style.display = "none";
-        
-        
-        gameOn = true;
-    }, 2000);
+            playGetReady()
+            //addPlayer();
+            createEnemies();
+            
+           // console.error(Reticulum)
+           // document.getElementById('intro').style.display = "none";
+            
+            
+            gameOn = true;
+        }, 2000);
+
+    }
     
  
 
 }
 
 function resetGame(){
+    gameSetupComplete = false;
     gameOn = false;
     freeze = false;
   //  console.log(rigidBodies.length)
