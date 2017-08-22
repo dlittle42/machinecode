@@ -232,7 +232,7 @@ renderer.shadowMap.enabled = true;
 	// markerRoot.add( mesh );
 
 	;(function(){
-		var geometry	= new THREE.TorusKnotGeometry(0.3,0.1,64,16); // make it slightly larger for better view
+	/*	var geometry	= new THREE.TorusKnotGeometry(0.3,0.1,64,16); // make it slightly larger for better view
 		var material	= new THREE.MeshNormalMaterial();
 		var material	= new THREE.MeshLambertMaterial();
 		var mesh	= new THREE.Mesh( geometry, material );
@@ -242,7 +242,7 @@ renderer.shadowMap.enabled = true;
 		markerRoot.add( mesh );
 		// point the directionalLight to the marker
 		directionalLight.target = mesh
-
+*/
 		onRenderFcts.push(function(){
 			mesh.rotation.x += 0.04;
 
@@ -268,14 +268,14 @@ renderer.shadowMap.enabled = true;
 		// add a transparent ground-plane shadow-receiver
 		var material = new THREE.ShadowMaterial();
 		material.opacity = 0.7; //! bug in threejs. can't set in constructor
-
+/*
 		var geometry = new THREE.PlaneGeometry(3, 3)
 		var planeMesh = new THREE.Mesh( geometry, material);
 		planeMesh.receiveShadow = true;
 		planeMesh.depthWrite = false;
 		planeMesh.rotation.x = -Math.PI/2
 		markerRoot.add(planeMesh);
-
+*/
 
 		initPhysics();
 
@@ -312,7 +312,7 @@ renderer.shadowMap.enabled = true;
 			ground = createParalellepiped( 40, 1, 40, 0, pos, quat, new THREE.MeshPhongMaterial( { 
 				color: 0xFFFFFF,
 				transparent: true,
-				opacity: .4 } ) );
+				opacity: .1 } ) );
 			ground.castShadow = true;
 			ground.receiveShadow = true;
 		/*	textureLoader.load( "textures/grid.png", function( texture ) {
