@@ -20,6 +20,8 @@
         top: 0px;
         width: 100%;
         padding: 5px;
+        width: 100%;
+        text-align: center;
     }
     
     a {
@@ -29,6 +31,7 @@
 </head>
 
 <body>
+    <div id="info"></div>
     <div id="container"></div>
     <script src="../../bower_components/three.js/build/three.js"></script>
     <script src="../../bower_components/three.js/examples/js/libs/ammo.js"></script>
@@ -835,26 +838,46 @@
 
     function removeObjects(object) {
 
-        // console.log(object)
+       // console.log("**-- "+object)
 
         scene.remove(object);
+/*
+        var i = rigidBodies.indexOf(object) ;
+        console.log("**--- "+i)
+        rigidBodies.splice(i, 1);
+*/
+        console.log(rigidBodies.length)
+        var i = rigidBodies.indexOf(object);
+        if(i != -1) {
+            rigidBodies.splice(i, 1);
+        }
+        console.log(rigidBodies.length)
+
         physicsWorld.removeRigidBody(object.userData.physicsBody);
 
     }
 
     function cleanupOldies(){
+        //console.log('cleanupOldies')
 
     	if (rigidBodies.length > letterMax){
-    	//	console.log('--- overload! -- ' + rigidBodies.length)
+            console.log('--- overload! -- ' + rigidBodies.length)
+          //  removeObjects(rigidBodies[0]);
+           // rigidBodies.slice(1);
+           // console.log(letterMax)
     		var num = rigidBodies.length - letterMax;
-    	//	console.log(num)
+    		console.log("...."+num+"....")
     		for (var i = 0; i < num; i++) {
 		        removeObjects(rigidBodies[i]);
+                //rigidBodies.splice(i,num);
 		  //      console.log(rigidBodies[i])
 		    }
-    		rigidBodies.splice(0,num);
+    		//rigidBodies.splice(0,num);
     		//console.log(rigidBodies.length)
-    	}
+            
+    	}else{
+            console.warn('ok '+ rigidBodies.length)
+        }
     	//removeObjects(rigidBodies[i]);
     }
 
@@ -897,7 +920,7 @@
     function addWords() {
         baseline = -10;
         vert = 20;
-        typeInterval = setInterval(typeWords, 100);
+        if (typeProgress==0) typeInterval = setInterval(typeWords, 100);
 
         ///clearInterval(refreshIntervalId);
     }
@@ -912,7 +935,7 @@
         }
         var letter = createText(char, 4);
         if (typeProgress == word.length) {
-          //  console.warn('end of phrase');
+            console.warn('end of phrase');
             typeProgress = 0;
             clearInterval(typeInterval);
         } else {
@@ -1186,6 +1209,8 @@
         updatePhysics(deltaTime);
 
         cleanupOldies();
+        document.getElementById("info").textContent=rigidBodies.length;
+
 
       //  controls.update(deltaTime);
 
