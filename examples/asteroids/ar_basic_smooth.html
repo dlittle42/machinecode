@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+<!-- three.js library -->
+<script src='../../bower_components/three.js/build/three.min.js'></script>
+<script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+
+<script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+<script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+<script src="../../bower_components/three.js/examples/js/ConvexObjectBreaker.js"></script>
+<script src="../../bower_components/three.js/examples/js/QuickHull.js"></script>
+<script src="../../bower_components/three.js/examples/js/geometries/ConvexGeometry.js"></script>
+
+<script src="../../bower_components/three.js/examples/js/libs/ammo.js"></script>
+<script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
+
+<script src="node_modules/howler/dist/howler.min.js"></script>
+<!-- ar.js -->
+<script src="build/ar.js"></script>
+<script>THREEx.ArToolkitContext.baseURL = ''</script>
+
+<body style='margin : 0px; overflow: hidden; font-family: Monospace;'><script>
+	//////////////////////////////////////////////////////////////////////////////////
+
+	var clock = new THREE.Clock();
+	var mouse = new THREE.Vector2()
+	var raycaster = new THREE.Raycaster();
+	var ballMaterial = new THREE.MeshPhongMaterial( { color: 0x33ffff } );
+
+	var gravityConstant = 0;//-1;//7.8;
+	var collisionConfiguration;
+	var dispatcher;
+	var broadphase;
+	var solver;
+	var physicsWorld;
+	var margin = 0.05;
+	var touchEnabled;
+
+	var convexBreaker = new THREE.ConvexObjectBreaker();
+	
+	
+
+	// Rigid bodies include all movable objects
+	var rigidBodies = [];
+
+	var pos = new THREE.Vector3();
+	var quat = new THREE.Quaternion();
+	var transformAux1 = new Ammo.btTransform();
+	var tempBtVec3_1 = new Ammo.btVector3( 0, 0, 0 );
+
+	var time = 0;
+
+	var objectsToRemove = [];
+	for ( var i = 0; i < 500; i++ ) {
+		objectsToRemove[ i ] = null;
+	}
+	var numObjectsToRemove = 0;
+
+	var impactPoint = new THREE.Vector3();
+	var impactNormal = new THREE.Vector3();
+
+	var pointerDown = false;
+    var pressing = false;
+
+    var focusObj;
+    var initMaterial;
+    var pointerX = 0;
+    var pointerY = 0;
+    var pointerInit = 0;
+    var hover = false;
+
+    var color = {
+          "black": new THREE.MeshPhongMaterial({
+            color: 0x222222
+          }),
+          "white": new THREE.MeshPhongMaterial({
+            color: 0xffffff
+          }),
+          "red": new THREE.MeshPhongMaterial({
+            color: 0xf25346
+          }),
+          "blue": new THREE.MeshPhongMaterial({
+            color: 0x68c3c0
+          })
+        }
+
+    var volume = 0.4;
+
+
+
+
+	function loadBlaster() {
+	    blaster = new Howl({
+	        src: ['audio/fire.wav'],
+	        volume: volume
+	    });
+	   // sound.play();
+
+	}
+
+	function playBlaster() {
+	    blaster.play();
+	}
+
+	//		Init
+	//////////////////////////////////////////////////////////////////////////////////
+
+	// init renderer
+	var renderer	= new THREE.WebGLRenderer({
+		// antialias	: true,
+		alpha: true
+	});
+
+	renderer.shadowMap.type = THREE.PCFSoftShadowMap
+	renderer.shadowMap.enabled = true;
+	renderer.setClearColor(new THREE.Color('lightgrey'), 0)
+	// renderer.setPixelRatio( 1/2 );
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	renderer.domElement.style.position = 'absolute'
+	renderer.domElement.style.top = '0px'
+	renderer.domElement.style.left = '0px'
+	document.body.appendChild( renderer.domElement );
+
+	// array of functions for the rendering loop
+	var onRenderFcts= [];
+
+	// init scene and camera
+	var scene	= new THREE.Scene();
+
+
+	var ambient = new THREE.AmbientLight( 0x666666 );
+	scene.add( ambient );
+
+	var directionalLight = new THREE.DirectionalLight( 'white' );
+	directionalLight.position.set( 1, 3, -0.3 ).setLength(2)
+	directionalLight.shadow.mapSize.set(128,128)
+	directionalLight.shadow.camera.bottom = -0.6
+	directionalLight.shadow.camera.top = 0.6
+	directionalLight.shadow.camera.right = 0.6
+	directionalLight.shadow.camera.left = -0.6
+	directionalLight.castShadow = true;
+	// scene.add(new THREE.CameraHelper( directionalLight.shadow.camera ))
+	scene.add( directionalLight );
+
+	
+	//////////////////////////////////////////////////////////////////////////////////
+	//		Initialize a basic camera
+	//////////////////////////////////////////////////////////////////////////////////
+
+	// Create a camera
+	//var camera = new THREE.Camera();
+	var camera = new THREE.PerspectiveCamera( 42, window.innerWidth / window.innerHeight, 0.01, 100 );
+
+
+	scene.add(camera);
+
+	////////////////////////////////////////////////////////////////////////////////
+	//          handle arToolkitSource
+	////////////////////////////////////////////////////////////////////////////////
+
+	var arToolkitSource = new THREEx.ArToolkitSource({
+		// to read from the webcam 
+		sourceType : 'webcam',
+
+		// to read from an image
+		// sourceType : 'image',
+		// sourceUrl : THREEx.ArToolkitContext.baseURL + '../data/images/img.jpg',		
+
+		// to read from a video
+		// sourceType : 'video',
+		// sourceUrl : THREEx.ArToolkitContext.baseURL + '../data/videos/headtracking.mp4',		
+	})
+
+	arToolkitSource.init(function onReady(){
+		onResize()
+	})
+	
+	// handle resize
+	window.addEventListener('resize', function(){
+		onResize()
+	})
+	function onResize(){
+		arToolkitSource.onResize()	
+		arToolkitSource.copySizeTo(renderer.domElement)	
+		if( arToolkitContext.arController !== null ){
+			arToolkitSource.copySizeTo(arToolkitContext.arController.canvas)	
+		}	
+	}
+	////////////////////////////////////////////////////////////////////////////////
+	//          initialize arToolkitContext
+	////////////////////////////////////////////////////////////////////////////////
+	
+
+	// create atToolkitContext
+	var arToolkitContext = new THREEx.ArToolkitContext({
+		cameraParametersUrl: THREEx.ArToolkitContext.baseURL + 'data/data/camera_para.dat',
+		detectionMode: 'mono',
+		maxDetectionRate: 30,
+		//canvasWidth: 80*3,
+		//canvasHeight: 60*3,
+		canvasWidth: 60*3,
+		canvasHeight: 80*3,
+	})
+	// initialize it
+	arToolkitContext.init(function onCompleted(){
+		// copy projection matrix to camera
+		camera.projectionMatrix.copy( arToolkitContext.getProjectionMatrix() );
+
+	})
+
+	// update artoolkit on every frame
+	onRenderFcts.push(function(){
+		if( arToolkitSource.ready === false )	return
+
+		arToolkitContext.update( arToolkitSource.domElement )
+	})
+	
+	
+	////////////////////////////////////////////////////////////////////////////////
+	//          Create a ArMarkerControls
+	////////////////////////////////////////////////////////////////////////////////
+	
+	var markerRoot = new THREE.Group
+	scene.add(markerRoot)
+
+	var mesh = new THREE.AxisHelper()
+	markerRoot.add(mesh)
+
+/*
+
+	var artoolkitMarker = new THREEx.ArMarkerControls(arToolkitContext, markerRoot, {
+		type : 'pattern',
+		patternUrl : THREEx.ArToolkitContext.baseURL + 'data/data/patt.hiro',
+		//changeMatrixMode: 'cameraTransformMatrix'
+		// patternUrl : THREEx.ArToolkitContext.baseURL + '../data/data/patt.kanji'
+	})
+	
+*/
+	var artoolkitMarker = new THREEx.ArMarkerControls(arToolkitContext, camera, {
+		type : 'pattern',
+		patternUrl : THREEx.ArToolkitContext.baseURL + ' data/data/patt.hiro',
+		// patternUrl : THREEx.ArToolkitContext.baseURL + '../data/data/patt.kanji',
+		// as we controls the camera, set changeMatrixMode: 'cameraTransformMatrix'
+		changeMatrixMode: 'cameraTransformMatrix'
+	})
+
+
+
+	// build a smoothedControls
+	var smoothedRoot = new THREE.Group()
+	scene.add(smoothedRoot)
+	var smoothedControls = new THREEx.ArSmoothedControls(smoothedRoot, {
+		lerpPosition: 1,
+		lerpQuaternion: 1,
+		lerpScale: 1,
+	})
+	onRenderFcts.push(function(delta){
+		smoothedControls.update(markerRoot)
+	})
+	//////////////////////////////////////////////////////////////////////////////////
+	//		add an object in the scene
+	//////////////////////////////////////////////////////////////////////////////////
+
+	var arWorldRoot = smoothedRoot
+
+
+	initPhysics();
+	initInput();
+	createObjects();
+	loadBlaster();
+/*
+	// add a torus knot	
+	var geometry	= new THREE.CubeGeometry(1,1,1);
+	var material	= new THREE.MeshNormalMaterial({
+		transparent : true,
+		opacity: 0.5,
+		side: THREE.DoubleSide
+	}); 
+	var mesh	= new THREE.Mesh( geometry, material );
+	mesh.position.y	= geometry.parameters.height/2
+	arWorldRoot.add( mesh );
+	
+	var geometry	= new THREE.TorusKnotGeometry(0.3,0.1,64,16);
+	var material	= new THREE.MeshNormalMaterial(); 
+	var mesh	= new THREE.Mesh( geometry, material );
+	mesh.position.y	= 0.5
+	arWorldRoot.add( mesh );
+*/
+	onRenderFcts.push(function(){
+	//	mesh.rotation.x += 0.1
+
+		var deltaTime = clock.getDelta();
+
+		updatePhysics( deltaTime );
+
+		//controls.update( deltaTime );
+
+		//renderer.render( scene, camera );
+
+		time += deltaTime;
+	})
+
+	function initInput() {
+
+    	//	document.addEventListener( 'mousemove', recordMousePosition, false );
+        //    document.addEventListener( 'touchmove', recordMousePosition, false );
+            document.addEventListener( 'mousedown', onPress, false );
+            document.addEventListener( 'touchstart', onPress, false );
+          //  document.addEventListener( 'mouseup', onRelease, false );
+          //  document.addEventListener( 'touchend', onRelease, false );
+
+	}
+
+
+
+	function onPress(e) {
+          //  pointerDown = true;
+           // circle.inflate = true;
+           // e.preventDefault();
+            castRay(e);
+
+            //console.log('press')
+/*
+            var ball = new THREE.Mesh( new THREE.SphereGeometry( .5, 14, 10 ), ballMaterial );
+			ball.castShadow = true;
+		//	ball.receiveShadow = true;
+			//console.log(ball)
+			markerRoot.add( ball );
+			ball.position.copy(camera.position);
+			*/
+
+						// Creates a ball and throws it
+			var ballMass = 1005;
+			var ballRadius = 0.1;
+
+			var ball = new THREE.Mesh( new THREE.SphereGeometry( ballRadius, 20, 20 ), ballMaterial );
+			ball.castShadow = true;
+			//ball.receiveShadow = true;
+
+			markerRoot.add(ball)
+
+		//	console.log(arToolkitContext)
+
+		//	ball.position.copy(camera.position)
+		
+			var ballShape = new Ammo.btSphereShape( ballRadius );
+			ballShape.setMargin( margin );
+			pos.copy( raycaster.ray.direction );
+			pos.add( raycaster.ray.origin );
+			quat.set( 0, 0, 0, 1 );
+			var ballBody = createRigidBody( ball, ballShape, ballMass, pos, quat );
+
+			pos.copy( raycaster.ray.direction );
+			pos.multiplyScalar( 20 );
+			ballBody.setLinearVelocity( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
+		
+			playBlaster();
+
+			//document.getElementById("info").textContent+="press"
+            //recordMousePosition(e);
+            //pressing = true;
+        }
+
+    function castRay(evt){
+                
+            if (evt.touches){
+               // console.log('got touches')
+                mouse.x = ( evt.touches[0].clientX / renderer.domElement.clientWidth ) * 2 - 1;
+                mouse.y = - ( evt.touches[0].clientY / renderer.domElement.clientHeight ) * 2 + 1;
+                pointerX = evt.touches[ 0 ].clientX - ( window.innerWidth / 2); 
+                pointerY = evt.touches[ 0 ].clientY - ( window.innerHeight/ 2); 
+                pointerInit = pointerX; 
+            }else{
+               // console.log('is mouse')
+                mouse.x = ( evt.clientX / renderer.domElement.clientWidth ) * 2 - 1;
+                mouse.y = - ( evt.clientY / renderer.domElement.clientHeight ) * 2 + 1;
+                pointerX = evt.clientX - ( window.innerWidth / 2); 
+                pointerY = evt.clientY - ( window.innerHeight/ 2); 
+            }
+            
+            raycaster.setFromCamera( mouse, camera );
+
+        }
+
+    function initPhysics() {
+
+		// Physics configuration
+
+		collisionConfiguration = new Ammo.btSoftBodyRigidBodyCollisionConfiguration();
+		dispatcher = new Ammo.btCollisionDispatcher( collisionConfiguration );
+		broadphase = new Ammo.btDbvtBroadphase();
+		solver = new Ammo.btSequentialImpulseConstraintSolver();
+		softBodySolver = new Ammo.btDefaultSoftBodySolver();
+		physicsWorld = new Ammo.btSoftRigidDynamicsWorld( dispatcher, broadphase, solver, collisionConfiguration, softBodySolver);
+		physicsWorld.setGravity( new Ammo.btVector3( 0, gravityConstant, 0 ) );
+		physicsWorld.getWorldInfo().set_m_gravity( new Ammo.btVector3( 0, gravityConstant, 0 ) );
+
+	}
+
+	function createObject( mass, halfExtents, pos, quat, material ) {
+			var geom = new THREE.BoxGeometry( halfExtents.x * 2, halfExtents.y * 2, halfExtents.z * 2 );
+
+			 var numVerts = geom.vertices.length;
+
+	        // console.log(numVerts);
+
+	        for (var i = 0; i < numVerts; i++) {
+
+	            geom.vertices[i].multiplyScalar(Math.random() * 2);
+
+	        }
+
+
+			var object = new THREE.Mesh( geom, material );
+			object.position.copy( pos );
+			object.quaternion.copy( quat );
+			convexBreaker.prepareBreakableObject( object, mass, new THREE.Vector3(), new THREE.Vector3(), true );
+			createDebrisFromBreakableObject( object );
+
+		}
+
+		function createObjects() {
+
+			// Ground
+			pos.set( 0, - 0.1, 0 );
+			quat.set( 0, 0, 0, 1 );
+			var ground = createParalellepipedWithPhysics( 10, .1, 10, 0, pos, quat, new THREE.MeshPhongMaterial( { 
+					color: 0xFFFFFF,
+				//	wireframe: true,
+				//	transparent: true,
+				//	opacity: .4 
+			} ) );
+			ground.receiveShadow = true;
+			ground.visible=false;
+
+
+
+			/*textureLoader.load( "textures/grid.png", function( texture ) {
+				texture.wrapS = THREE.RepeatWrapping;
+				texture.wrapT = THREE.RepeatWrapping;
+				texture.repeat.set( 40, 40 );
+				ground.material.map = texture;
+				ground.material.needsUpdate = true;
+			} );
+*/
+			// Tower 1
+			var towerMass = 1000;
+			var towerHalfExtents = new THREE.Vector3( .4, .4, .4 );
+			//pos.set( -8, 5, 0 );
+			//pos.set( -1, 1, 0 );
+			pos.set( 0, 1, 0 );
+			quat.set( 0, 0, 0, 1 );
+			createObject( towerMass, towerHalfExtents, pos, quat, createMaterial( 0x000000 ));
+
+			// Tower 2
+			//pos.set( 8, 5, 0 );
+			pos.set( 0, 2, 0 );
+			quat.set( 0, 0, 0, 1 );
+			createObject( towerMass, towerHalfExtents, pos, quat, createMaterial( 0x000000 ) );
+
+			pos.set( 0, 3, 0 );
+			quat.set( 0, 0, 0, 1 );
+			createObject( towerMass, towerHalfExtents, pos, quat, createMaterial( 0x000000 ) );
+
+			pos.set( 0, 4, 0 );
+			quat.set( 0, 0, 0, 1 );
+			createObject( towerMass, towerHalfExtents, pos, quat, createMaterial( 0xF4A321 ) );
+
+
+			
+			var radius = 4;
+
+			for (var n=0; n<10; n++){
+				var angle = Math.random()*Math.PI*2;
+				pos.set( Math.cos(angle)*radius ,2, Math.sin(angle)*radius);
+				quat.set( 0, 0, 0, 1 );
+				createObject( towerMass, towerHalfExtents, pos, quat, createMaterial( 0x000000 ) );
+			}
+
+
+		}
+
+		function createParalellepipedWithPhysics( sx, sy, sz, mass, pos, quat, material ) {
+
+			var object = new THREE.Mesh( new THREE.BoxGeometry( sx, sy, sz, 1, 1, 1 ), material );
+			var shape = new Ammo.btBoxShape( new Ammo.btVector3( sx * 0.5, sy * 0.5, sz * 0.5 ) );
+			shape.setMargin( margin );
+
+			createRigidBody( object, shape, mass, pos, quat );
+
+			return object;
+
+		}
+
+		function createDebrisFromBreakableObject( object ) {
+
+			object.castShadow = true;
+			object.receiveShadow = true;
+
+			var shape = createConvexHullPhysicsShape( object.geometry.vertices );
+			shape.setMargin( margin );
+
+			var body = createRigidBody( object, shape, object.userData.mass, null, null, object.userData.velocity, object.userData.angularVelocity );
+
+			// Set pointer back to the three object only in the debris objects
+			var btVecUserData = new Ammo.btVector3( 0, 0, 0 );
+			btVecUserData.threeObject = object;
+			body.setUserPointer( btVecUserData );
+
+		}
+
+		function removeDebris( object ) {
+
+			//scene.remove( object );
+			markerRoot.remove(object);
+
+			physicsWorld.removeRigidBody( object.userData.physicsBody );
+
+		}
+
+		function createConvexHullPhysicsShape( points ) {
+
+			var shape = new Ammo.btConvexHullShape();
+
+			for ( var i = 0, il = points.length; i < il; i++ ) {
+				var p = points[ i ];
+				this.tempBtVec3_1.setValue( p.x, p.y, p.z );
+				var lastOne = ( i === ( il - 1 ) );
+				shape.addPoint( this.tempBtVec3_1, lastOne );
+			}
+
+			return shape;
+
+		}
+
+		function createRigidBody( object, physicsShape, mass, pos, quat, vel, angVel ) {
+
+			if ( pos ) {
+				object.position.copy( pos );
+			}
+			else {
+				pos = object.position;
+			}
+			if ( quat ) {
+				object.quaternion.copy( quat );
+			}
+			else {
+				quat = object.quaternion;
+			}
+
+			var transform = new Ammo.btTransform();
+			transform.setIdentity();
+			transform.setOrigin( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
+			transform.setRotation( new Ammo.btQuaternion( quat.x, quat.y, quat.z, quat.w ) );
+			var motionState = new Ammo.btDefaultMotionState( transform );
+
+			var localInertia = new Ammo.btVector3( 0, 0, 0 );
+			physicsShape.calculateLocalInertia( mass, localInertia );
+
+			var rbInfo = new Ammo.btRigidBodyConstructionInfo( mass, motionState, physicsShape, localInertia );
+			var body = new Ammo.btRigidBody( rbInfo );
+
+			body.setFriction( 0.5 );
+
+			if ( vel ) {
+				body.setLinearVelocity( new Ammo.btVector3( vel.x, vel.y, vel.z ) );
+			}
+			if ( angVel ) {
+				body.setAngularVelocity( new Ammo.btVector3( angVel.x, angVel.y, angVel.z ) );
+			}
+
+			object.userData.physicsBody = body;
+			object.userData.collided = false;
+
+			//scene.add( object );
+			markerRoot.add(object);
+
+			if ( mass > 0 ) {
+				rigidBodies.push( object );
+
+				// Disable deactivation
+				body.setActivationState( 4 );
+			}
+
+			physicsWorld.addRigidBody( body );
+
+			return body;
+		}
+
+		function createRandomColor() {
+			return Math.floor( Math.random() * ( 1 << 24 ) );
+		}
+
+		function createMaterial( color ) {
+			console.log(color)
+			color = color || createRandomColor();
+			return new THREE.MeshPhongMaterial( { 
+				color: color,
+				specular: 0x050505,
+    			shininess: 100} );
+		}
+
+	function updatePhysics( deltaTime ) {
+
+			// Step world
+			physicsWorld.stepSimulation( deltaTime, 10 );
+
+			// Update rigid bodies
+			for ( var i = 0, il = rigidBodies.length; i < il; i++ ) {
+				var objThree = rigidBodies[ i ];
+				var objPhys = objThree.userData.physicsBody;
+				var ms = objPhys.getMotionState();
+				if ( ms ) {
+
+					ms.getWorldTransform( transformAux1 );
+					var p = transformAux1.getOrigin();
+					var q = transformAux1.getRotation();
+					objThree.position.set( p.x(), p.y(), p.z() );
+					objThree.quaternion.set( q.x(), q.y(), q.z(), q.w() );
+
+					objThree.userData.collided = false;
+
+				}
+			}
+
+			for ( var i = 0, il = dispatcher.getNumManifolds(); i < il; i ++ ) {
+
+				var contactManifold = dispatcher.getManifoldByIndexInternal( i );
+				var rb0 = contactManifold.getBody0();
+				var rb1 = contactManifold.getBody1();
+
+				var threeObject0 = Ammo.castObject( rb0.getUserPointer(), Ammo.btVector3 ).threeObject;
+				var threeObject1 = Ammo.castObject( rb1.getUserPointer(), Ammo.btVector3 ).threeObject;
+
+				if ( ! threeObject0 && ! threeObject1 ) {
+					continue;
+				}
+
+				var userData0 = threeObject0 ? threeObject0.userData : null;
+				var userData1 = threeObject1 ? threeObject1.userData : null;
+
+				var breakable0 = userData0 ? userData0.breakable : false;
+				var breakable1 = userData1 ? userData1.breakable : false;
+
+				var collided0 = userData0 ? userData0.collided : false;
+				var collided1 = userData1 ? userData1.collided : false;
+
+				if ( ( ! breakable0 && ! breakable1 ) || ( collided0 && collided1 ) ) {
+					continue;
+				}
+
+				var contact = false;
+				var maxImpulse = 0;
+				for ( var j = 0, jl = contactManifold.getNumContacts(); j < jl; j ++ ) {
+					var contactPoint = contactManifold.getContactPoint( j );
+					if ( contactPoint.getDistance() < 0 ) {
+						contact = true;
+						var impulse = contactPoint.getAppliedImpulse();
+						if ( impulse > maxImpulse ) {
+							maxImpulse = impulse;
+							var pos = contactPoint.get_m_positionWorldOnB();
+							var normal = contactPoint.get_m_normalWorldOnB();
+							impactPoint.set( pos.x(), pos.y(), pos.z() );
+							impactNormal.set( normal.x(), normal.y(), normal.z() );
+						}
+						break;
+					}
+				}
+
+				// If no point has contact, abort
+				if ( ! contact ) {
+					continue;
+				}
+
+				// Subdivision
+
+				var fractureImpulse = 250;
+
+				if ( breakable0 && !collided0 && maxImpulse > fractureImpulse ) {
+
+					var debris = convexBreaker.subdivideByImpact( threeObject0, impactPoint, impactNormal , 1, 2, 1.5 );
+
+					var numObjects = debris.length;
+					for ( var j = 0; j < numObjects; j++ ) {
+
+						createDebrisFromBreakableObject( debris[ j ] );
+
+					}
+
+					objectsToRemove[ numObjectsToRemove++ ] = threeObject0;
+					userData0.collided = true;
+
+				}
+/*
+				if ( breakable1 && !collided1 && maxImpulse > fractureImpulse ) {
+
+					var debris = convexBreaker.subdivideByImpact( threeObject1, impactPoint, impactNormal , 1, 2, 1.5 );
+
+					var numObjects = debris.length;
+					for ( var j = 0; j < numObjects; j++ ) {
+
+						createDebrisFromBreakableObject( debris[ j ] );
+
+					}
+
+					objectsToRemove[ numObjectsToRemove++ ] = threeObject1;
+					userData1.collided = true;
+
+				}
+*/
+			}
+
+			for ( var i = 0; i < numObjectsToRemove; i++ ) {
+
+				removeDebris( objectsToRemove[ i ] );
+
+			}
+			numObjectsToRemove = 0;
+
+		}
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		render the whole thing on the page
+	//////////////////////////////////////////////////////////////////////////////////
+	var stats = new Stats();
+	document.body.appendChild( stats.dom );
+	// render the scene
+	onRenderFcts.push(function(){
+		renderer.render( scene, camera );
+		stats.update();
+	})
+
+	// run the rendering loop
+	var lastTimeMsec= null
+	requestAnimationFrame(function animate(nowMsec){
+		// keep looping
+		requestAnimationFrame( animate );
+		// measure time
+		lastTimeMsec	= lastTimeMsec || nowMsec-1000/60
+		var deltaMsec	= Math.min(200, nowMsec - lastTimeMsec)
+		lastTimeMsec	= nowMsec
+		// call each update function
+		onRenderFcts.forEach(function(onRenderFct){
+			onRenderFct(deltaMsec/1000, nowMsec/1000)
+		})
+	})
+</script></body>

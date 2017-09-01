@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - blender -json</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				background:#777;
+				padding:0;
+				margin:0;
+				font-weight: bold;
+				overflow:hidden;
+			}
+
+			#info {
+				position: absolute;
+				top: 0px;
+				width: 100%;
+				color: #ffffff;
+				padding: 5px;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+			}
+
+			a {
+				color: #ffffff;
+			}
+		</style>
+	</head>
+	<body>
+
+		<div id="container"></div>
+
+
+		<script src="../../bower_components/three.js/build/three.js"></script>
+		 <script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+		<script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+    <script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+
+		<script>
+
+			var renderer,
+    	scene,
+    	camera,
+    	container,
+    	controls;
+
+    	var action = {}, mixer;
+
+    	renderer = new THREE.WebGLRenderer({ antialias: true });
+    	renderer.setClearColor( 0xbfd1e5 );
+    	renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    	renderer.shadowMap.enabled = true;
+          renderer.setPixelRatio(window.devicePixelRatio);
+          renderer.setSize(window.innerWidth, window.innerHeight);
+          
+
+          container = document.getElementById('container');
+          container.appendChild(renderer.domElement);
+    	//renderer.setClearColor(0x000000);
+
+    	
+  
+
+    //CAMERA
+    camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 1000 );
+    camera.position.set(0, 1, 2);
+    camera.lookAt(0,0,0)
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+          controls.target = new THREE.Vector3(0, 0.6, 0);
+
+    //SCENE
+    scene = new THREE.Scene();
+
+    //LIGHTS
+    var ambientLight = new THREE.AmbientLight( 0x707070 );
+	scene.add( ambientLight );
+
+	var light = new THREE.DirectionalLight( 0xffffff, 1 );
+	light.position.set( 1, 4, 5 );
+	light.lookAt( scene.position );
+
+
+
+
+	//light.shadowCameraVisible = true;
+
+	var lightcam = new THREE.CameraHelper( light.shadow.camera );
+	scene.add(lightcam)
+
+	light.castShadow = true;
+	var d = 14;
+	light.shadow.camera.left = -d;
+	light.shadow.camera.right = d;
+	light.shadow.camera.top = d;
+	light.shadow.camera.bottom = -d;
+
+	light.shadow.camera.near = 0.01;
+	light.shadow.camera.far = 50;
+
+	light.shadow.mapSize.x = 1024;
+	light.shadow.mapSize.y = 1024;
+
+	scene.add( light );
+  
+    
+    var loader = new THREE.JSONLoader();
+    // loader.load('monkey.json', handle_load);
+
+    loader.load('json/monkey-rig2.json', handle_load);
+
+    var mesh;
+    var mixer;
+
+    function handle_load(geometry, materials) {
+
+        //BASIC MESH
+         var material = new THREE.MultiMaterial(materials);
+        // mesh = new THREE.Mesh(geometry, material);
+        // scene.add(mesh);
+        // mesh.position.z = -10;
+
+        //ANIMATION MESH
+        //var material = new THREE.MeshLambertMaterial({morphTargets: true});
+
+        mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
+        mesh.scale.set(.1,.1,.1);
+        mesh.position.set(0,0,0);
+        mesh.castShadow = true;
+       // mesh.position.z = -10;
+
+
+       var geometry = new THREE.PlaneBufferGeometry(2, 2, 10,10);
+        geometry.rotateX(-Math.PI / 2);
+       // var material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+       // var material = new THREE.MeshBasicMaterial({ color: 0x7BC8A4, wireframe: false });
+         var material = new THREE.MeshPhongMaterial( { color: 0xFFFFFF } )
+        ground = new THREE.Mesh(geometry, material);
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+       // var material = new THREE.MeshBasicMaterial({ color: 0xffff00, wireframe: false });
+        var material	= new THREE.MeshPhongMaterial({
+			ambient		: 0x444444,
+			color		: 0x8844AA,
+			shininess	: 300, 
+			specular	: 0x33AA33,
+			shading		: THREE.SmoothShading,
+			//map		: texture
+		});
+        var object = new THREE.Mesh( new THREE.BoxGeometry( .2, .2, .2, 1, 1, 1 ), material );
+        scene.add(object);
+        object.position.set(.3, .3, .3);
+        object.castShadow = true;
+
+
+        //MIXER
+        mixer = new THREE.AnimationMixer(mesh);
+
+	    action.hello = mixer.clipAction(geometry.animations[ 0 ]);
+	    action.Idle = mixer.clipAction(geometry.animations[ 1 ]);
+	  //  action.run = mixer.clipAction(geometry.animations[ 3 ]);
+	  //  action.walk = mixer.clipAction(geometry.animations[ 4 ]);
+
+	    action.hello.setEffectiveWeight(1);
+	    action.Idle.setEffectiveWeight(1);
+	  //  action.run.setEffectiveWeight(1);
+	  //  action.walk.setEffectiveWeight(1);
+
+	    action.hello.setLoop(THREE.LoopOnce, 0);
+	    action.hello.clampWhenFinished = true;
+
+	    action.hello.enabled = true;
+	    action.Idle.enabled = true;
+	 //   action.run.enabled = true;
+	 //   action.walk.enabled = true;
+
+	    action.Idle.play()
+
+
+      //  var clip = THREE.AnimationClip.CreateFromMorphTargetSequence('talk', geometry.morphTargets, 30);
+      //  mixer.clipAction(clip).setDuration(1).play();
+    }
+
+
+    //RENDER LOOP
+    render();
+
+    var delta = 0;
+    var prevTime = Date.now();
+
+    function render() {
+
+        delta += 0.1;
+
+        if (mesh) {
+        
+          //  mesh.rotation.y += 0.01;
+
+            //animation mesh
+            // mesh.morphTargetInfluences[ 0 ] = Math.sin(delta) * 20.0;
+        }
+
+        var angle	= Date.now()/1000 * Math.PI;
+// angle	= Math.PI*2
+		light.position.x	= Math.cos(angle*-0.1)*10;
+		light.position.y	= 5 + Math.sin(angle*0.5)*6;
+		light.position.z	= Math.sin(angle*-0.1)*10;	
+
+        if (mixer) {
+            var time = Date.now();
+            mixer.update((time - prevTime) * 0.001);
+            prevTime = time;
+        }
+
+    	renderer.render(scene, camera);
+
+    	requestAnimationFrame(render);
+    }
+		</script>
+	</body>
+</html>

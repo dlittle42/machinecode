@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Hello, World! - A-Frame</title>
+    <meta name="description" content="Hello, World! - A-Frame">
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=no">
+    <script src="https://aframe.io/releases/0.6.1/aframe.min.js"></script>
+    <script src="//cdn.rawgit.com/donmccurdy/aframe-extras/v3.11.2/dist/aframe-extras.min.js"></script>
+    <script src="https://rawgit.com/google-ar/three.ar.js/master/dist/three.ar.js"></script>
+    <script src="dist/aframe-three-ar.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/annyang/2.4.0/annyang.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/SpeechKITT/0.3.0/speechkitt.min.js"></script>
+<script src="https://unpkg.com/aframe-environment-component/dist/aframe-environment-component.min.js"></script>
+
+  </head>
+  <body>
+
+
+
+
+   <a-scene three-ar vr-mode-ui="enabled:false" shadow="type: pcfsoft" >
+<!--    <a-scene shadow="type: pcfsoft" > -->
+      <a-camera position="0 0 4"><a-cursor></a-cursor></a-camera>
+    <!--  <a-entity light="type: directional; color: #EEE; intensity: 1" position="0 1 1"></a-entity> -->
+
+      <a-entity 
+        position="0 0 0" 
+        scale="0.5 0.5 0.5" 
+        shadow="cast: true"
+        json-model="src: json/monkey-rig2.json" 
+        animation-mixer="clip: Idle">
+      </a-entity>
+      <a-box color="red" position="1.5 1 .5" scale=".5 .5 .5" shadow="cast: true; receive: true"></a-box>
+<!--  
+      <a-plane position="0 0 0" rotation="-90 0 0" width="4" height="4" color="#7BC8A4" shadow="receive: true"></a-plane>
+-->
+    <!--  <a-sky color="#ECECEC"></a-sky> -->
+  <a-light type="directional" castShadows="true" color="#fff" position="2 5 3" look-at="0 0 0"></a-light>
+      <a-light type="ambient" color="#445451"></a-light>
+
+      <a-entity environment="preset: forest; numDressing: 100; shadow: true; shadowSize: 10; lightPosition: -1 1 -0.5"></a-entity>
+
+
+    
+     <!-- <a-light type="point" intensity=".5" position="2 4 4"></a-light>
+      <a-entity light="type: ambient; intensity: 0.5;"></a-entity>
+-->
+      <!--
+  <a-entity light="type: directional;
+                   castShadow: true;
+                   intensity: 1;
+                   shadowCameraVisible: true;"
+            position="2 2 0"></a-entity>
+
+            -->
+<!--
+            <a-light type="directional" castShadow="true" position="0 2 1" rotation="-45 0 0" target="#directionaltarget" shadowCameraVisible="true">
+              <a-entity id="directionaltarget" position="0 0 -1"></a-entity>
+            </a-light>
+-->
+    </a-scene>
+    <script type="text/javascript">
+
+    
+    var poseArr = ["Idle", "Dance", "Jump"];
+    var pose = 0;
+    var monkey = document.querySelector("a-entity");
+
+    document.addEventListener("keydown", keyDownTextField, false);
+    monkey.addEventListener("mousedown", changePose);
+    monkey.addEventListener("touchstart", changePose);
+
+
+    if (annyang) {
+
+      console.log('yep, annyang')
+
+      // Add our commands to annyang
+      annyang.addCommands({
+       // 'hello': function() { alert('Hello world!'); },
+        'stop': function() { changePose('Idle') },
+        'jump': function() { changePose('Jump') },
+        'dance': function() { changePose('Dance') }
+      });
+
+      annyang.addCallback('result', function(userSaid) {
+        console.log(userSaid); // sample output: 'hello'
+        document.getElementById("skitt-ui").style.background = "green";
+
+      });
+
+
+      annyang.addCallback('resultMatch', function(userSaid, commandText, phrases) {
+        console.log(userSaid); // sample output: 'hello'
+        console.log(commandText); // sample output: 'hello (there)'
+        console.log(phrases); // sample output: ['hello', 'halo', 'yellow', 'polo', 'hello kitty']
+        document.getElementById("skitt-ui").style.background = "#2980B1";
+      });
+
+      // Tell KITT to use annyang
+      SpeechKITT.annyang();
+
+      // Define a stylesheet for KITT to use
+      SpeechKITT.setStylesheet('//cdnjs.cloudflare.com/ajax/libs/SpeechKITT/0.3.0/themes/flat.css');
+
+      // Render KITT's interface
+      SpeechKITT.vroom();
+    }
+
+    function keyDownTextField(e) {
+    var keyCode = e.keyCode;
+      if(keyCode==13) {
+       console.log("You hit the enter key.");
+       changePose();
+      } 
+    }
+
+   // monkey.addEventListener('click', function(evt){
+    function changePose(newPose){
+      console.log('new Pose! '+ newPose);
+
+      if (newPose){
+          console.log(typeof newPose)
+          monkey.setAttribute("animation-mixer", "clip: "+newPose+ "; autoplay: true; loop: true;")
+          return
+      }
+
+      if (pose < poseArr.length-1){
+        pose ++;
+
+      }else{
+        pose = 0;
+      }
+
+      console.log(poseArr[pose])
+
+
+
+       monkey.setAttribute("animation-mixer", "clip: "+poseArr[pose]+"; autoplay: true; loop: true;")
+
+      
+      /*
+      if (pose == "Idle"){
+          monkey.setAttribute("animation-mixer", "clip: Dance; autoplay: true; loop: true;")
+          pose = "Dance";
+      }else{
+          monkey.setAttribute("animation-mixer", "clip: Idle; autoplay: true; loop: true;")
+          pose="Idle";
+      }
+      */
+    }
+
+    </script>
+  </body>
+</html>

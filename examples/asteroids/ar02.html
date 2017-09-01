@@ -131,7 +131,7 @@
 
 	// Create a camera
 	//var camera = new THREE.Camera();
-	var camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.2, 2000 );
+	var camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.2, 10000 );
 	scene.add(camera);
 
 	var ambientLight = new THREE.AmbientLight( 0x707070 );
@@ -202,7 +202,10 @@
 	// initialize it
 	arToolkitContext.init(function onCompleted(){
 		// copy projection matrix to camera
+		console.log('--copy matrix')
+		console.log(camera)
 		camera.projectionMatrix.copy( arToolkitContext.getProjectionMatrix() );
+		console.log(camera)
 	})
 
 	// update artoolkit on every frame
@@ -222,7 +225,7 @@
 	scene.add(markerRoot)
 	var artoolkitMarker = new THREEx.ArMarkerControls(arToolkitContext, markerRoot, {
 		type : 'pattern',
-		patternUrl : THREEx.ArToolkitContext.baseURL + 'data/data/patt.hiro'
+		patternUrl : THREEx.ArToolkitContext.baseURL + 'data/data/patt.hiro',
 		// patternUrl : THREEx.ArToolkitContext.baseURL + '../data/data/patt.kanji'
 	})
 
@@ -479,6 +482,8 @@
 
 		function shoot(evt){
 
+				console.log(arWorldRoot)
+
 				if (evt.type == "touchstart") touchEnabled = true;
 				//alert('shoot')
 
@@ -504,7 +509,7 @@
 */
 
 				//alert(camera.position)
-				document.getElementById("info").textContent=camera.position.x +":"+camera.position.y+":"+camera.position.z;
+				document.getElementById("info").textContent=arWorldRoot.position.x.toFixed(2) +":"+arWorldRoot.position.y.toFixed(2)+":"+arWorldRoot.position.z.toFixed(2);
 
 				console.log(arToolkitContext.getProjectionMatrix())
 
@@ -520,14 +525,29 @@
 				ball.receiveShadow = true;
 				var ballShape = new Ammo.btSphereShape( ballRadius );
 				ballShape.setMargin( margin );
-				pos.copy( raycaster.ray.direction );
-				pos.add( raycaster.ray.origin );
+			//	pos.copy( raycaster.ray.direction );
+			//	pos.add( raycaster.ray.origin );
+			//	pos.copy( raycaster.ray.origin );
+
+
+				arWorldRoot.add(ball)
+			//	ball.position.copy(arWorldRoot.position)
+				ball.position.x = arWorldRoot.position.x/2;// *-1;
+				ball.position.y = -arWorldRoot.position.z/2;//0;//arWorldRoot.position.y *-1;
+				ball.position.z = -arWorldRoot.position.z/2;
+/*
+				pos.copy( arWorldRoot.position );
+				//pos.add( raycaster.ray.origin );
 				quat.set( 0, 0, 0, 1 );
 				var ballBody = createRigidBody( ball, ballShape, ballMass, pos, quat );
 
-				pos.copy( raycaster.ray.direction );
-				pos.multiplyScalar( 40 );
+				//pos.copy( raycaster.ray.direction );
+				pos.copy( raycaster.ray.origin );
+				pos.multiplyScalar( 20 );
 				ballBody.setLinearVelocity( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
+
+				*/
+			
 		}
 
 //////
