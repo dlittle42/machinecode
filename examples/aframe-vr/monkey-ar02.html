@@ -74,6 +74,13 @@
 <script src="../../bower_components/three.js/build/three.js"></script>
 <script src="../asteroids/node_modules/three/examples/js/controls/VRControls.js"></script>
 <script src="https://rawgit.com/google-ar/three.ar.js/master/dist/three.ar.js"></script>
+
+<script src="../../bower_components/three.js/examples/js/shaders/CopyShader.js"></script>
+<script src="../../bower_components/three.js/examples/js/shaders/FXAAShader.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/RenderPass.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/OutlinePass.js"></script>
 <script>
 
 var vrDisplay;
@@ -87,6 +94,8 @@ var renderer;
 var cube;
  var ground;
  var playerGroup;
+
+ var composer, effectFXAA, outlinePass;
 
 var clock;
 var light;
@@ -182,6 +191,7 @@ function init() {
 
   addGround();
   setLights();
+  //goPostProcess();
 
   // Create the cube geometry and add it to the scene. Set the position
   // to (Infinity, Infinity, Infinity) so that it won't appear visible
@@ -285,7 +295,7 @@ function setLights(){
   light.shadow.camera.top = d;
   light.shadow.camera.bottom = -d;
 
-  light.shadow.camera.near = 0.01;
+  light.shadow.camera.near = 0.1;
   light.shadow.camera.far = 50;
 
   light.shadow.mapSize.x = 1024;
@@ -303,6 +313,7 @@ function addGround(){
           var plane = new THREE.Mesh( new THREE.PlaneBufferGeometry(1,1), shadowMaterial);
           
           plane.rotation.x = -Math.PI / 2;
+          //plane.position.y=-.5;
           plane.receiveShadow = true;
           plane.name="shadowplane"
           //scene.add( plane );
@@ -326,6 +337,31 @@ function fadeAction (name) {
   from.crossFadeTo(to, 0.3);
   activeActionName = name;
 
+}
+
+function goPostProcess(){
+
+     // postprocessing
+        composer = new THREE.EffectComposer(renderer);
+        var renderPass = new THREE.RenderPass(scene, camera);
+        composer.addPass(renderPass);
+        outlinePass = new THREE.OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
+        outlinePass.edgeStrength = 50.0;
+        outlinePass.edgeGlow = 0.0;
+        outlinePass.edgeThickness = 1.0;
+        outlinePass.pulsePeriod = 0;
+        outlinePass.rotate = false;
+        outlinePass.usePatternTexture = false;
+        outlinePass.visibleEdgeColor = new THREE.Color(0xffffff)
+        outlinePass.hiddenEdgeColor = new THREE.Color(0x190a05)
+        composer.addPass(outlinePass);
+
+        //
+
+        effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
+        effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+        effectFXAA.renderToScreen = true;
+        composer.addPass(effectFXAA);
 }
 
 /**
@@ -354,6 +390,9 @@ function update() {
   // Render our three.js virtual scene
   renderer.clearDepth();
   renderer.render(scene, camera);
+
+ // effect.render(scene, camera);
+ // composer.render();
 
   
 
