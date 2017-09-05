@@ -1,0 +1,830 @@
+
+<!--
+/*
+ * Copyright 2017 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>three.ar.js - asteroids</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no,
+  minimum-scale=1.0, maximum-scale=1.0">
+  <style>
+    body {
+      font-family: monospace;
+      margin: 0;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      height: 100vh;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    #info {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      transform: translate(-50%, 0);
+      margin: 1em;
+      z-index: 10;
+      display: block;
+      width: 100%;
+      line-height: 2em;
+      text-align: center;
+    }
+    #info a, #info .title {
+      padding: 0.4em 0.6em;
+      border-radius: 0.1em;
+    }
+    #info a {
+      color: rgba(255, 255, 255, 0.8);
+      background-color: rgba(40, 40, 40, 0.6);
+      font-weight: bold;
+      text-decoration: none;
+    }
+    .title {
+      color: rgba(255, 255, 255, 0.9);
+      background-color: rgba(40, 40, 40, 0.4);
+      margin-left: 0.2em;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+  </style>
+</head>
+<body>
+<div id="info">
+    <span class="title">shoot</span>
+</div>
+<script src="../../bower_components/three.js/build/three.js"></script>
+<script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+
+<script src="../asteroids/node_modules/three/examples/js/controls/VRControls.js"></script>
+<script src="https://rawgit.com/google-ar/three.ar.js/master/dist/three.ar.js"></script>
+<script src="../../bower_components/three.js/examples/js/ConvexObjectBreaker.js"></script>
+<script src="../../bower_components/three.js/examples/js/QuickHull.js"></script>
+<script src="../../bower_components/three.js/examples/js/geometries/ConvexGeometry.js"></script>
+
+<script src="../../bower_components/three.js/examples/js/libs/ammo.js"></script>
+<script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
+
+<script src="node_modules/howler/dist/howler.min.js"></script>
+<script>
+
+var vrDisplay;
+var vrControls;
+var arView;
+
+var canvas;
+var camera;
+var scene;
+var renderer;
+var cube;
+var stats;
+
+var colors = [
+  new THREE.Color( 0xffffff ),
+  new THREE.Color( 0xffff00 ),
+  new THREE.Color( 0xff00ff ),
+  new THREE.Color( 0xff0000 ),
+  new THREE.Color( 0x00ffff ),
+  new THREE.Color( 0x00ff00 ),
+  new THREE.Color( 0x0000ff ),
+  new THREE.Color( 0x000000 )
+];
+
+var BOX_SCALE = 0.3;
+
+/////
+var clock = new THREE.Clock();
+	var mouse = new THREE.Vector2()
+	var raycaster = new THREE.Raycaster();
+	var ballMaterial = new THREE.MeshPhongMaterial( { color: 0x33ffff } );
+
+	var gravityConstant = 0;//-1;//7.8;
+	var collisionConfiguration;
+	var dispatcher;
+	var broadphase;
+	var solver;
+	var physicsWorld;
+	var margin = 0.05;
+	var touchEnabled;
+
+	var convexBreaker = new THREE.ConvexObjectBreaker();
+	
+	
+
+	// Rigid bodies include all movable objects
+	var rigidBodies = [];
+
+	var pos = new THREE.Vector3();
+	var quat = new THREE.Quaternion();
+	var transformAux1 = new Ammo.btTransform();
+	var tempBtVec3_1 = new Ammo.btVector3( 0, 0, 0 );
+
+	var time = 0;
+
+	var objectsToRemove = [];
+	for ( var i = 0; i < 500; i++ ) {
+		objectsToRemove[ i ] = null;
+	}
+	var numObjectsToRemove = 0;
+
+	var impactPoint = new THREE.Vector3();
+	var impactNormal = new THREE.Vector3();
+
+	var pointerDown = false;
+    var pressing = false;
+
+    var focusObj;
+    var initMaterial;
+    var pointerX = 0;
+    var pointerY = 0;
+    var pointerInit = 0;
+    var hover = false;
+
+    var color = {
+          "black": new THREE.MeshPhongMaterial({
+            color: 0x222222
+          }),
+          "white": new THREE.MeshPhongMaterial({
+            color: 0xffffff
+          }),
+          "red": new THREE.MeshPhongMaterial({
+            color: 0xf25346
+          }),
+          "blue": new THREE.MeshPhongMaterial({
+            color: 0x68c3c0
+          })
+        }
+
+    var volume = 0.4;
+
+
+
+
+/////
+
+	function loadBlaster() {
+	    blaster = new Howl({
+	        src: ['audio/fire.wav'],
+	        volume: volume
+	    });
+	   // sound.play();
+
+	}
+
+	function playBlaster() {
+	    blaster.play();
+	}
+
+
+function loadExplode() {
+
+    explode = new Howl({
+        src: ['audio/bangSmall.wav'],
+        volume: volume
+    });
+    //explode.play();
+
+}
+
+function playExplode() {
+    explode.play();
+}
+
+/**
+ * Use the `getARDisplay()` utility to leverage the WebVR API
+ * to see if there are any AR-capable WebVR VRDisplays. Returns
+ * a valid display if found. Otherwise, display the unsupported
+ * browser message.
+ */
+THREE.ARUtils.getARDisplay().then(function (display) {
+  if (display) {
+    vrDisplay = display;
+    init();
+  } else {
+    THREE.ARUtils.displayUnsupportedMessage();
+  }
+});
+
+function init() {
+  // Turn on the debugging panel
+  var arDebug = new THREE.ARDebug(vrDisplay);
+  document.body.appendChild(arDebug.getElement());
+
+  // Setup the three.js rendering environment
+  renderer = new THREE.WebGLRenderer({ alpha: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.autoClear = false;
+  canvas = renderer.domElement;
+  document.body.appendChild(canvas);
+  scene = new THREE.Scene();
+
+  // Creating the ARView, which is the object that handles
+  // the rendering of the camera stream behind the three.js
+  // scene
+  arView = new THREE.ARView(vrDisplay, renderer);
+
+  // The ARPerspectiveCamera is very similar to THREE.PerspectiveCamera,
+  // except when using an AR-capable browser, the camera uses
+  // the projection matrix provided from the device, so that the
+  // perspective camera's depth planes and field of view matches
+  // the physical camera on the device.
+  camera = new THREE.ARPerspectiveCamera(
+    vrDisplay,
+    60,
+    window.innerWidth / window.innerHeight,
+    vrDisplay.depthNear,
+    vrDisplay.depthFar
+  );
+
+  // VRControls is a utility from three.js that applies the device's
+  // orientation/position to the perspective camera, keeping our
+  // real world and virtual world in sync.
+  vrControls = new THREE.VRControls(camera);
+
+  // Create the cube geometry and add it to the scene. Set the position
+  // to (Infinity, Infinity, Infinity) so that it won't appear visible
+  // until the first hit is found, and move it there
+  var geometry = new THREE.BoxGeometry(BOX_SCALE, BOX_SCALE, BOX_SCALE);
+  var faceIndices = ['a', 'b', 'c'];
+  for (var i = 0; i < geometry.faces.length; i++) {
+    var f  = geometry.faces[i];
+    for (var j = 0; j < 3; j++) {
+      var vertexIndex = f[faceIndices[ j ]];
+      f.vertexColors[j] = colors[vertexIndex];
+    }
+  }
+  var material = new THREE.MeshBasicMaterial({ vertexColors: THREE.VertexColors });
+  cube = new THREE.Mesh(geometry, material);
+
+  // Place the cube very far to initialize
+  cube.position.set(10000, 10000, 10000);
+
+  scene.add(cube);
+
+  setLight();
+  initPhysics();
+  initInput();
+  createObjects();
+  loadBlaster();
+  loadExplode();
+
+  stats = new Stats();
+  document.body.appendChild( stats.dom );
+
+  // Bind our event handlers
+  window.addEventListener('resize', onWindowResize, false);
+ // canvas.addEventListener('touchstart', onClick, false);
+
+  // Kick off the render loop!
+  update();
+}
+
+/**
+ * The render loop, called once per frame. Handles updating
+ * our scene and rendering.
+ */
+function update() {
+
+	var deltaTime = clock.getDelta();
+
+  // Render the device's camera stream on screen first of all.
+  // It allows to get the right pose synchronized with the right frame.
+  arView.render();
+
+  // Update our camera projection matrix in the event that
+  // the near or far planes have updated
+  camera.updateProjectionMatrix();
+
+  // Update our perspective camera's positioning
+  vrControls.update();
+
+  updatePhysics( deltaTime );
+
+  if (stats) stats.update();
+
+  // Render our three.js virtual scene
+  renderer.clearDepth();
+  renderer.render(scene, camera);
+
+  // Kick off the requestAnimationFrame to call this function
+  // on the next frame
+  requestAnimationFrame(update);
+}
+
+function setLight(){
+	var ambient = new THREE.AmbientLight( 0x666666 );
+	scene.add( ambient );
+
+	var directionalLight = new THREE.DirectionalLight( 'white' );
+	directionalLight.position.set( 1, 3, -0.3 ).setLength(2)
+	/*directionalLight.shadow.mapSize.set(128,128)
+	directionalLight.shadow.camera.bottom = -0.6
+	directionalLight.shadow.camera.top = 0.6
+	directionalLight.shadow.camera.right = 0.6
+	directionalLight.shadow.camera.left = -0.6
+	directionalLight.castShadow = true;
+	*/
+	// scene.add(new THREE.CameraHelper( directionalLight.shadow.camera ))
+	scene.add( directionalLight );
+}
+
+/**
+ * On window resize, update the perspective camera's aspect ratio,
+ * and call `updateProjectionMatrix` so that we can get the latest
+ * projection matrix provided from the device
+ */
+function onWindowResize () {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+	function initInput() {
+
+    	//	document.addEventListener( 'mousemove', recordMousePosition, false );
+        //    document.addEventListener( 'touchmove', recordMousePosition, false );
+            document.addEventListener( 'mousedown', onPress, false );
+            document.addEventListener( 'touchstart', onPress, false );
+          //  document.addEventListener( 'mouseup', onRelease, false );
+          //  document.addEventListener( 'touchend', onRelease, false );
+
+	}
+
+function onPress(e) {
+          //  pointerDown = true;
+           // circle.inflate = true;
+           // e.preventDefault();
+            castRay(e);
+
+            //console.log('press')
+/*
+            var ball = new THREE.Mesh( new THREE.SphereGeometry( .5, 14, 10 ), ballMaterial );
+			ball.castShadow = true;
+		//	ball.receiveShadow = true;
+			//console.log(ball)
+			markerRoot.add( ball );
+			ball.position.copy(camera.position);
+			*/
+
+						// Creates a ball and throws it
+			var ballMass = 1005;
+			var ballRadius = 0.1;
+
+			var ball = new THREE.Mesh( new THREE.SphereGeometry( ballRadius, 20, 20 ), ballMaterial );
+			//ball.castShadow = true;
+			//ball.receiveShadow = true;
+			ball.name = "bullet";
+
+			scene.add(ball)
+
+		//	console.log(arToolkitContext)
+
+		//	ball.position.copy(camera.position)
+		
+			var ballShape = new Ammo.btSphereShape( ballRadius );
+			ballShape.setMargin( margin );
+			pos.copy( raycaster.ray.direction );
+			pos.add( raycaster.ray.origin );
+			quat.set( 0, 0, 0, 1 );
+			var ballBody = createRigidBody( ball, ballShape, ballMass, pos, quat );
+
+			pos.copy( raycaster.ray.direction );
+			pos.multiplyScalar( 20 );
+			ballBody.setLinearVelocity( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
+		
+			playBlaster();
+
+			//document.getElementById("info").textContent+="press"
+            //recordMousePosition(e);
+            //pressing = true;
+        }
+
+    function castRay(evt){
+                
+            if (evt.touches){
+               // console.log('got touches')
+                mouse.x = ( evt.touches[0].clientX / renderer.domElement.clientWidth ) * 2 - 1;
+                mouse.y = - ( evt.touches[0].clientY / renderer.domElement.clientHeight ) * 2 + 1;
+                pointerX = evt.touches[ 0 ].clientX - ( window.innerWidth / 2); 
+                pointerY = evt.touches[ 0 ].clientY - ( window.innerHeight/ 2); 
+                pointerInit = pointerX; 
+            }else{
+               // console.log('is mouse')
+                mouse.x = ( evt.clientX / renderer.domElement.clientWidth ) * 2 - 1;
+                mouse.y = - ( evt.clientY / renderer.domElement.clientHeight ) * 2 + 1;
+                pointerX = evt.clientX - ( window.innerWidth / 2); 
+                pointerY = evt.clientY - ( window.innerHeight/ 2); 
+            }
+            
+            raycaster.setFromCamera( mouse, camera );
+
+        }
+
+    function initPhysics() {
+
+    	//alert('initPhysics')
+
+		// Physics configuration
+
+		collisionConfiguration = new Ammo.btSoftBodyRigidBodyCollisionConfiguration();
+		dispatcher = new Ammo.btCollisionDispatcher( collisionConfiguration );
+		broadphase = new Ammo.btDbvtBroadphase();
+		solver = new Ammo.btSequentialImpulseConstraintSolver();
+		softBodySolver = new Ammo.btDefaultSoftBodySolver();
+		physicsWorld = new Ammo.btSoftRigidDynamicsWorld( dispatcher, broadphase, solver, collisionConfiguration, softBodySolver);
+		physicsWorld.setGravity( new Ammo.btVector3( 0, gravityConstant, 0 ) );
+		physicsWorld.getWorldInfo().set_m_gravity( new Ammo.btVector3( 0, gravityConstant, 0 ) );
+
+	}
+
+	function createObject( mass, halfExtents, pos, quat, material ) {
+			var geom = new THREE.BoxGeometry( halfExtents.x * 2, halfExtents.y * 2, halfExtents.z * 2 );
+
+			 var numVerts = geom.vertices.length;
+
+	        // console.log(numVerts);
+
+	        for (var i = 0; i < numVerts; i++) {
+
+	            geom.vertices[i].multiplyScalar(Math.random() * 2);
+
+	        }
+
+
+			var object = new THREE.Mesh( geom, material );
+			object.position.copy( pos );
+			object.quaternion.copy( quat );
+			convexBreaker.prepareBreakableObject( object, mass, new THREE.Vector3(), new THREE.Vector3(), true );
+			createDebrisFromBreakableObject( object );
+
+		}
+
+		function createObjects() {
+/*
+			// Ground
+			pos.set( 0, - 0.1, 0 );
+			quat.set( 0, 0, 0, 1 );
+			var ground = createParalellepipedWithPhysics( 10, .1, 10, 0, pos, quat, new THREE.MeshPhongMaterial( { 
+					color: 0xFFFFFF,
+				//	wireframe: true,
+				//	transparent: true,
+				//	opacity: .4 
+			} ) );
+			ground.receiveShadow = true;
+		//	ground.visible=false;
+*/
+
+
+			/*textureLoader.load( "textures/grid.png", function( texture ) {
+				texture.wrapS = THREE.RepeatWrapping;
+				texture.wrapT = THREE.RepeatWrapping;
+				texture.repeat.set( 40, 40 );
+				ground.material.map = texture;
+				ground.material.needsUpdate = true;
+			} );
+*/
+			// Tower 1
+			var towerMass = 1000;
+			var towerHalfExtents = new THREE.Vector3( .4, .4, .4 );
+			//pos.set( -8, 5, 0 );
+			//pos.set( -1, 1, 0 );
+			pos.set( 0, 1, 0 );
+			quat.set( 0, 0, 0, 1 );
+			createObject( towerMass, towerHalfExtents, pos, quat, createMaterial( 0x000000 ));
+
+			// Tower 2
+			//pos.set( 8, 5, 0 );
+			pos.set( 0, 2, 0 );
+			quat.set( 0, 0, 0, 1 );
+			createObject( towerMass, towerHalfExtents, pos, quat, createMaterial( 0x000000 ) );
+
+			pos.set( 0, 3, 0 );
+			quat.set( 0, 0, 0, 1 );
+			createObject( towerMass, towerHalfExtents, pos, quat, createMaterial( 0x000000 ) );
+
+			pos.set( 0, 4, 0 );
+			quat.set( 0, 0, 0, 1 );
+			createObject( towerMass, towerHalfExtents, pos, quat, createMaterial( 0xF4A321 ) );
+
+
+			
+			var radius = 8;
+
+			for (var n=0; n<10; n++){
+				var angle = Math.random()*Math.PI*2;
+				pos.set( 
+						Math.cos(angle)*radius ,
+						Math.random()*2 - 2, 
+						Math.sin(angle)*radius);
+				quat.set( 0, 0, 0, 1 );
+				createObject( towerMass, towerHalfExtents, pos, quat, createMaterial( 0x000000 ) );
+			}
+/*
+			for (var n=0; n<10; n++){
+				pos.set( Math.random()*2 - 2, Math.random()*2 - 2, Math.random()*2 - 2 );
+				quat.set( 0, 0, 0, 1 );
+				createObject( towerMass, towerHalfExtents, pos, quat, createMaterial( 0x000000 ) );
+			}
+
+*/
+		}
+
+		function createParalellepipedWithPhysics( sx, sy, sz, mass, pos, quat, material ) {
+
+			var object = new THREE.Mesh( new THREE.BoxGeometry( sx, sy, sz, 1, 1, 1 ), material );
+			var shape = new Ammo.btBoxShape( new Ammo.btVector3( sx * 0.5, sy * 0.5, sz * 0.5 ) );
+			shape.setMargin( margin );
+
+			createRigidBody( object, shape, mass, pos, quat );
+
+			return object;
+
+		}
+
+		function createDebrisFromBreakableObject( object ) {
+
+			//object.castShadow = true;
+			//object.receiveShadow = true;
+
+			var shape = createConvexHullPhysicsShape( object.geometry.vertices );
+			shape.setMargin( margin );
+
+			var body = createRigidBody( object, shape, object.userData.mass, null, null, object.userData.velocity, object.userData.angularVelocity );
+
+			// Set pointer back to the three object only in the debris objects
+			var btVecUserData = new Ammo.btVector3( 0, 0, 0 );
+			btVecUserData.threeObject = object;
+			body.setUserPointer( btVecUserData );
+
+		}
+
+		function removeDebris( object ) {
+
+			//scene.remove( object );
+			scene.remove(object);
+
+			physicsWorld.removeRigidBody( object.userData.physicsBody );
+
+		}
+
+		function createConvexHullPhysicsShape( points ) {
+
+			var shape = new Ammo.btConvexHullShape();
+
+			for ( var i = 0, il = points.length; i < il; i++ ) {
+				var p = points[ i ];
+				this.tempBtVec3_1.setValue( p.x, p.y, p.z );
+				var lastOne = ( i === ( il - 1 ) );
+				shape.addPoint( this.tempBtVec3_1, lastOne );
+			}
+
+			return shape;
+
+		}
+
+		function createRigidBody( object, physicsShape, mass, pos, quat, vel, angVel ) {
+
+			if ( pos ) {
+				object.position.copy( pos );
+			}
+			else {
+				pos = object.position;
+			}
+			if ( quat ) {
+				object.quaternion.copy( quat );
+			}
+			else {
+				quat = object.quaternion;
+			}
+
+			var transform = new Ammo.btTransform();
+			transform.setIdentity();
+			transform.setOrigin( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
+			transform.setRotation( new Ammo.btQuaternion( quat.x, quat.y, quat.z, quat.w ) );
+			var motionState = new Ammo.btDefaultMotionState( transform );
+
+			var localInertia = new Ammo.btVector3( 0, 0, 0 );
+			physicsShape.calculateLocalInertia( mass, localInertia );
+
+			var rbInfo = new Ammo.btRigidBodyConstructionInfo( mass, motionState, physicsShape, localInertia );
+			var body = new Ammo.btRigidBody( rbInfo );
+
+			body.setFriction( 0.5 );
+
+			if ( vel ) {
+				body.setLinearVelocity( new Ammo.btVector3( vel.x, vel.y, vel.z ) );
+			}
+			if ( angVel ) {
+				body.setAngularVelocity( new Ammo.btVector3( angVel.x, angVel.y, angVel.z ) );
+			}
+
+			object.userData.physicsBody = body;
+			object.userData.collided = false;
+
+			//scene.add( object );
+			scene.add(object);
+
+			if ( mass > 0 ) {
+				rigidBodies.push( object );
+
+				// Disable deactivation
+				body.setActivationState( 4 );
+			}
+
+			physicsWorld.addRigidBody( body );
+
+			return body;
+		}
+
+		function createRandomColor() {
+			return Math.floor( Math.random() * ( 1 << 24 ) );
+		}
+
+		function createMaterial( color ) {
+			console.log(color)
+			color = color || createRandomColor();
+			return new THREE.MeshPhongMaterial( { 
+				color: color,
+				specular: 0x050505,
+    			shininess: 100} );
+		}
+
+	function updatePhysics( deltaTime ) {
+
+			// Step world
+			physicsWorld.stepSimulation( deltaTime, 10 );
+
+			// Update rigid bodies
+			for ( var i = 0, il = rigidBodies.length; i < il; i++ ) {
+				var objThree = rigidBodies[ i ];
+				var objPhys = objThree.userData.physicsBody;
+				var ms = objPhys.getMotionState();
+				if ( ms ) {
+
+					ms.getWorldTransform( transformAux1 );
+					var p = transformAux1.getOrigin();
+					var q = transformAux1.getRotation();
+					objThree.position.set( p.x(), p.y(), p.z() );
+					objThree.quaternion.set( q.x(), q.y(), q.z(), q.w() );
+
+					objThree.userData.collided = false;
+
+				}
+			}
+
+			for ( var i = 0, il = dispatcher.getNumManifolds(); i < il; i ++ ) {
+
+				var contactManifold = dispatcher.getManifoldByIndexInternal( i );
+				var rb0 = contactManifold.getBody0();
+				var rb1 = contactManifold.getBody1();
+
+				var threeObject0 = Ammo.castObject( rb0.getUserPointer(), Ammo.btVector3 ).threeObject;
+				var threeObject1 = Ammo.castObject( rb1.getUserPointer(), Ammo.btVector3 ).threeObject;
+
+				if ( ! threeObject0 && ! threeObject1 ) {
+					continue;
+				}
+
+				var userData0 = threeObject0 ? threeObject0.userData : null;
+				var userData1 = threeObject1 ? threeObject1.userData : null;
+
+				var breakable0 = userData0 ? userData0.breakable : false;
+				var breakable1 = userData1 ? userData1.breakable : false;
+
+				var collided0 = userData0 ? userData0.collided : false;
+				var collided1 = userData1 ? userData1.collided : false;
+
+				if ( ( ! breakable0 && ! breakable1 ) || ( collided0 && collided1 ) ) {
+					continue;
+				}
+
+				var contact = false;
+				var maxImpulse = 0;
+				for ( var j = 0, jl = contactManifold.getNumContacts(); j < jl; j ++ ) {
+					var contactPoint = contactManifold.getContactPoint( j );
+					if ( contactPoint.getDistance() < 0 ) {
+						contact = true;
+					
+						var impulse = contactPoint.getAppliedImpulse();
+						if ( impulse > maxImpulse ) {
+							playExplode(); // ???
+							maxImpulse = impulse;
+							var pos = contactPoint.get_m_positionWorldOnB();
+							var normal = contactPoint.get_m_normalWorldOnB();
+							impactPoint.set( pos.x(), pos.y(), pos.z() );
+							impactNormal.set( normal.x(), normal.y(), normal.z() );
+						}
+						break;
+					}
+				}
+
+				// If no point has contact, abort
+				if ( ! contact ) {
+					continue;
+				}
+
+				// Subdivision
+
+				var fractureImpulse = 250;
+
+				if ( breakable0 && !collided0 && maxImpulse > fractureImpulse ) {
+
+
+
+					var debris = convexBreaker.subdivideByImpact( threeObject0, impactPoint, impactNormal , 1, 2, 1.5 );
+
+					var numObjects = debris.length;
+					for ( var j = 0; j < numObjects; j++ ) {
+
+						createDebrisFromBreakableObject( debris[ j ] );
+
+					}
+
+					objectsToRemove[ numObjectsToRemove++ ] = threeObject0;
+					userData0.collided = true;
+
+				}
+/*
+				if ( breakable1 && !collided1 && maxImpulse > fractureImpulse ) {
+
+					var debris = convexBreaker.subdivideByImpact( threeObject1, impactPoint, impactNormal , 1, 2, 1.5 );
+
+					var numObjects = debris.length;
+					for ( var j = 0; j < numObjects; j++ ) {
+
+						createDebrisFromBreakableObject( debris[ j ] );
+
+					}
+
+					objectsToRemove[ numObjectsToRemove++ ] = threeObject1;
+					userData1.collided = true;
+
+				}
+*/
+			}
+
+			for ( var i = 0; i < numObjectsToRemove; i++ ) {
+
+				removeDebris( objectsToRemove[ i ] );
+
+			}
+			numObjectsToRemove = 0;
+
+		}
+
+/**
+ * When clicking on the screen, fire a ray from where the user clicked
+ * on the screen and if a hit is found, place a cube there.
+ 
+function onClick (e) {
+  // If we don't have a touches object, abort
+  // TODO: is this necessary?
+  if (!e.touches[0]) {
+    return;
+  }
+
+  // Inspect the event object and generate normalize screen coordinates
+  // (between 0 and 1) for the screen position.
+  var x = e.touches[0].pageX / window.innerWidth;
+  var y = e.touches[0].pageY / window.innerHeight;
+
+  // Send a ray from the point of click to the real world surface
+  // and attempt to find a hit. `hitTest` returns an array of potential
+  // hits.
+  var hits = vrDisplay.hitTest(x, y);
+
+  // If a hit is found, just use the first one
+  if (hits && hits.length) {
+    var hit = hits[0];
+    // Use the `placeObjectAtHit` utility to position
+    // the cube where the hit occurred
+    THREE.ARUtils.placeObjectAtHit(cube,  // The object to place
+                                   hit,   // The VRHit object to move the cube to
+                                   true, // Whether or not we also apply orientation
+                                   1);    // Easing value from 0 to 1; we want to move
+                                          // the cube directly to the hit position
+  }
+}
+*/
+</script>
+</body>
+</html>
