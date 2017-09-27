@@ -1,0 +1,524 @@
+
+<!--
+/*
+ * Copyright 2017 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>three.ar.js - Monkey</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no,
+  minimum-scale=1.0, maximum-scale=1.0">
+  <style>
+    body {
+      font-family: monospace;
+      margin: 0;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      height: 100vh;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    #info {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      transform: translate(-50%, 0);
+      margin: 1em;
+      z-index: 10;
+      display: block;
+      width: 100%;
+      line-height: 2em;
+      text-align: center;
+    }
+    #info a, #info .title {
+      padding: 0.4em 0.6em;
+      border-radius: 0.1em;
+    }
+    #info a {
+      color: rgba(255, 255, 255, 0.8);
+      background-color: rgba(40, 40, 40, 0.6);
+      font-weight: bold;
+      text-decoration: none;
+    }
+    .title {
+      color: rgba(255, 255, 255, 0.9);
+      background-color: rgba(40, 40, 40, 0.4);
+      margin-left: 0.2em;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+  </style>
+</head>
+<body>
+<div id="info">
+    <span class="title">Tap</span>
+</div>
+<script src="../../bower_components/three.js/build/three.js"></script>
+<script src="../asteroids/node_modules/three/examples/js/controls/VRControls.js"></script>
+<script src="https://rawgit.com/google-ar/three.ar.js/master/dist/three.ar.js"></script>
+
+<script src="../../bower_components/three.js/examples/js/shaders/CopyShader.js"></script>
+<script src="../../bower_components/three.js/examples/js/shaders/FXAAShader.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/RenderPass.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/OutlinePass.js"></script>
+<script>
+
+var vrDisplay;
+var vrControls;
+var arView;
+
+var canvas;
+var camera;
+var scene;
+var renderer;
+var cube;
+ var ground;
+ var playerGroup;
+
+ var composer, effectFXAA, outlinePass;
+
+var clock;
+var light;
+var character;
+var textureLoader = new THREE.TextureLoader();
+var loader = new THREE.JSONLoader();
+var isLoaded = false;
+var action = {}, mixer;
+var activeActionName = 'idle';
+
+var arrAnimations = [
+          'idle',
+          'walk',
+          'dance',
+          'jump',
+         // 'rocky'
+        ];
+var actualAnimation = 0;
+
+
+var colors = [
+  new THREE.Color( 0xffffff ),
+  new THREE.Color( 0xffff00 ),
+  new THREE.Color( 0xff00ff ),
+  new THREE.Color( 0xff0000 ),
+  new THREE.Color( 0x00ffff ),
+  new THREE.Color( 0x00ff00 ),
+  new THREE.Color( 0x0000ff ),
+  new THREE.Color( 0x000000 )
+];
+
+var BOX_SCALE = 0.3;
+
+/**
+ * Use the `getARDisplay()` utility to leverage the WebVR API
+ * to see if there are any AR-capable WebVR VRDisplays. Returns
+ * a valid display if found. Otherwise, display the unsupported
+ * browser message.
+ */
+THREE.ARUtils.getARDisplay().then(function (display) {
+  if (display) {
+    vrDisplay = display;
+    init();
+  } else {
+    THREE.ARUtils.displayUnsupportedMessage();
+  }
+});
+
+function init() {
+  clock = new THREE.Clock();
+  // Turn on the debugging panel
+  var arDebug = new THREE.ARDebug(vrDisplay);
+  document.body.appendChild(arDebug.getElement());
+
+  // Setup the three.js rendering environment
+  renderer = new THREE.WebGLRenderer({ alpha: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.autoClear = false;
+
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.enabled = true;
+
+  canvas = renderer.domElement;
+  document.body.appendChild(canvas);
+  scene = new THREE.Scene();
+
+  playerGroup = new THREE.Object3D();
+  playerGroup.name = "player";
+
+  scene.add(playerGroup)
+
+  // Creating the ARView, which is the object that handles
+  // the rendering of the camera stream behind the three.js
+  // scene
+  arView = new THREE.ARView(vrDisplay, renderer);
+
+  // The ARPerspectiveCamera is very similar to THREE.PerspectiveCamera,
+  // except when using an AR-capable browser, the camera uses
+  // the projection matrix provided from the device, so that the
+  // perspective camera's depth planes and field of view matches
+  // the physical camera on the device.
+  camera = new THREE.ARPerspectiveCamera(
+    vrDisplay,
+    60,
+    window.innerWidth / window.innerHeight,
+    vrDisplay.depthNear,
+    vrDisplay.depthFar
+  );
+
+  // VRControls is a utility from three.js that applies the device's
+  // orientation/position to the perspective camera, keeping our
+  // real world and virtual world in sync.
+  vrControls = new THREE.VRControls(camera);
+
+  addGround();
+  setLights();
+  //goPostProcess();
+
+  // Create the cube geometry and add it to the scene. Set the position
+  // to (Infinity, Infinity, Infinity) so that it won't appear visible
+  // until the first hit is found, and move it there
+  var geometry = new THREE.BoxGeometry(BOX_SCALE, BOX_SCALE, BOX_SCALE);
+  var faceIndices = ['a', 'b', 'c'];
+  for (var i = 0; i < geometry.faces.length; i++) {
+    var f  = geometry.faces[i];
+    for (var j = 0; j < 3; j++) {
+      var vertexIndex = f[faceIndices[ j ]];
+      f.vertexColors[j] = colors[vertexIndex];
+    }
+  }
+  var material = new THREE.MeshBasicMaterial({ vertexColors: THREE.VertexColors });
+  cube = new THREE.Mesh(geometry, material);
+ // cube.castShadow = true;
+
+  // Place the cube very far to initialize
+  cube.position.set(10000, 10000, 10000);
+
+  scene.add(cube);
+
+  loader.load('json/ha-monkey-rig.json', function (geometry, materials) {
+    materials.forEach(function (material) {
+      material.skinning = true;
+    });
+
+
+    character = new THREE.SkinnedMesh(
+      geometry,
+      new THREE.MeshFaceMaterial(materials)
+    );
+
+    character.castShadow = true;
+
+    character.scale.set(.05,.05,.05)
+
+    mixer = new THREE.AnimationMixer(character);
+
+//   action.idle = mixer.clipAction(geometry.animations[ 0 ]);
+    action.dance = mixer.clipAction(geometry.animations[ 0 ]);
+    action.idle = mixer.clipAction(geometry.animations[ 1 ]);
+    action.jump = mixer.clipAction(geometry.animations[ 2 ]);
+
+    
+ //  action.rocky = mixer.clipAction(geometry.animations[ 4 ]);
+   action.walk = mixer.clipAction(geometry.animations[ 5 ]);
+
+    action.idle.setEffectiveWeight(1);
+    action.dance.setEffectiveWeight(1);
+    action.jump.setEffectiveWeight(1);
+    action.walk.setEffectiveWeight(1);
+  //  action.rocky.setEffectiveWeight(1);
+
+    action.jump.setLoop(THREE.LoopOnce, 0);
+    action.jump.clampWhenFinished = true;
+
+    action.idle.enabled = true;
+    action.dance.enabled = true;
+    action.jump.enabled = true;
+    action.walk.enabled = true;
+ //   action.rocky.enabled = true;
+
+   // scene.add(character);
+   playerGroup.add(character)
+
+    window.addEventListener('resize', onWindowResize, false);
+    window.addEventListener('click', onDoubleClick, false);
+    console.log('Double click to change animation');
+    animate();
+
+    isLoaded = true;
+
+    action.walk.play();
+  });
+
+
+  // Bind our event handlers
+  window.addEventListener('resize', onWindowResize, false);
+  canvas.addEventListener('touchstart', onClick, false);
+
+  // Kick off the render loop!
+  update();
+}
+
+function setLights(){
+            //LIGHTS
+    var ambientLight = new THREE.AmbientLight( 0x707070 );
+  scene.add( ambientLight );
+
+  var light = new THREE.DirectionalLight( 0xffffff, 1 );
+  light.position.set( 1, 4, 5 );
+  light.lookAt( scene.position );
+
+
+
+
+  //light.shadowCameraVisible = true;
+
+  //var lightcam = new THREE.CameraHelper( light.shadow.camera );
+  //scene.add(lightcam)
+
+  light.castShadow = true;
+  var d = 14;
+  light.shadow.camera.left = -d;
+  light.shadow.camera.right = d;
+  light.shadow.camera.top = d;
+  light.shadow.camera.bottom = -d;
+
+  light.shadow.camera.near = 0.1;
+  light.shadow.camera.far = 50;
+
+  light.shadow.mapSize.x = 1024;
+  light.shadow.mapSize.y = 1024;
+
+  scene.add( light );
+}
+
+function addGround(){
+  // GROUND
+     var shadowMaterial = new THREE.ShadowMaterial( { color: 0xeeeeee } );
+          shadowMaterial.opacity = 0.25;
+
+        //  var plane = new THREE.Mesh( new THREE.PlaneGeometry(400, 400, 10, 10), createMaterial(0xffffff));
+          var plane = new THREE.Mesh( new THREE.PlaneBufferGeometry(1,1), shadowMaterial);
+          
+          plane.rotation.x = -Math.PI / 2;
+          //plane.position.y=-.5;
+          plane.receiveShadow = true;
+          plane.name="shadowplane"
+          //scene.add( plane );
+          playerGroup.add(plane)
+}
+
+
+
+
+function fadeAction (name) {
+  var from = action[ activeActionName ].play();
+  var to = action[ name ].play();
+
+  from.enabled = true;
+  to.enabled = true;
+
+  if (to.loop === THREE.LoopOnce) {
+    to.reset();
+  }
+
+  from.crossFadeTo(to, 0.3);
+  activeActionName = name;
+
+}
+
+function goPostProcess(){
+
+     // postprocessing
+        composer = new THREE.EffectComposer(renderer);
+        var renderPass = new THREE.RenderPass(scene, camera);
+        composer.addPass(renderPass);
+        outlinePass = new THREE.OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
+        outlinePass.edgeStrength = 50.0;
+        outlinePass.edgeGlow = 0.0;
+        outlinePass.edgeThickness = 1.0;
+        outlinePass.pulsePeriod = 0;
+        outlinePass.rotate = false;
+        outlinePass.usePatternTexture = false;
+        outlinePass.visibleEdgeColor = new THREE.Color(0xffffff)
+        outlinePass.hiddenEdgeColor = new THREE.Color(0x190a05)
+        composer.addPass(outlinePass);
+
+        //
+
+        effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
+        effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+        effectFXAA.renderToScreen = true;
+        composer.addPass(effectFXAA);
+}
+
+/**
+ * The render loop, called once per frame. Handles updating
+ * our scene and rendering.
+ */
+function update() {
+
+  var delta = clock.getDelta();
+
+  // Render the device's camera stream on screen first of all.
+  // It allows to get the right pose synchronized with the right frame.
+  arView.render();
+
+  // Update our camera projection matrix in the event that
+  // the near or far planes have updated
+  camera.updateProjectionMatrix();
+
+  // Update our perspective camera's positioning
+  vrControls.update();
+
+  if( mixer ) {
+    mixer.update( delta );
+  }
+
+  // Render our three.js virtual scene
+  renderer.clearDepth();
+  renderer.render(scene, camera);
+
+ // effect.render(scene, camera);
+ // composer.render();
+
+  
+
+  // Kick off the requestAnimationFrame to call this function
+  // on the next frame
+  requestAnimationFrame(update);
+}
+
+/**
+ * On window resize, update the perspective camera's aspect ratio,
+ * and call `updateProjectionMatrix` so that we can get the latest
+ * projection matrix provided from the device
+ */
+function onWindowResize () {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function placeMonkey(){
+
+    var x = window.innerWidth/2;
+    var y = window.innerHeight/2;
+
+    var hits = vrDisplay.hitTest(x, y);
+
+  // If a hit is found, just use the first one
+  if (hits && hits.length) {
+    var hit = hits[0];
+    // Use the `placeObjectAtHit` utility to position
+    // the cube where the hit occurred
+   THREE.ARUtils.placeObjectAtHit(character,  // The object to place
+                                   hit,   // The VRHit object to move the cube to
+                                   true, // Whether or not we also apply orientation
+                                   1);    // Easing value from 0 to 1; we want to move
+                                          // the cube directly to the hit position
+/*
+    THREE.ARUtils.placeObjectAtHit(ground,  // The object to place
+    hit,   // The VRHit object to move the cube to
+    false, // Whether or not we also apply orientation
+    1);
+
+    */
+  }
+
+  //action.dance.play();
+
+  var num = Math.floor(Math.random()*(arrAnimations.length));
+  fadeAction(arrAnimations[num]);
+
+}
+
+/**
+ * When clicking on the screen, fire a ray from where the user clicked
+ * on the screen and if a hit is found, place a cube there.
+ */
+function onClick (e) {
+  // If we don't have a touches object, abort
+  // TODO: is this necessary?
+  if (!e.touches[0]) {
+    return;
+  }
+
+  // Inspect the event object and generate normalize screen coordinates
+  // (between 0 and 1) for the screen position.
+  var x = e.touches[0].pageX / window.innerWidth;
+  var y = e.touches[0].pageY / window.innerHeight;
+
+  // Send a ray from the point of click to the real world surface
+  // and attempt to find a hit. `hitTest` returns an array of potential
+  // hits.
+  var hits = vrDisplay.hitTest(x, y);
+
+  // If a hit is found, just use the first one
+  if (hits && hits.length) {
+    var hit = hits[0];
+    // Use the `placeObjectAtHit` utility to position
+    // the cube where the hit occurred
+   THREE.ARUtils.placeObjectAtHit(playerGroup,  // The object to place
+                                   hit,   // The VRHit object to move the cube to
+                                   true, // Whether or not we also apply orientation
+                                   1);    // Easing value from 0 to 1; we want to move
+                                          // the cube directly to the hit position
+
+
+
+ 
+  }
+
+  //action.dance.play();
+
+  var num = Math.floor(Math.random()*(arrAnimations.length));
+  fadeAction(arrAnimations[num]);
+
+ // character.lookAt(0,0,0)
+}
+
+var mylatesttap;
+function onDoubleClick () {
+  alert('double')
+  var now = new Date().getTime();
+  var timesince = now - mylatesttap;
+  if ((timesince < 600) && (timesince > 0)) {
+    if (actualAnimation == arrAnimations.length - 1) {
+      actualAnimation = 0;
+    } else {
+      actualAnimation++;
+    }
+    fadeAction(arrAnimations[actualAnimation]);
+
+  } else {
+    // too much time to be a doubletap
+  }
+
+  mylatesttap = new Date().getTime();
+
+}
+
+</script>
+</body>
+</html>

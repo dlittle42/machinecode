@@ -1,0 +1,493 @@
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Boxes</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			 html{
+      			width: 100%;
+			  height: 100%;
+			  
+			  background: #fff;  /* fallback for old browsers */
+
+			    }
+
+			body {
+				color: #000;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+				font-weight: bold;
+
+				/*background-color: #fff;*/
+				margin: 0px;
+				overflow: hidden;
+			}
+
+			#info {
+				color:#000;
+				position: absolute;
+				top: 0px; width: 100%;
+				padding: 5px;
+
+			}
+
+			a {
+				color: red;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div id="container"></div>
+
+
+		<script src="../../bower_components/jquery/dist/jquery.min.js"></script>
+    	<script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
+	    <script src="../../bower_components/three.js/build/three.js"></script>
+	    <script src="../../node_modules/three.meshline/src/THREE.MeshLine.js"></script>
+	    <script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+	    <script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+	    <script src="node_modules/howler/dist/howler.min.js"></script>
+	    <script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+
+
+		<script>
+
+				var camera, scene, renderer, controls;
+				var sourceObj, destinationObj, line;
+				var orbs=[];
+				var lines=[];
+				var orbCount = 0;
+				var particleSystem;
+				var clock;
+				var deltaTime;
+				var node;
+				var brickWidth = 2,
+					brickHeight = 1,
+					brickDepth = 1;
+
+				var mouse = new THREE.Vector2(), INTERSECTED;
+        		var pointerDown = false;
+        		var pressing = false;
+
+        		var focusObj;
+        		var pointerX = 0;
+        var pointerY = 0;
+        var pointerInit = 0;
+        var sphere;
+        var hover = false;
+        var volume = 1;
+        var step =0;
+
+        var color = {
+              "black": new THREE.MeshBasicMaterial({
+                color: 0x222222
+              }),
+              "white": new THREE.MeshBasicMaterial({
+                color: 0xffffff
+              }),
+              "red": new THREE.MeshBasicMaterial({
+                color: 0xf25346
+              }),
+              "blue": new THREE.MeshBasicMaterial({
+                color: 0x68c3c0
+              })
+            }
+
+        	var objects = [];
+
+        	var A1, A2, As1, C2, Cs2, D2, Ds2, E2;//, F2 Csharp, E, Fsharp;
+
+        	 var tones = [];
+
+        	 var timer;
+        	 var stepNum=0;
+
+	
+        	function loadSounds(){
+
+			    A1 = new Howl({
+			        preload: true,
+			        src: ['audio/casio/A1.mp3'],
+			        volume: volume
+			    });
+
+			    A2 = new Howl({
+			        preload: true,
+			        src: ['audio/casio/A2.mp3'],
+			        volume: volume
+			    });
+
+			    As1 = new Howl({
+			        preload: true,
+			        src: ['audio/casio/As1.mp3'],
+			        volume: volume
+			    });
+
+			    C2 = new Howl({
+			        preload: true,
+			        src: ['audio/casio/C2.mp3'],
+			        volume: volume
+			    });
+
+			    Cs2 = new Howl({
+			        preload: true,
+			        src: ['audio/casio/Cs2.mp3'],
+			        volume: volume
+			    });
+
+			     D2 = new Howl({
+			        preload: true,
+			        src: ['audio/casio/D2.mp3'],
+			        volume: volume
+			    });
+
+			    Ds2 = new Howl({
+			        preload: true,
+			        src: ['audio/casio/Ds2.mp3'],
+			        volume: volume
+			    });
+
+			    E2 = new Howl({
+			        preload: true,
+			        src: ['audio/casio/E2.mp3'],
+			        volume: volume
+			    });
+
+			    tones = [A1, A2, As1, C2, Cs2, D2, Ds2, E2]
+			  
+
+			}
+
+
+			
+				function init() {
+
+				  loadSounds();
+
+				  clock = new THREE.Clock(true);
+
+				  scene = new THREE.Scene();
+				  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+				  camera.position.set(15, 5, 20);
+
+
+				  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+			       // renderer.setPixelRatio((window.devicePixelRatio) ? window.devicePixelRatio : 1);
+		        renderer.setPixelRatio( window.devicePixelRatio );
+		        renderer.setSize(window.innerWidth, window.innerHeight);
+		        renderer.autoClear = false;
+		        renderer.setClearColor(0xffffff, 0.0);
+		        document.body.appendChild(renderer.domElement);
+
+		        scene = new THREE.Scene();
+
+		      
+
+				  controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+
+				  var planeGeom = new THREE.PlaneGeometry(10, 10, 10, 10);
+				  planeGeom.rotateX(THREE.Math.degToRad(-90));
+				  planeGeom.translate(0, -5, 0);
+
+				  var planeMat = new THREE.MeshBasicMaterial({
+				    color: 0x777777,
+				    wireframe: true
+				  });
+				  var plane = new THREE.Mesh(planeGeom, planeMat);
+				 // scene.add(plane);
+
+				
+				//box = new Brick(0, 4,3);
+				//scene.add(box.mesh);
+				createWall();
+
+		        var ambientLight = new THREE.AmbientLight(0x999999 );
+		        scene.add(ambientLight);
+		        
+		        var lights = [];
+		        lights[0] = new THREE.DirectionalLight( 0xffffff, 1 );
+		        lights[0].position.set( 1, 0, 0 );
+		        lights[1] = new THREE.DirectionalLight( 0x11E8BB, 1 );
+		        lights[1].position.set( 0.75, 1, 0.5 );
+		        lights[2] = new THREE.DirectionalLight( 0x8200C9, 1 );
+		        lights[2].position.set( -0.75, -1, 0.5 );
+		        scene.add( lights[0] );
+		        scene.add( lights[1] );
+		        scene.add( lights[2] );
+
+		        timer = setInterval(function() {
+					  stepSequence(stepNum);
+					  (stepNum<7) ? stepNum++ : stepNum=0;
+			
+					}, 200);
+
+
+		        raycaster = new THREE.Raycaster();
+                  //  terrain = new Terrain(scene);
+                  //  scene.add(terrain.plane_mesh);
+                  //  document.addEventListener( 'mousemove', recordMousePosition, false );
+                  //  document.addEventListener( 'touchmove', recordMousePosition, false );
+                    document.addEventListener( 'mousedown', onPress, false );
+                    document.addEventListener( 'touchstart', onPress, false );
+                    document.addEventListener( 'mouseup', onRelease, false );
+                    document.addEventListener( 'touchend', onRelease, false );
+				
+
+				  window.addEventListener('resize', onWindowResize, false);
+
+				}
+
+				function recordMousePosition(e) {
+	              e.preventDefault();
+	              hover = true;
+	              castRay(e);
+	              if (e.touches){
+	               // uniforms.mouse.value.x = (e.touches[0].clientX) / window.innerWidth  *  2 - 1;
+	               // uniforms.mouse.value.y = (e.touches[0].clientY) / window.innerHeight * -2 + 1; 
+	              }else{
+	               // uniforms.mouse.value.x = (e.clientX) / window.innerWidth  *  2 - 1;
+	               // uniforms.mouse.value.y = (e.clientY) / window.innerHeight * -2 + 1;     
+	              } 
+	            }
+
+
+				function onPress(e) {
+	                pointerDown = true;
+	                castRay(e);
+
+	            }
+	            function onRelease(e) {
+	              //  e.preventDefault();
+	            }
+
+
+				function onWindowResize() {
+			        camera.aspect = window.innerWidth / window.innerHeight;
+			        camera.updateProjectionMatrix();
+			        renderer.setSize(window.innerWidth, window.innerHeight);
+			      }
+
+				
+
+
+				var Brick = function(xpos=0, ypos=0, zpos=0, tone, col, row){
+
+				//	console.log(tone)
+
+					this.mesh = new THREE.Object3D();
+				//	this.mesh.name = "keybox"+xpos
+					this.selected = false;
+				//	this.tone = tone;
+			
+					//this.tone.play()
+
+					var geom = new THREE.BoxGeometry( brickWidth,brickHeight,brickDepth );
+					//var geom2 =  new THREE.BoxGeometry( 1, 1, 1 );
+
+					var material = new THREE.MeshPhongMaterial({
+						color: 0x487B36,
+						shading: THREE.FlatShading
+					});
+
+					var mat = new THREE.MeshPhongMaterial({
+			          color: 0xffffff,
+			          shading: THREE.FlatShading,
+			          side: THREE.BackSide
+			        });
+
+			        var mat2 = new THREE.MeshPhongMaterial({
+			          color: 0xffffff,
+			          wireframe: true,
+			          side: THREE.DoubleSide
+
+			        });
+
+			        this.node =  new THREE.Mesh(geom, mat);
+			     //   this.node.scale.x = this.node.scale.y = this.node.scale.z = 10;
+			     	this.mesh.position.set(xpos, ypos, zpos)
+			        this.mesh.add(this.node)
+
+			        this.node.name = "keybox"+row +"-"+col;
+			        this.node.tone = tone;
+			        this.node.row = row;
+			        this.node.col = col;
+/*
+			        this.skel = new THREE.Mesh(geom2, mat2);
+		        	this.skel.scale.x = this.skel.scale.y = this.skel.scale.z = 1.2;
+		        	this.mesh.add(this.skel);
+		        	this.inflate = false;
+
+		        	this.box = new THREE.Mesh(geom2, material);
+		        	this.box.scale.x = this.box.scale.y = this.box.scale.z = .5;
+		        	this.mesh.add(this.box);
+*/
+
+		        	var edges = new THREE.EdgesGeometry( geom, 60 ); // the second parameter solves your problem ;)
+					var line = new THREE.LineSegments( edges, new THREE.LineBasicMaterial( { color: 0x487B36 } ) );
+					//scene.add( line );
+					this.node.add(line)
+
+					
+		        	//objects.push(this.node)
+		        	objects.push(this.node)
+		        //	console.log(objects)
+
+				  	
+				}
+
+				Brick.prototype.animate = function (){
+
+
+				}
+
+				Brick.prototype.play = function (){
+					this.mesh.tone.play();
+
+				}
+
+				function createBox(x,y,z){
+					box = new Brick(x,y,z);
+					scene.add(box.mesh);
+				}
+
+				function createWall(xpos, zpos) {
+				    // Wall
+				   
+				    var hCount = 8,
+				    vCount = 8,
+				    size = 1,
+				    spacing = 1.1;
+					var grid = new THREE.Object3D(); // just to hold them all together
+					for (var h=0; h<hCount; h+=1) {
+						var tone = tones[h];
+					    for (var v=0; v<vCount; v+=1) {
+					     //   var box = new THREE.Mesh(new THREE.BoxGeometry(size*2,size,size),
+					    //                  createMaterial());
+					    	var xpos = (h-hCount/2) * (spacing *2) + 1;
+					    	var ypos = (v-vCount/2) * spacing;
+					    	var zpos = -(v-vCount/2) * spacing;
+					        box = new Brick(xpos, ypos, zpos, tone, h, v);
+					      //  box.mesh.position.x = (h-hCount/2) * spacing *2;
+					     //   box.mesh.position.y = (v-vCount/2) * spacing;
+					        grid.add(box.mesh);
+					    }
+					}
+					scene.add(grid);
+
+				}
+
+
+				function castRay(evt){
+                
+	                if (evt.touches){
+	                   // console.log('got touches')
+	                    mouse.x = ( evt.touches[0].clientX / renderer.domElement.clientWidth ) * 2 - 1;
+	                    mouse.y = - ( evt.touches[0].clientY / renderer.domElement.clientHeight ) * 2 + 1;
+	                    pointerX = evt.touches[ 0 ].clientX - ( window.innerWidth / 2); 
+	                    pointerY = evt.touches[ 0 ].clientY - ( window.innerHeight/ 2); 
+	                    pointerInit = pointerX; 
+	                }else{
+	                   // console.log('is mouse')
+	                    mouse.x = ( evt.clientX / renderer.domElement.clientWidth ) * 2 - 1;
+	                    mouse.y = - ( evt.clientY / renderer.domElement.clientHeight ) * 2 + 1;
+	                    pointerX = evt.clientX - ( window.innerWidth / 2); 
+	                    pointerY = evt.clientY - ( window.innerHeight/ 2); 
+	                }
+	                
+	                raycaster.setFromCamera( mouse, camera );
+
+	                var intersects = raycaster.intersectObjects( objects );
+
+                    if ( intersects.length > 0 ) {
+                        focusObj = intersects[0].object;
+                       if (intersects[ 0 ].object.selected){
+	                      //  intersects[ 0 ].object.material.color.setHex( 0xffffff );
+	                        colorTo(intersects[ 0 ].object, color['white']);
+	                        intersects[ 0 ].object.selected = false;
+	                    }else{
+	                    	 intersects[ 0 ].object.material.color.setHex( 0x62E418 );
+	                        intersects[ 0 ].object.selected = true;
+	                        intersects[ 0 ].object.tone.play();
+	                       // console.log(intersects[ 0 ].object);//.tone.play();
+	                    }
+
+                    }
+	           
+	     
+	            }
+
+	            function colorTo(target, value, speed=.5) {
+	              var target = target;
+	              var initial = new THREE.Color(target.material.color);//new THREE.Color(target.material.color.getHex());
+	              var value = new THREE.Color(value.color.getHex());
+	              TweenMax.to(initial, speed, {
+	                r: value.r,
+	                g: value.g,
+	                b: value.b,
+	                
+	                onUpdate: function () {
+	                	//console.log('onupdate')
+	                  target.material.color = initial;
+	                 // uniforms.line_color.value = initial;
+	                }
+	              });
+	            }
+
+	            function stepSequence(time){
+	            	//var sec = Math.floor(time) % 8;
+	            //	console.log(sec)
+	            	loopThroughRow(time)
+	            	
+	            }
+
+	            function loopThroughRow(r){
+	            	for (n=0; n<objects.length; n++){
+	            		if (objects[n].row == r){
+	            			//objects[n].material.color.setHex( 0x000000 );
+	            		//	console.log(objects[n].name);
+	            			objects[n].material.opacity=.5;
+	            			//console.log(objects[n].selected)
+	            			if (objects[n].selected ==true){
+	            				console.log(objects[n].name)
+	            				objects[n].tone.play();
+	            			}
+	            			
+	            		}else{
+	            			//objects[n].material.color.setHex( 0xffffff );
+	            			objects[n].material.opacity=1
+	            		}
+	            	}
+	            }
+
+
+				function animate() {
+
+				  deltaTime = clock.getDelta();
+				  requestAnimationFrame(animate);
+
+				 // stepSequence(clock.elapsedTime);
+
+
+				  render();
+				}
+
+				function render() {
+					
+				  renderer.render(scene, camera);
+				}
+
+				init();
+				
+				
+				animate();
+
+
+		</script>
+
+	</body>
+</html>

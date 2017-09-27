@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <title>Walkers heatmap</title>
+
+		<style type="text/css">
+			body {
+				margin: 170px 20px 20px;
+				text-align: center;
+			}
+
+			.wrapper {
+				display: inline-block;
+				position: relative;
+				width: 640px;
+				height: 480px;
+				background-color: #000;
+			}
+
+
+			video {
+				position: absolute;
+				left: 0;
+				top: 0;
+				width: 640px;
+				height: 480px;
+				transform: scaleX(-1); /* flip video, like a mirror */
+			}
+
+			.motion-box {
+				display: none;
+				position: absolute;
+				border: 4px solid #fff;
+				transition: all .1s;
+			}
+
+
+
+			figure {
+				display: inline-block;
+				margin: 10px;
+				vertical-align: top;
+			}
+
+			figcaption {
+				text-align: left;
+				font-weight: bold;
+			}
+
+			video, canvas {
+				position: absolute;
+				left: 0;
+				top: 0;
+				width: 640px;
+				height: 480px;
+				transform: scaleX(-1);
+			}
+
+			canvas {
+				image-rendering: pixelated;
+				opacity: .3;
+			}
+
+
+		</style>
+    </head>
+    <body>
+
+		<div class="wrapper">
+
+			<figure>
+				<video id="walkers" src="video/walkers.mp4" autoplay loop muted></video>
+				<canvas id="motion"></canvas>
+				<div class="motion-box"></div>
+				<figcaption>Live Video</figcaption>
+			</figure>
+
+			
+
+		</div>
+
+		<figure>
+				
+				<figcaption>
+					Motion Heatmap<br>
+					Score: <span id="score">?</span>
+				</figcaption>
+			</figure>
+
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+		<script src="js/diff-video.js"></script>
+
+		<script>
+			var $motionBox = $('.motion-box');
+			var score = document.getElementById('score');
+			var canvas = document.getElementById('motion');
+
+			var scale = 10;	// capture resolution over motion resolution
+			var isActivated = false;
+			var isTargetInSight = false;
+			var lostTimeout;
+
+			function initSuccess() {
+				DiffCamEngine.start();
+			}
+
+			function initError() {
+				alert('Something went wrong.');
+			}
+
+			function startComplete() {
+				setTimeout(activate, 500);
+			}
+
+			function activate() {
+				isActivated = true;
+			}
+
+			function capture(payload) {
+				if (!isActivated ) {
+					return;
+				}
+
+				var box = payload.motionBox;
+
+				//console.log(box)
+				if (box) {
+					// video is flipped, so we're positioning from right instead of left
+					var right = box.x.min * scale + 1;
+					var top = box.y.min * scale + 1;
+					var width = (box.x.max - box.x.min) * scale;
+					var height = (box.y.max - box.y.min) * scale;
+
+					$motionBox.css({
+						display: 'block',
+						right: right,
+						top: top,
+						width: width,
+						height: height
+					});
+
+					if (!isTargetInSight) {
+						isTargetInSight = true;
+						//play('i-see-you');
+						console.log('found')
+					} else {
+						//play('fire');
+					}
+
+					clearTimeout(lostTimeout);
+					lostTimeout = setTimeout(declareLost, 2000);
+				}else{
+				/*	$motionBox.css({
+						display: 'none',
+						
+					});
+				*/
+				}
+
+				score.textContent = payload.score;
+
+			}
+
+			function declareLost() {
+				isTargetInSight = false;
+				console.log('lost')
+			}
+
+
+
+			DiffCamEngine.init({
+				//video: document.getElementById('video'),
+				video: document.getElementById('walkers'),
+				captureIntervalTime: 50,
+				includeMotionBox: true,
+				includeMotionPixels: true,
+				initSuccessCallback: initSuccess,
+				initErrorCallback: initError,
+				motionCanvas: canvas,
+				pixelDiffThreshold: 100,
+				scoreThreshold: 16,
+				startCompleteCallback: startComplete,
+				captureCallback: capture
+			});
+
+
+			/////////
+
+
+
+		</script>
+    </body>
+</html>

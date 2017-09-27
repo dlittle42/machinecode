@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>three.js webgl - blender -json</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+      body {
+        background:#777;
+        padding:0;
+        margin:0;
+        font-weight: bold;
+        overflow:hidden;
+      }
+
+      #info {
+        position: absolute;
+        top: 0px;
+        width: 100%;
+        color: #ffffff;
+        padding: 5px;
+        font-family:Monospace;
+        font-size:13px;
+        text-align:center;
+      }
+
+      a {
+        color: #ffffff;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div id="container"></div>
+    <script src="../../bower_components/three.js/build/three.js"></script>
+    <script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+    <script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+    <script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+
+    <script>
+
+    // working, but animation slightly off
+
+        var clock, container, camera, scene, renderer, controls, listener;
+
+        var ground, character;
+        var light;
+        var textureLoader = new THREE.TextureLoader();
+        var loader = new THREE.JSONLoader();
+        var isLoaded = false;
+        var action = {}, mixer;
+        var activeActionName = 'idle';
+
+        var arrAnimations = [
+          'idle',
+          'walk',
+          'dance',
+          'jump',
+         // 'rocky'
+        ];
+        var actualAnimation = 0;
+
+        init();
+
+        function init () {
+          clock = new THREE.Clock();
+
+          scene = new THREE.Scene();
+
+          renderer = new THREE.WebGLRenderer({ antialias: true });
+          renderer.setPixelRatio(window.devicePixelRatio);
+          renderer.setSize(window.innerWidth, window.innerHeight);
+          renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+          renderer.shadowMap.enabled = true;
+
+          container = document.getElementById('container');
+          container.appendChild(renderer.domElement);
+
+          camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+          camera.position.set(0, 4, 10);
+          listener = new THREE.AudioListener();
+          camera.add(listener);
+
+          controls = new THREE.OrbitControls(camera, renderer.domElement);
+          controls.target = new THREE.Vector3(0, 0.6, 0);
+          // Lights
+          //LIGHTS
+    var ambientLight = new THREE.AmbientLight( 0x707070 );
+  scene.add( ambientLight );
+
+  var light = new THREE.DirectionalLight( 0xffffff, 1 );
+  light.position.set( 1, 4, 5 );
+  light.lookAt( scene.position );
+
+
+
+
+  //light.shadowCameraVisible = true;
+
+ // var lightcam = new THREE.CameraHelper( light.shadow.camera );
+//  scene.add(lightcam)
+
+  light.castShadow = true;
+  var d = 14;
+  light.shadow.camera.left = -d;
+  light.shadow.camera.right = d;
+  light.shadow.camera.top = d;
+  light.shadow.camera.bottom = -d;
+
+  light.shadow.camera.near = 0.01;
+  light.shadow.camera.far = 50;
+
+  light.shadow.mapSize.x = 1024;
+  light.shadow.mapSize.y = 1024;
+
+  scene.add( light );
+
+          textureLoader.load('json/purple-stripes.png', function (texture) {
+            var geometry = new THREE.PlaneBufferGeometry(8, 8);
+            geometry.rotateX(-Math.PI / 2);
+          //  var material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+            var material =  new THREE.MeshPhongMaterial({ map: texture});
+            ground = new THREE.Mesh(geometry, material);
+            ground.receiveShadow= true;
+            scene.add(ground);
+
+          });
+
+          loader.load('json/ha-monkey-rig.json', function (geometry, materials) {
+            materials.forEach(function (material) {
+              material.skinning = true;
+            });
+
+
+            character = new THREE.SkinnedMesh(
+              geometry,
+              new THREE.MeshFaceMaterial(materials)
+            );
+
+            character.castShadow = true;
+
+            mixer = new THREE.AnimationMixer(character);
+
+         //   action.idle = mixer.clipAction(geometry.animations[ 0 ]);
+            action.dance = mixer.clipAction(geometry.animations[ 0 ]);
+            action.idle = mixer.clipAction(geometry.animations[ 1 ]);
+            action.jump = mixer.clipAction(geometry.animations[ 2 ]);
+
+            
+         //  action.rocky = mixer.clipAction(geometry.animations[ 4 ]);
+           action.walk = mixer.clipAction(geometry.animations[ 5 ]);
+
+            action.idle.setEffectiveWeight(1);
+            action.dance.setEffectiveWeight(1);
+            action.jump.setEffectiveWeight(1);
+            action.walk.setEffectiveWeight(1);
+          //  action.rocky.setEffectiveWeight(1);
+
+            action.jump.setLoop(THREE.LoopOnce, 0);
+            action.jump.clampWhenFinished = true;
+
+            action.idle.enabled = true;
+            action.dance.enabled = true;
+            action.jump.enabled = true;
+            action.walk.enabled = true;
+         //   action.rocky.enabled = true;
+
+            scene.add(character);
+
+            window.addEventListener('resize', onWindowResize, false);
+            window.addEventListener('click', onDoubleClick, false);
+            console.log('Double click to change animation');
+            animate();
+
+            isLoaded = true;
+
+       //    action.walk.play();
+            action.jump.play();
+          });
+        }
+
+        function fadeAction (name) {
+          var from = action[ activeActionName ].play();
+          var to = action[ name ].play();
+
+          from.enabled = true;
+          to.enabled = true;
+
+          if (to.loop === THREE.LoopOnce) {
+            to.reset();
+          }
+
+          from.crossFadeTo(to, 0.3);
+          activeActionName = name;
+
+        }
+
+        function onWindowResize () {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        var mylatesttap;
+        function onDoubleClick () {
+          var now = new Date().getTime();
+          var timesince = now - mylatesttap;
+          if ((timesince < 600) && (timesince > 0)) {
+            if (actualAnimation == arrAnimations.length - 1) {
+              actualAnimation = 0;
+            } else {
+              actualAnimation++;
+            }
+            fadeAction(arrAnimations[actualAnimation]);
+
+          } else {
+            // too much time to be a doubletap
+          }
+
+          mylatesttap = new Date().getTime();
+
+        }
+
+        function animate () {
+          requestAnimationFrame(animate);
+          controls.update();
+          render();
+
+        }
+
+        function render () {
+          var delta = clock.getDelta();
+          mixer.update(delta);
+          renderer.render(scene, camera);
+        }
+
+        </script>
+  </body>
+</html>

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+	<title>SCORE</title>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+	<link rel="icon" type="image/png" sizes="174x174" href="./style/favicon.png">
+
+	<script src="js/Tone.js"></script>
+	<script src="../../bower_components/jquery/dist/jquery.min.js"></script>
+	<script src="js/draggabilly.js"></script>
+	<script src="js/StartAudioContext.js"></script>
+	<script src="js/Interface.js"></script>
+	<script src="js/nexusUI.js"></script>
+
+	<link rel="stylesheet" type="text/css" href="css/examples.css">
+
+	<script>
+		// jshint ignore: start
+	</script>
+
+</head>
+<body>	
+	<style type="text/css">
+		canvas {
+			margin-top: 3px;
+		}
+
+		#playhead{
+			border: 1px solid red;
+		/*	position: absolute;
+			top: 0;
+			left: 0;*/
+		}
+	</style>
+	<div id="Content">
+		<canvas nx="matrix"></canvas>
+		<canvas id="playhead"></canvas>
+	</div>	
+	<script>
+		//setup a polyphonic sampler
+		var keys = new Tone.Players({
+			"A" : "audio/casio/A1.[mp3|ogg]",
+			"C#" : "audio/casio/Cs2.[mp3|ogg]",
+			"E" : "audio/casio/E2.[mp3|ogg]",
+			"F#" : "audio/casio/Fs2.[mp3|ogg]",
+		}, {
+			"volume" : -10,
+			"fadeOut" : "64n",
+		}).toMaster();
+
+		//the notes
+		var noteNames = ["F#", "E", "C#", "A"];
+
+		var loop = new Tone.Sequence(function(time, col){
+
+			//callback
+
+		//	console.log(col)
+
+			var column = matrix1.matrix[col];
+			for (var i = 0; i < 4; i++){
+				if (column[i] === 1){
+					//slightly randomized velocities
+					var vel = Math.random() * 0.5 + 0.5;
+					keys.get(noteNames[i]).start(time, 0, "32n", 0, vel);
+					console.log('hit '+noteNames[i] + ' on col '+col)
+				}
+			}
+		}, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], "16n");
+
+
+		//loop.at(0, "A");
+
+		console.log(loop.at(0));
+		console.log(loop.at(1));
+
+		/*loop.on('step',function(data) {
+		    	console.log(data)
+		    })
+*/
+
+		//console.log(loop)
+/*
+		var loop = new Tone.Loop(function(time){
+			//triggered every eighth note. 
+			console.log(time);
+		}, "8n").start(0);
+*/
+		Tone.Transport.start();
+
+		Tone.Transport.scheduleRepeat((time) => {
+			console.log(time)
+			Tone.Draw.schedule(() => {
+		        this.tickDraw()
+		      }, time)
+	    /*  this.tickSynths(this.tickIdx, time)
+	      Tone.Draw.schedule(() => {
+	        this.tickDraw()
+	      }, time)
+	      */
+	    }, '16n')
+
+	    function tickDraw () {
+	    	console.log('draw')
+		   /* if (this.playing) {
+		      this.PlayCTX.clearRect(0, 0, this.di * this.scale, this.di * this.scale)
+		      this.PlayCTXXStroke = this.lineSM
+		      this.PlayCTXYStroke = this.lineSM
+
+		      let offset = this.tickIdx * this.scale + this.scale / 2
+
+		      this.PlayCTX.lineWidth = this.PlayCTXYStroke
+		      this.path(this.PlayCTX, offset, 0, offset, this.di * this.scale)
+
+		      this.PlayCTX.lineWidth = this.PlayCTXXStroke
+		      this.path(this.PlayCTX, 0, offset, this.di * this.scale, offset)
+		      this.tickIdx++
+		      if (this.tickIdx >= this.ticks) this.tickIdx = 0;
+		    }
+		    */
+		  }
+
+	
+/*
+		Tone.Transport.scheduleRepeat((time) => {
+    //  this.tickSynths(this.tickIdx, time)
+    		console.log(time)
+	      Tone.Draw.schedule(() => {
+	        this.tickDraw()
+	      }, time)
+	   
+	    }, '16n')
+*/
+
+
+		// GUI //
+
+
+		nx.onload = function(){
+			//nx.colorize("#f5871f");
+			nx.colorize("accent", "#0be");
+			nx.colorize("fill", "#444449");
+			//nx.colorize("border", "#000000")
+			
+			matrix1.col = 16;
+			matrix1.init();
+			matrix1.resize($("#Content").width(), 250);
+			matrix1.draw();
+
+			console.log(matrix1)
+/*
+			matrix1.on('*',function(data) {
+		    	console.log(data)
+		    })
+*/
+		    
+		    
+		}
+
+
+		Interface.Slider({
+			name : "BPM",
+			min : 80,
+			max : 200,
+			value : Tone.Transport.bpm.value,
+			drag : function(val){
+				Tone.Transport.bpm.value = val;
+			}
+		});
+
+		Interface.Button({
+			text : "Start",
+			activeText : "Stop",
+			type : "toggle",
+			key : 32, //spacebar
+			start : function(){
+				loop.start();
+			},
+			end : function(){
+				loop.stop();
+			},
+		});
+
+		Interface.Loader();
+
+		$(window).on("resize", function(){
+			matrix1.resize($("#Content").width(), 250);
+			matrix1.draw();	
+		});
+
+
+		var canvas = document.getElementById("playhead");
+var ctx = canvas.getContext("2d");
+ctx.strokeStyle = "Green";
+ctx.canvas.width  = window.innerWidth;
+ctx.canvas.height  = 250;
+var posX = 0;
+var posY = 0;
+var lineLength = ctx.canvas.height;
+var speed = 2;
+
+function drawLine() {
+	ctx.beginPath();
+  ctx.moveTo(posX, 0);
+  ctx.lineTo(posX, posY+lineLength);
+  ctx.stroke();
+}
+
+function moveLine () {
+	posX += speed;
+  
+  if (posX < 0 || posX > canvas.width) {
+	  posX=0;
+  }
+}
+
+function looping() {
+	// clear old frame;
+  ctx.clearRect(0,0,canvas.width, canvas.height);
+  moveLine();
+  drawLine();
+  requestAnimationFrame(looping);
+}
+requestAnimationFrame(looping);
+
+	</script>
+</body>
+</html>
