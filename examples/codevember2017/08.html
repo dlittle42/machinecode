@@ -21,6 +21,14 @@
 				top: 0px; width: 100%;
 				padding: 5px;
 			}
+
+			#again {
+				position: absolute;
+				top: 5px; 
+				right: 20px;
+	
+			}
+
 			#intro{
 				position: absolute;
 				top: 40%;
@@ -72,7 +80,9 @@
 	<body>
 
 	<div id="container">
-		
+		<div id="again">
+			<a href="#">Again?</a>
+		</div>
 		<div id="intro">
 			<h1>08. Fridge</h1>
 			<p>Go ahead and click already</p>
@@ -428,61 +438,7 @@ var quat = new THREE.Quaternion();
 			return material;
 		}
 
-		function createBalls(){
-
-			var ballMass = .35;
-			var ballRadius = 1;//0.4;
-
-			for ( var j = 0; j < 100; j ++ ) {
-
-				//var material = new THREE.MeshPhongMaterial( { map: fridge } );
-
-				 var playerMaterial = new THREE.MeshPhongMaterial( { map: fridge } );
-				   // playerblock = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz, 1, 1, 1), createMaterial(0xff0000, false,.5, true));
 		
-
-				/*
-				    var playerMaterial = new THREE.SpriteMaterial({
-				        map: heroTexture,
-				        color: 0xffffff
-				    });
-				*/
-				    playerMaterial.transparent = true;
-
-
-				    var player = new THREE.Sprite(playerMaterial);
-
-
-				    player.scale.set(.5, .5, 1.0);
-
-				//var ball = new THREE.Mesh( new THREE.SphereGeometry( ballRadius, 14, 10 ), ballMaterial );
-				var ball = new THREE.Mesh( new THREE.SphereGeometry( ballRadius, 14, 10 ), invisibleMat );
-				ball.castShadow = true;
-				ball.receiveShadow = true;
-				var ballShape = new Ammo.btSphereShape( ballRadius );
-				ballShape.setMargin( margin );
-
-				ball.add(player);
-
-				//pos = new THREE.Vector3(10,0,10);
-				pos.x = Math.random()* 200 - 100;
-				pos.y = Math.random()* 200 - 100;
-				pos.z = Math.random()* 200 - 100;
-				//pos.copy( raycaster.ray.direction );
-				//pos.add( raycaster.ray.origin );
-				quat.set( 0, 0, 0, 1 );
-				var ballBody = createRigidBody( ball, ballShape, ballMass, pos, quat );
-				ballBody.setFriction( 0.9 );
-
-				var direction = new THREE.Vector3();
- 				direction.subVectors( new THREE.Vector3(0,4,0), pos ).normalize() ;
- 				
-
-				pos.copy( direction );
-				pos.multiplyScalar( 10 );
-				ballBody.setLinearVelocity( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
-			}
-		}
 
 		function Player(xpos, sprite) {
 
@@ -550,16 +506,25 @@ var quat = new THREE.Quaternion();
 
 
 		function initAnimation(evt){
-			document.getElementById("intro").className += " play";
-			//playQuote();
-			cameraZoom();
 
-			var direction = new THREE.Vector3();
-				direction.subVectors( new THREE.Vector3(0,0,0), pos ).normalize() ;
+			if (camera.position.x <-7){
+				cleanupPhysics();
+				camera.position.x = -4;
+				removePlayer();
+				createObjects();
+				document.getElementById("intro").className ="";
+			}else{
+				document.getElementById("intro").className += " play";
+				//playQuote();
+				cameraZoom();
 
-			pos.copy( direction );
-			pos.multiplyScalar( 10 );
-			playerBody.setLinearVelocity( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
+				var direction = new THREE.Vector3();
+					direction.subVectors( new THREE.Vector3(0,0,0), pos ).normalize() ;
+
+				pos.copy( direction );
+				pos.multiplyScalar( 10 );
+				playerBody.setLinearVelocity( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
+			}
 		}
 
 		function onWindowResize() {
@@ -569,6 +534,34 @@ var quat = new THREE.Quaternion();
 
 			renderer.setSize( window.innerWidth, window.innerHeight );
 
+		}
+
+
+		function cleanupPhysics(){
+
+		     for (var i = 0; i < rigidBodies.length; i++) {
+
+		        removeDebris(rigidBodies[i]);
+
+		    }
+		    rigidBodies = [];
+		    
+		}
+
+		function removeDebris(object) {
+
+		   // console.log(object)
+
+		    scene.remove(object);
+		    console.log(object.userData)
+		    if (object.userData.reticulumReady) removeFromReticulum( object);
+
+		    physicsWorld.removeRigidBody(object.userData.physicsBody);
+
+		}
+
+		function removePlayer(){
+			scene.remove(playerGroup);
 		}
 
 		function animate() {
