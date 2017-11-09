@@ -13,12 +13,23 @@
 <script src="//cdnjs.cloudflare.com/ajax/libs/SpeechKITT/0.3.0/speechkitt.min.js"></script>
 <script src="https://unpkg.com/aframe-environment-component/dist/aframe-environment-component.min.js"></script>
 
+<style>
+#info{
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  color: black;
+  font-size: 18px;
+  z-index: 99;
+}
+</style>
+
   </head>
   <body>
 
 
 
-
+   <div id="info"></div>
    <a-scene three-ar vr-mode-ui="enabled:false" shadow="type: pcfsoft" >
 <!--    <a-scene shadow="type: pcfsoft" > -->
       <a-camera position="0 0 4"><a-cursor></a-cursor></a-camera>
@@ -26,7 +37,7 @@
 
       <a-entity 
         position="0 0 0" 
-        scale="0.5 0.5 0.5" 
+        scale="0.75 0.75 0.75" 
         shadow="cast: true"
         json-model="src: json/ha-monkey-rig.json" 
         animation-mixer="clip: idle">
@@ -69,7 +80,7 @@
 
     document.addEventListener("keydown", keyDownTextField, false);
     monkey.addEventListener("mousedown", changePose);
-    monkey.addEventListener("touchstart", changePose);
+    window.addEventListener("touchstart", changePose);
 
 
     if (annyang) {
@@ -119,24 +130,25 @@
 
    // monkey.addEventListener('click', function(evt){
     function changePose(newPose){
-      console.log('new Pose! '+ newPose);
+     // alert('new Pose! '+ newPose);
 
-      if (newPose){
+      if (typeof(newPose) != 'object'){
           console.log(typeof newPose)
           monkey.setAttribute("animation-mixer", "clip: "+newPose+ "; autoplay: true; loop: true;")
+          document.getElementById("info").innerHTML = newPose;
           return
       }
 
       if (pose < poseArr.length-1){
-        pose ++;
+        pose++;
 
       }else{
         pose = 0;
       }
 
-      console.log(poseArr[pose])
+      //alert(poseArr[pose])
 
-
+      document.getElementById("info").innerHTML = poseArr[pose];
 
        monkey.setAttribute("animation-mixer", "clip: "+poseArr[pose]+"; autoplay: true; loop: true;")
 
