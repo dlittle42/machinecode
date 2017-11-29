@@ -1,0 +1,230 @@
+<html lang="en">
+  <head>
+    <title>spin the wheel</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link href="https://fonts.googleapis.com/css?family=Barlow|Kanit:800" rel="stylesheet">
+    <style>
+
+      html {
+        box-sizing: border-box;
+      }
+      *, *:before, *:after {
+        box-sizing: inherit;
+      }
+
+      body {
+        color: #ffffff;
+        font-family:Monospace;
+        font-size:13px;
+        text-align:center;
+        position: fixed;
+
+        background-color: #bfd1e5;
+        margin: 0px;
+        overflow: hidden;
+      }
+
+      #info {
+        color:#fff;
+        background-color: black;
+        position: absolute;
+        top: 0px; width: 100%;
+        padding: 5px;
+
+      }
+
+      h1{
+        font-family: 'Kanit', sans-serif;
+          letter-spacing: 5px;
+          font-size: 70px;
+          margin-bottom: 0;
+      }
+
+      p{
+        
+        
+        font-family: 'Barlow', sans-serif;
+          font-size: 28px;
+          margin-top: 0;
+          letter-spacing: 2px;
+      }
+
+
+
+      a {
+        color: #a06851;
+      }
+
+
+
+    </style>
+  </head>
+  <body>
+
+  <div id="container">
+    <div id="info"></div>
+
+  </div>
+
+  <script src="../../bower_components/three.js/build/three.js"></script>
+  <script src="../../bower_components/three.js/examples/js/utils/GeometryUtils.js"></script>
+  <script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+
+<!--  <script src="rotateCam.js"></script> -->
+  <script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+  <script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+  <script src="../../bower_components/howler.js/dist/howler.min.js"></script>
+  <script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.js"></script>
+
+  <script src="../../bower_components/three.js/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="../../bower_components/three.js/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="../../bower_components/three.js/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="../../bower_components/three.js/examples/js/postprocessing/MaskPass.js"></script>
+    <!-- shaders -->
+
+    <script src="../../bower_components/three.js/examples/js/shaders/RGBShiftShader.js"></script>
+    <script src="../../bower_components/three.js/examples/js/shaders/DotScreenShader.js"></script>
+    <script src="../../bower_components/three.js/examples/js/shaders/CopyShader.js"></script>
+
+
+    <script>
+
+// originally from
+// http://jsfiddle.net/g29k91qL/4/
+// inspired by the hints in (webgl calls in threejs)
+// https://github.com/mrdoob/three.js/issues/7785
+
+var scene, sceneStencil, camera, renderer, clock;
+var controls;
+var box, plane;
+var composer;
+
+
+init();
+animate();
+
+function init() {
+
+  var planeGeometry, planeMaterial;
+  var boxGeometry, boxMaterial;
+  var index;
+
+  scene = new THREE.Scene();
+  sceneStencil = new THREE.Scene();
+
+  clock = new THREE.Clock();
+
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+  camera.position.z = 10;
+
+  planeGeometry = new THREE.PlaneGeometry(10, 5);
+
+  // set colorWrite to "true" to see the area/shapes of the stencil test
+  planeMaterial = new THREE.MeshBasicMaterial({
+    color: 0x00ffff,
+    colorWrite: true,  // works for r73 (not r70)
+    depthWrite: false
+  });
+/*
+  for (index = 0; index < 5; index++) {
+    plane = new THREE.Mesh(planeGeometry, planeMaterial);
+    plane.name = 'plane'+index;
+    console.log(plane.name)
+    if (index==1) plane1 = plane;
+    plane.position.x = -10 + (5 * index);
+    sceneStencil.add(plane);
+  }
+*/
+
+  plane = new THREE.Mesh(planeGeometry, planeMaterial);
+ // plane.position.x = -10 + (5);
+  sceneStencil.add(plane);
+
+ // plane1 = scene.getObjectByName( "plane1", true );
+
+  boxGeometry = new THREE.BoxGeometry(2, 2, 2);
+  boxMaterial = new THREE.MeshBasicMaterial({
+    color: 0xff0000,
+  });
+
+  box = new THREE.Mesh(boxGeometry, boxMaterial);
+  scene.add(box);
+
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor (0x888888);
+
+  renderer.autoClear = false;
+
+  composer = new THREE.EffectComposer( renderer );
+  composer.addPass( new THREE.RenderPass( scene, camera ) );
+
+  var effect = new THREE.ShaderPass( THREE.DotScreenShader );
+  effect.uniforms[ 'scale' ].value = 3;
+
+  
+//  composer.addPass( effect );
+/*
+  var effect = new THREE.ShaderPass( THREE.RGBShiftShader );
+  effect.uniforms[ 'amount' ].value = 0.0015;
+  */
+  effect.renderToScreen = true;
+  composer.addPass( effect );
+
+
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  document.body.appendChild(renderer.domElement);
+	
+  window.addEventListener('resize', onWindowResize, false);
+
+  window.addEventListener( 'mousedown', movePlane, false);
+}
+
+function movePlane(){
+  plane.position.y+=1;
+}
+
+function animate() {
+
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.clear();
+	
+  // animate the box
+  box.position.x = Math.cos(clock.getElapsedTime()) * 10;
+
+
+  var gl = renderer.context;
+
+  // enable stencil test
+  gl.enable(gl.STENCIL_TEST);
+  //renderer.state.setStencilTest( true );
+
+  // config the stencil buffer to collect data for testing
+  gl.stencilFunc(gl.ALWAYS, 1, 0xff);
+  gl.stencilOp(gl.REPLACE, gl.REPLACE, gl.REPLACE);
+
+	// render shape for stencil test
+  renderer.render(sceneStencil, camera);
+  
+  // set stencil buffer for testing
+  gl.stencilFunc(gl.EQUAL, 1, 0xff);
+  gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+
+  // render actual scene
+ // renderer.render(scene, camera);
+  composer.render(scene, camera);
+
+  // disable stencil test
+  gl.disable(gl.STENCIL_TEST);
+}
+
+function onWindowResize() {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize( window.innerWidth, window.innerHeight );
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+}
+</script>
