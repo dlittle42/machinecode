@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>Pitch demo</title>
+  <style>
+    body {
+      /*margin: 40px;*/
+    }
+
+    .box {
+      background-color: #444;
+      color: #fff;
+      border-radius: 5px;
+      padding: 20px;
+      font-size: 150%;
+      position: relative;
+      overflow: hidden;
+      
+    }
+
+    .box:nth-child(even) {
+   
+      /*background-position: cover;*/
+      
+      
+    }
+
+    .box img{
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .note{
+      position: absolute;
+      top: 20px;
+      left: 20px;
+    }
+
+    .bkgd{
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 200%;
+      height: 200%;
+      background-repeat: repeat;
+      
+      transition: all .1s ease-out;
+      opacity: 0;
+    }
+
+
+    .box.active .bkgd{
+      animation: backgroundScroll 5s linear infinite;
+      animation-fill-mode: forwards; 
+      opacity: 1;
+    }
+/*
+    .box:hover .bkgd{
+      opacity: 1;
+    }
+*/
+    .wrapper {
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      padding: 40px;
+      box-sizing: border-box;
+      grid-gap: 10px;
+
+      grid-auto-flow: row;
+
+      grid-template-columns: repeat(3, 1fr);
+      grid-auto-rows: 200px;
+    }
+
+
+
+    .blue{
+      
+      background-color: #7FE8EF;
+
+
+    }
+
+    .blue .bkgd{
+      background-image: url(images/blue-stripes.png);
+    }
+
+    .green{
+      
+      background-color: #BDF260;
+
+
+    }
+
+
+    .green .bkgd{
+      background-image: url(images/green-stripes.png);
+
+    }
+
+    .orange{
+      
+      background-color: #FEBE4B;
+
+
+    }
+    .orange .bkgd{
+      background-image: url(images/orange-stripes.png);
+
+    }
+    .pink{
+      
+      background-color: #ffc7d7;
+
+
+    }
+    .pink .bkgd{
+      background-image: url(images/pink-stripes.png);
+
+    }
+    .purple{
+      
+      background-color: #DEB5F6;
+
+
+    }
+    .purple .bkgd{
+      background-image: url(images/purple-stripes.png);
+
+    }
+
+    @keyframes backgroundScroll {
+     
+         0% {transform: translate(0, -25%) rotate(0.01turn);}
+         100% {transform: translate(-270px, -25%) rotate(0.01turn);}
+       
+  }
+
+
+      #note { font-size: 164px; }
+      .droptarget { background-color: #348781}
+      div.confident { color: black; }
+      div.vague { color: lightgrey; }
+      #note { display: inline-block; height:180px; text-align: left;}
+      
+      #detector { width: 300px; height: 300px; border: 4px solid gray; border-radius: 8px; text-align: center; padding-top: 10px;}
+      #output { width: 300px; height: 42px; }
+      #flat { display: none; }
+      #sharp { display: none; }
+      .flat #flat { display: inline; }
+      .sharp #sharp { display: inline; }
+
+
+
+  </style>
+</head>
+<body>
+<p>
+
+      <button onclick="toggleLiveInput()">use live input</button>
+
+      <!--<button onclick="updatePitch(0);">sample</button>-->
+    </p>
+<div class="wrapper">
+  <div class="box blue active">
+  
+    <div class="bkgd"></div>
+  <!--  <img src="images/blue-monkey-face.png">
+  -->
+     <div id="detector" class="vague">
+      <div class="pitch"><span id="pitch">--</span>Hz</div>
+      <div class="note"><span id="note">--</span></div>   
+      <canvas id="output" width=300 height=42></canvas>
+      <div id="detune"><span id="detune_amt">--</span><span id="flat">cents &#9837;</span><span id="sharp">cents &#9839;</span></div>
+    </div>
+    <div class="note">C</div>
+  </div>
+
+
+  <div class="box green">
+    <div class="bkgd"></div>
+    <img src="images/orange-girl-face.png">
+    <div class="note">C#</div>
+  </div>
+  <div class="box orange">
+    <div class="bkgd"></div>
+    <img src="images/pink-monkey-face.png">
+    <div class="note">D</div>
+  </div>
+  <div class="box pink">
+    <div class="bkgd"></div>
+    <img src="images/yellow-girl-face.png">
+    <div class="note">D#</div>
+  </div>
+  <div class="box purple">
+    <div class="bkgd"></div>
+    <img src="images/purple-monkey-face.png">
+    <div class="note">E</div>
+  </div>
+  <div class="box blue">
+    <div class="bkgd"></div>
+    <img src="images/blue-monkey-face.png">
+    <div class="note">F</div>
+  </div>
+  <div class="box green">
+    <div class="bkgd"></div>
+    <img src="images/orange-girl-face.png">
+    <div class="note">F#</div>
+  </div>
+  <div class="box orange">
+    <div class="bkgd"></div>
+    <img src="images/pink-monkey-face.png">
+    <div class="note">G</div>
+  </div>
+  <div class="box pink">
+    <div class="bkgd"></div>
+    <img src="images/yellow-girl-face.png">
+    <div class="note">G#</div>
+  </div>
+  <div class="box purple">
+    <div class="bkgd"></div>
+    <img src="images/purple-monkey-face.png">
+    <div class="note">A</div>
+  </div>
+  <div class="box blue">
+    <div class="bkgd"></div>
+    <img src="images/blue-monkey-face.png">
+    <div class="note">A#</div>
+  </div>
+  <div class="box green">
+    <div class="bkgd"></div>
+    <img src="images/orange-girl-face.png">
+    <div class="note">B</div>
+  </div>
+  
+</div>
+
+<!-- <script src="../_lib/TweenMax.min.js"></script> -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="js/pitchdetect.js"></script>
+<script>
+/*
+  function hasClass(el, className) {
+    if (el.classList)
+      return el.classList.contains(className)
+    else
+      return !!el.className.match(new RegExp('(\\s|^)' + className + '(\\s|$)'))
+  }
+
+  function addClass(el, className) {
+    if (el.classList)
+      el.classList.add(className)
+    else if (!hasClass(el, className)) el.className += " " + className
+  }
+
+  function removeClass(el, className) {
+    if (el.classList)
+      el.classList.remove(className)
+    else if (hasClass(el, className)) {
+      var reg = new RegExp('(\\s|^)' + className + '(\\s|$)')
+      el.className=el.className.replace(reg, ' ')
+    }
+  }
+
+  var classname = document.getElementsByClassName("box");
+
+  var myFunction = function() {
+      var attribute = this.getAttribute("data-myattribute");
+      if (hasClass(this,'active')){
+         removeClass(this, 'active')
+      }else{
+         addClass(this, 'active')
+      }
+     
+     
+  };
+
+  for (var i = 0; i < classname.length; i++) {
+      classname[i].addEventListener('click', myFunction, false);
+  }
+  */
+
+  $(document).ready(function() {
+    var $box = $(".box");
+    $box.click(function(e) {
+        var $this = $(this);
+        if ($this.hasClass("active") ){
+            $box.removeClass("active");
+        } else {
+            $box.removeClass("active");
+            $this.addClass("active");
+        }
+
+
+    });
+});
+</script>
+
+
+</body>
+</html>

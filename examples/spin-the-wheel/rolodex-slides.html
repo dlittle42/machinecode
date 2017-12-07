@@ -536,7 +536,9 @@
 					side:THREE.DoubleSide 
 				} ));
 
-					 ball.doubleSided = true;
+				ball.name="obj"+j;
+
+				ball.doubleSided = true;
 				//ball.castShadow = true;
 				//ball.receiveShadow = true;
 				//pos = new THREE.Vector3(10,0,10);
@@ -547,18 +549,23 @@
 				ball.position.y=0;
 				ball.position.z = r * Math.sin(theta);
 
+			/*	var newSphereGeom= new THREE.SphereGeometry(.5,.5,.5);
+				var sphere= new THREE.Mesh(newSphereGeom, new THREE.MeshBasicMaterial({ color: 0x2266dd }));
+				ball.add(sphere)
+			*/
+
 				//ball.rotation.y -= (Math.PI)/j;
 				ball.rotation.y = Math.atan2( ( letterGroup.position.x - ball.position.x ), ( letterGroup.position.z - ball.position.z ) );
 
 			} 
-/*
-			var aObj = scene.getObjectByName( "a", true );
+
+			var aObj = scene.getObjectByName( "obj0", true );
 		//	letterGroup.lookAt(aObj.position)
 			var rot = Math.atan2( ( letterGroup.position.x - aObj.position.x ), ( letterGroup.position.z - aObj.position.z ) );
 
 		
 
-			TweenMax.to(letterGroup.rotation, 2,{
+			TweenMax.to(letterGroup.rotation, 1,{
                // z:depth,
                 x:0,
                 y: rot,
@@ -572,7 +579,7 @@
             }});
 
          //   initShaders();
-*/
+
 		}
 
 		
@@ -602,12 +609,12 @@
 				//camera.position.z = 1;
 
 				if (event.touches){
-					console.log('got touches')
+				//	console.log('got touches')
 					initDragX = ( event.touches[0].clientX / renderer.domElement.clientWidth ) * 2 - 1;
 					//mouse.y = - ( event.touches[0].clientY / renderer.domElement.clientHeight ) * 2 + 1;
 					//getTouchPointer();
 				}else{
-					console.log('is mouse')
+					//console.log('is mouse')
 					initDragX = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
 					//mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
 					//getDesktopPointer();
@@ -620,12 +627,12 @@
 		//	initDragX = mouse.;
 			if (isDragging){
 				if (event.touches){
-					console.log('got touches')
+					//console.log('got touches')
 					endDragX = ( event.touches[0].clientX / renderer.domElement.clientWidth ) * 2 - 1;
 					//mouse.y = - ( event.touches[0].clientY / renderer.domElement.clientHeight ) * 2 + 1;
 					//getTouchPointer();
 				}else{
-					console.log('is mouse')
+					//console.log('is mouse')
 					endDragX = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
 					//mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
 					//getDesktopPointer();
@@ -634,7 +641,7 @@
 				dragDiff = (initDragX - endDragX) * stepAngle;
 			
 				info.textContent = debugDrag(dragDiff, 0)
-				letterGroup.rotation.y += dragDiff/numObj;
+			//	letterGroup.rotation.y += dragDiff/numObj;
 			}
 
 		}
@@ -647,7 +654,9 @@
 				//letterGroup.position.z = 0;
 
 				info.textContent = debugDrag(dragDiff, dragDuration)
-				initAnimation(dragDiff*5);
+				var next = dragDiff.toFixed(2)*10;
+				initAnimation(next);
+				//initAnimation(dragDiff*5);
 				scaleMask(-10)
 
 
@@ -660,7 +669,7 @@
 		}
 
 		function initAnimation( rot ){
-			console.log('initAnimation')
+			console.log('initAnimation' + rot)
 			//var rot = stepAngle;//Math.PI/3;
 			var time = dragDuration/1000;
 			TweenMax.to(letterGroup.rotation, 1+ time,{
@@ -670,9 +679,9 @@
                 z:0,
                // delay: delay,
                 ease:"Power3.easeOut",
-                onUpdate:function(){
+                onComplete:function(){
                    // no_geom.verticesNeedUpdate = true;
-                    
+                    console.log(letterGroup.rotation.y)
               //  console.log('tweened');
             }});
 		}
