@@ -1,0 +1,652 @@
+<html lang="en">
+	<head>
+		<title>Notes</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+		<!-- CSS
+	    –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+	    <link rel="stylesheet" href="css/normalize.css">
+	    <link rel="stylesheet" href="css/skeleton.css">
+	    <link rel="stylesheet" href="css/custom.css">
+
+		<style>
+			body {
+				color: #7FE8EF;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+
+				background-color: #bfd1e5;
+				margin: 0px;
+				overflow: hidden;
+			}
+
+			#info {
+				position: absolute;
+				top: 0px; width: 100%;
+				padding: 5px;
+			}
+
+			a {
+				color: #a06851;
+			}
+
+			#keyboard{
+				position: absolute;
+				top: 0;
+				left: 100px;
+			}
+
+			/* keyboard hud */
+			button{
+      height: 40px;
+      width: 40px;
+      border-radius: 4px;
+      border: solid grey 1px;
+
+    }
+
+    button:focus{
+      outline:none;
+    }
+
+    .black{
+      background-color: #363636;
+      color: white;
+    }
+
+    .grey{
+      background-color: #e3e3e3;
+      border-color:lightgrey;
+    }
+
+    .white{
+      background-color: white;
+    }
+
+    #caps{
+      width: 80px;
+      color: grey;
+      font-size: 9px;
+    }
+
+    #keyboard{
+      -webkit-user-select: none; /* Safari */
+      -moz-user-select: none; /* Firefox */
+      -ms-user-select: none; /* IE/Edge */
+      user-select: none; /* Chrome/Opera */
+      width:525px;
+    }
+
+    #tab{
+      width: 70px;
+    }
+
+    #whiteKeys{
+      margin-top:5px;
+    }
+
+		</style>
+	</head>
+	<body>
+
+	<div id="container"></div>
+	 <div id=keyboard>
+        <div id=blackKeys>
+          <button   id=tab>tab</button>
+          <button class=grey>&nbsp;</button>
+          <button class=black id=C#4>W</button>
+          <button class=black id=D#4>E</button>
+          <button class=grey>&nbsp;</button>
+          <button class=black id=F#4>T</button>
+          <button class=black id=G#4>Y</button>
+          <button class=black id=A#4>U</button>
+          <button class=grey>&nbsp;</button>
+          <button class=black id=C#5>O</button>
+          <button class=black id=D#5>P</button>
+        </div>
+        <div id=whiteKeys>
+          <button class=grey style="width:80px" id=caps>AMSynth</button>
+          <button class=white id=C4>A</button>
+          <button class=white id=D4>S</button>
+          <button class=white id=E4>D</button>
+          <button class=white id=F4>F</button>
+          <button class=white id=G4>G</button>
+          <button class=white id=A4>H</button>
+          <button class=white id=B4>J</button>
+          <button class=white id=C5>K</button>
+          <button class=white id=D5>L</button>
+          <button class=white id=E5>;</button>
+        </div>
+      </div>
+
+      <div class="keyboard">
+   
+
+        <div class="row">
+            <div class="twelve columns">
+                <button class="keyboard-key" id="key-1">1</button>
+                <button class="keyboard-key" id="key-2">2</button>
+                <button class="keyboard-key" id="key-3">3</button>
+                <button class="keyboard-key" id="key-4">4</button>
+                <button class="keyboard-key" id="key-5">5</button>
+                <button class="keyboard-key" id="key-6">6</button>
+                <button class="keyboard-key" id="key-7">7</button>
+                <button class="keyboard-key" id="key-8">8</button>
+                <button class="keyboard-key" id="key-9">9</button>
+                <button class="keyboard-key" id="key-0">0</button>
+            </div>
+        </div>
+
+
+        <div class="row">
+	        <div class="twelve columns">
+	        <button class="keyboard-key" id="key-Q">Q</button>
+	        <button class="keyboard-key" id="key-W">W</button>
+	        <button class="keyboard-key" id="key-E">E</button>
+	        <button class="keyboard-key" id="key-R">R</button>
+	        <button class="keyboard-key" id="key-T">T</button>
+	        <button class="keyboard-key" id="key-Y">Y</button>
+	        <button class="keyboard-key" id="key-U">U</button>
+	        <button class="keyboard-key active-style" id="key-I">I</button>
+	        <button class="keyboard-key" id="key-O">O</button>
+	        <button class="keyboard-key" id="key-P">P</button>
+	        </div>
+	    </div>
+
+	    <div class="row">
+	        <div class="twelve columns">
+	            <button class="keyboard-key" id="key-A">A</button>
+	            <button class="keyboard-key" id="key-S">S</button>
+	            <button class="keyboard-key" id="key-D">D</button>
+	            <button class="keyboard-key" id="key-F">F</button>
+	            <button class="keyboard-key" id="key-G">G</button>
+	            <button class="keyboard-key" id="key-H">H</button>
+	            <button class="keyboard-key" id="key-J">J</button>
+	            <button class="keyboard-key" id="key-K">K</button>
+	            <button class="keyboard-key" id="key-L">L</button>
+	        </div>
+	    </div>
+
+	    <div class="row">
+	        <div class="twelve columns">
+	            <button class="keyboard-key" id="key-Z">Z</button>
+	            <button class="keyboard-key" id="key-X">X</button>
+	            <button class="keyboard-key" id="key-C">C</button>
+	            <button class="keyboard-key" id="key-V">V</button>
+	            <button class="keyboard-key" id="key-B">B</button>
+	            <button class="keyboard-key" id="key-N">N</button>
+	            <button class="keyboard-key" id="key-M">M</button>
+	        </div>
+	    </div>
+    </div>
+
+	<script src="../../../bower_components/three.js/build/three.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/libs/ammo.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/Detector.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+<!--
+	<script src="../../../bower_components/three.js/examples/js/ConvexObjectBreaker.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/QuickHull.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/geometries/ConvexGeometry.js"></script>
+
+	<script src="../../../bower_components/three.js/examples/js/utils/GeometryUtils.js"></script>
+-->
+	<script src="../../../bower_components/dat.gui/dat.gui.js"></script>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://tonejs.github.io/build/Tone.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/keypress/2.1.4/keypress.min.js"></script>
+    <script src="js/keyboard2.js"></script>
+
+<!-- postprocessing
+	<script src="../../../bower_components/three.js/examples/js/postprocessing/EffectComposer.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/postprocessing/ShaderPass.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/postprocessing/RenderPass.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/postprocessing/MaskPass.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/postprocessing/BloomPass.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/postprocessing/FilmPass.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/postprocessing/DotScreenPass.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/postprocessing/TexturePass.js"></script>
+ -->
+
+<!-- shaders 
+	<script src="../../../bower_components/three.js/examples/js/shaders/BleachBypassShader.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/shaders/FilmShader.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/shaders/HorizontalBlurShader.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/shaders/SepiaShader.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/shaders/VerticalBlurShader.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/shaders/VignetteShader.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/shaders/RGBShiftShader.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/shaders/DotScreenShader.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/shaders/FXAAShader.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/shaders/ConvolutionShader.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/shaders/LuminosityHighPassShader.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/shaders/ColorifyShader.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/shaders/CopyShader.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/shaders/TriangleBlurShader.js"></script>
+-->
+	<!-- replace built-in triangulation with PnlTri.js 
+	<script src="../../../bower_components/three.js/examples/js/libs/pnltri.min.js"></script>
+	-->
+	
+	<script>
+
+		// Detects webgl
+		if ( ! Detector.webgl ) {
+			Detector.addGetWebGLMessage();
+			document.getElementById( 'container' ).innerHTML = "";
+		}
+
+		// - Global variables -
+
+		// Graphics variables
+		var container, stats;
+		var camera, controls, scene, renderer;
+		var textureLoader;
+		var clock = new THREE.Clock();
+
+
+
+///------------------- letter stuff ------
+
+		var group, textMesh1, textMesh2, textGeo, materials;
+
+	    var firstLetter = true;
+	    var mainletter;
+
+	    var width = window.innerWidth;
+	    var height = window.innerHeight;
+
+	    var phrase = "do you ha";
+
+	    var text = "S",
+
+	        height = 10,
+	        size = 70,
+	        hover = 30,
+
+	        curveSegments = 4,
+
+	        bevelThickness = 20,
+	        bevelSize = 1.5,
+	        bevelSegments = 3,
+	        bevelEnabled = true,
+
+	        font = undefined,
+
+	        fontName = "Slukoni";//"optimer", // helvetiker, optimer, gentilis, droid sans, droid serif
+	        fontWeight = "Medium";//"bold"; // normal bold
+
+	    var mirror = false;
+
+	    var fontMap = {
+
+	        "helvetiker": 0,
+	        "optimer": 1,
+	        "gentilis": 2,
+	        "droid/droid_sans": 3,
+	        "droid/droid_serif": 4,
+	        "slukoni": 5
+
+	    };
+
+	    var weightMap = {
+
+	        "regular": 0,
+	        "bold": 1
+
+	    };
+
+	     var postprocessing = { enabled : false, renderMode: 0 }; 
+
+
+	    var depthMaterial, effectComposer, depthRenderTarget, composer;
+
+	    var params = {
+	      projection: 'normal',
+	      background: false,
+	      exposure: 1.0,
+	      bloomStrength: 1.5,
+	      bloomThreshold: 0.35,
+	      bloomRadius: 0.4
+	    };
+
+	    var reverseFontMap = [];
+	    var reverseWeightMap = [];
+
+	    for ( var i in fontMap ) reverseFontMap[ fontMap[i] ] = i;
+	    for ( var i in weightMap ) reverseWeightMap[ weightMap[i] ] = i;
+
+///---------------------------------------
+
+
+		var mouseCoords = new THREE.Vector2();
+		var raycaster = new THREE.Raycaster();
+		var ballMaterial = new THREE.MeshPhongMaterial( { color: 0x000000 } );
+
+		var time = 0;
+
+		// - Main code -
+
+		init();
+		
+
+
+		// - Functions -
+
+		function init() {
+
+			initGraphics();
+			initInput();
+
+		}
+
+		function initGraphics() {
+
+			container = document.getElementById( 'container' );
+
+			camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.2, 2000 );
+
+			scene = new THREE.Scene();
+
+			camera.position.x = -14;
+			camera.position.y = 8;
+			camera.position.z =  16;
+
+			controls = new THREE.OrbitControls( camera );
+			controls.target.y = 2;
+
+			renderer = new THREE.WebGLRenderer({antialias:true, precision: "mediump"});
+			renderer.setClearColor( 0x7FE8EF );
+			renderer.setPixelRatio( window.devicePixelRatio );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			renderer.shadowMap.enabled = true;
+
+			textureLoader = new THREE.TextureLoader();
+/*
+			var ambientLight = new THREE.AmbientLight( 0x707070 );
+			scene.add( ambientLight );
+*/
+			var light = new THREE.DirectionalLight( 0xffffff, 1 );
+			light.position.set( -10, 18, 5 );
+			light.castShadow = true;
+			var d = 14;
+			light.shadow.camera.left = -d;
+			light.shadow.camera.right = d;
+			light.shadow.camera.top = d;
+			light.shadow.camera.bottom = -d;
+
+			light.shadow.camera.near = 2;
+			light.shadow.camera.far = 50;
+
+			light.shadow.mapSize.x = 1024;
+			light.shadow.mapSize.y = 1024;
+
+			scene.add( light );
+
+			materials = [
+	            new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.FlatShading } ), // front
+	            new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.SmoothShading } ) // side
+	        ];
+
+			group = new THREE.Group();
+	        group.position.y = 100;
+
+	        scene.add( group );
+
+	        console.log(fontName)
+	        loadFont();
+	       // staticEffect();
+
+
+			//container.innerHTML = "";
+
+			container.appendChild( renderer.domElement );
+
+			stats = new Stats();
+			stats.domElement.style.position = 'absolute';
+			stats.domElement.style.top = '0px';
+			container.appendChild( stats.domElement );
+
+			//
+
+			window.addEventListener( 'resize', onWindowResize, false );
+
+		}
+
+
+		function loadFont() {
+
+	        var loader = new THREE.FontLoader();
+	        var typefile = 'fonts/' + fontName + '_' + fontWeight + '.typeface.json';
+	        console.log(typefile);
+	        loader.load( typefile, function ( response ) {
+
+	            console.log('font loaded');
+
+	            font = response;
+
+	           // refreshText();
+	            mainletter = createText('a');
+	            scene.add(mainletter);
+
+				animate();
+
+	        } );
+
+	    }
+
+	    function refreshText() {
+
+
+       var letter = createText(text);
+
+        mainletter.geometry.dispose();
+       // console.log(mainletter.geometry);
+        mainletter.geometry = letter.geometry;
+
+    }
+
+    function createText(letter) {
+
+        textGeo = new THREE.TextGeometry( letter, {
+
+            font: font,
+
+            size: size,
+            height: height,
+            curveSegments: curveSegments,
+
+            bevelThickness: bevelThickness,
+            bevelSize: bevelSize,
+            bevelEnabled: bevelEnabled,
+
+            material: 0,
+            extrudeMaterial: 1
+
+        });
+
+        textGeo.computeBoundingBox();
+        textGeo.computeVertexNormals();
+
+
+
+       
+        var centerOffset = -0.5 * ( textGeo.boundingBox.max.x - textGeo.boundingBox.min.x );
+
+        textMesh1 = new THREE.Mesh( textGeo, materials );
+
+        textMesh1.position.x = 0;//centerOffset;
+        textMesh1.position.y = 0;//hover+ height;
+        textMesh1.position.z = 0;
+
+        textMesh1.rotation.x = 0;
+        textMesh1.rotation.y = Math.PI * 2;
+
+        var boxHelper = new THREE.BoxHelper( textMesh1 );
+		boxHelper.material.color.set( 0xff0000 );
+		//textMesh1.add( boxHelper );
+
+
+        textMesh1.scale.set(.03,.03,.03)
+
+        return textMesh1;
+
+
+       
+
+        
+
+    }
+
+		function createRandomColor() {
+			return Math.floor( Math.random() * ( 1 << 24 ) );
+		}
+
+		function createMaterial( color ) {
+			color = color || createRandomColor();
+			return new THREE.MeshPhongMaterial( { color: color } );
+		}
+
+		function initInput() {
+
+			document.addEventListener( 'keypress', onDocumentKeyPress, false );
+
+		}
+
+		function onDocumentKeyDown( event ) {
+
+               
+
+            var keyCode = event.keyCode;
+
+            console.log(keycode)
+
+            // backspace
+
+            if ( keyCode == 8 ) {
+
+                event.preventDefault();
+
+                text = text.substring( 0, text.length - 1 );
+                refreshText();
+
+                return false;
+
+            }
+
+        }
+
+        function onDocumentKeyPress( event ) {
+
+            var keyCode = event.which;
+
+            // backspace
+
+            if ( keyCode == 8 ) {
+
+                event.preventDefault();
+
+            } else {
+
+                var ch = String.fromCharCode( keyCode );
+                text = ch;
+                console.log('text is '+ text)
+
+                refreshText();
+               // createLetter(ch, 1);
+
+            }
+
+        }
+
+		function onWindowResize() {
+
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+
+			renderer.setSize( window.innerWidth, window.innerHeight );
+
+		}
+
+		function animate() {
+
+			requestAnimationFrame( animate );
+
+			render();
+			//stats.update();
+
+		}
+
+		function render() {
+
+			var deltaTime = clock.getDelta();
+
+		//	updatePhysics( deltaTime );
+
+			controls.update( deltaTime );
+
+			//renderer.render( scene, camera );
+
+			if ( postprocessing.enabled ) {
+
+				renderer.toneMappingExposure = Math.pow( params.exposure, 4.0 );
+				composer.render(deltaTime);
+
+			} else {
+
+				renderer.render( scene, camera );
+
+			}
+
+			time += deltaTime;
+
+		}
+
+
+		function staticEffect(){
+            var renderPass = new THREE.RenderPass(scene, camera);
+            var effectFilm = new THREE.FilmPass(0.8, 0.325, 1400, false);
+            //effectFilm.renderToScreen = true;
+
+            composer = new THREE.EffectComposer(renderer);
+            composer.addPass(renderPass);
+            composer.addPass(effectFilm);
+
+            
+            var colorifyPass = new THREE.ShaderPass( THREE.ColorifyShader );
+			colorifyPass.uniforms[ "color" ].value = new THREE.Color( 0xffff00 );
+			colorifyPass.renderToScreen = true;
+			composer.addPass( colorifyPass );
+
+
+            // setup the control gui
+            var controls = new function () {
+                this.scanlinesCount = 1400;
+                this.grayscale = false;
+                this.scanlinesIntensity = 0.3;
+                this.noiseIntensity = 0.8;
+
+                this.updateEffectFilm = function () {
+                    effectFilm.uniforms.grayscale.value = controls.grayscale;
+                    effectFilm.uniforms.nIntensity.value = controls.noiseIntensity;
+                    effectFilm.uniforms.sIntensity.value = controls.scanlinesIntensity;
+                    effectFilm.uniforms.sCount.value = controls.scanlinesCount;
+                };
+            };
+
+
+            var gui = new dat.GUI();
+            gui.add(controls, "scanlinesIntensity", 0, 1).onChange(controls.updateEffectFilm);
+            gui.add(controls, "noiseIntensity", 0, 3).onChange(controls.updateEffectFilm);
+            gui.add(controls, "grayscale").onChange(controls.updateEffectFilm);
+            gui.add(controls, "scanlinesCount", 0, 2048).step(1).onChange(controls.updateEffectFilm);
+        }
+
+		</script>
+
+	</body>
+</html>

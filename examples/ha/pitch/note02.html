@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+	<title>Synth</title>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+	<link rel="icon" type="image/png" sizes="174x174" href="./style/favicon.png">
+	
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/0.12.27/Tone.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script src="js/draggabilly.js"></script>
+	<script src="js/StartAudioContext.js"></script>
+	<script src="js/Interface.js"></script>
+	<script src="js/Keyboard.js"></script>
+
+	<link rel="stylesheet" type="text/css" href="css/keyboard.css">
+
+	<script>
+		// jshint ignore: start
+	</script>
+
+</head>
+<body>	
+	<style type="text/css">
+
+		body {
+				color: #7FE8EF;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+
+				background-color: #bfd1e5;
+				margin: 0px;
+				overflow: hidden;
+			}
+
+		img {
+			width: 80%;
+			max-width: 700px;
+			margin-left: auto;
+    		margin-right: auto;
+    		display: block;
+		}
+
+		#Keyboard {
+			margin: 3px!important;
+		}
+
+		.Keyboard{
+			position: absolute;
+			left:0;
+			bottom:0;
+		}
+		#Content{
+			height: 100%;
+		}
+		#info{
+			position: absolute;
+		    top: 0px;
+		    left: 100px;
+		    font-size: 48px;
+		    background-color: black;
+		}
+	</style>
+	<div id="Content">
+		
+		<div id="container"></div>
+		
+	</div>
+	<div id=info></div>
+
+	<script src="../../../bower_components/three.js/build/three.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/libs/ammo.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/Detector.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.19.0/TweenMax.min.js"></script>
+<!--
+	<script src="../../../bower_components/three.js/examples/js/ConvexObjectBreaker.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/QuickHull.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/geometries/ConvexGeometry.js"></script>
+
+	<script src="../../../bower_components/three.js/examples/js/utils/GeometryUtils.js"></script>
+-->
+	<script src="../../../bower_components/dat.gui/dat.gui.js"></script>
+
+	<script>
+
+		var synth = new Tone.Synth({
+			"oscillator" : {
+				"type" : "square"
+			},
+			"envelope" : {
+				"attack" : 0.01,
+				"decay" : 0.2,
+				"sustain" : 0.2,
+				"release" : 0.2,
+			}
+		}).toMaster();
+
+		// GUI //
+
+		var keyboard = Interface.Keyboard();
+
+		keyboard.keyDown = function (note) {
+			console.log(note)
+		    synth.triggerAttack(note);
+		};
+
+		keyboard.keyUp = function () {
+		    synth.triggerRelease();
+		};
+
+
+		/////////////////////////
+
+		// Detects webgl
+		if ( ! Detector.webgl ) {
+			Detector.addGetWebGLMessage();
+			document.getElementById( 'container' ).innerHTML = "";
+		}
+
+		// - Global variables -
+
+		// Graphics variables
+		var container, stats;
+		var camera, controls, scene, renderer;
+		var textureLoader;
+		var clock = new THREE.Clock();
+
+
+
+///------------------- letter stuff ------
+
+		var group, textMesh1, textMesh2, textGeo, materials;
+
+	    var firstLetter = true;
+	    var mainletter;
+	    var linebreak = 0;
+
+	    var letters = [];
+	    var letterPool = [];
+
+	    var width = window.innerWidth;
+	    var height = window.innerHeight;
+
+	  //  var phrase = "do you ha";
+
+	    var cycle=0;
+
+	    var text = "S",
+
+	        height = 10,
+	        size = 70,
+	        hover = 30,
+
+	        curveSegments = 4,
+
+	        bevelThickness = 20,
+	        bevelSize = 1.5,
+	        bevelSegments = 3,
+	        bevelEnabled = true,
+
+	        font = undefined,
+
+	        fontName = "Slukoni";//"optimer", // helvetiker, optimer, gentilis, droid sans, droid serif
+	        fontWeight = "Medium";//"bold"; // normal bold
+
+	    var mirror = false;
+
+	    var fontMap = {
+
+	        "helvetiker": 0,
+	        "optimer": 1,
+	        "gentilis": 2,
+	        "droid/droid_sans": 3,
+	        "droid/droid_serif": 4,
+	        "slukoni": 5
+
+	    };
+
+	    var weightMap = {
+
+	        "regular": 0,
+	        "bold": 1
+
+	    };
+
+	     var postprocessing = { enabled : false, renderMode: 0 }; 
+
+
+	    var depthMaterial, effectComposer, depthRenderTarget, composer;
+
+	    var params = {
+	      projection: 'normal',
+	      background: false,
+	      exposure: 1.0,
+	      bloomStrength: 1.5,
+	      bloomThreshold: 0.35,
+	      bloomRadius: 0.4
+	    };
+
+	    var reverseFontMap = [];
+	    var reverseWeightMap = [];
+
+	    for ( var i in fontMap ) reverseFontMap[ fontMap[i] ] = i;
+	    for ( var i in weightMap ) reverseWeightMap[ weightMap[i] ] = i;
+
+///---------------------------------------
+
+
+		var mouseCoords = new THREE.Vector2();
+		var raycaster = new THREE.Raycaster();
+		var ballMaterial = new THREE.MeshPhongMaterial( { color: 0x000000 } );
+
+		var time = 0;
+
+		var info = document.getElementById('info');
+
+	//	var mouthTexture = textureLoader.load( "images/mouth/spritesheet.png" );
+		//var annie;
+
+		var heads=[
+			"blue-monkey.png",
+			"orange-monkey.png",
+			"pink-monkey.png",
+			"purple-monkey.png",
+			"yellow-monkey.png",
+
+		]
+		var monkeyPool = [];
+
+		var letterGroup = new THREE.Group();
+		// - Main code -
+
+		init();
+		
+
+
+		// - Functions -
+
+		function init() {
+
+			initGraphics();
+			initInput();
+
+		}
+
+		function initGraphics() {
+
+			container = document.getElementById( 'container' );
+
+			camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.2, 2000 );
+
+			scene = new THREE.Scene();
+
+			camera.position.x = 0;
+			camera.position.y = 2;
+			camera.position.z =  16;
+
+			controls = new THREE.OrbitControls( camera );
+			controls.target.y = 2;
+
+			renderer = new THREE.WebGLRenderer({antialias:true, precision: "mediump"});
+			renderer.setClearColor( 0x7FE8EF );
+			renderer.setPixelRatio( window.devicePixelRatio );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			renderer.shadowMap.enabled = true;
+
+			textureLoader = new THREE.TextureLoader();
+
+			var ambientLight = new THREE.AmbientLight( 0x707070 );
+			scene.add( ambientLight );
+
+			var light = new THREE.DirectionalLight( 0xffffff, 1 );
+			light.position.set( -10, 18, 5 );
+		/*	light.castShadow = true;
+			var d = 14;
+			light.shadow.camera.left = -d;
+			light.shadow.camera.right = d;
+			light.shadow.camera.top = d;
+			light.shadow.camera.bottom = -d;
+
+			light.shadow.camera.near = 2;
+			light.shadow.camera.far = 50;
+
+			light.shadow.mapSize.x = 1024;
+			light.shadow.mapSize.y = 1024;
+			*/
+
+			scene.add( light );
+
+			//createSkybox();
+
+			var axisHelper = new THREE.AxisHelper( 15 );
+			scene.add( axisHelper );
+
+			scene.add(letterGroup);
+
+			//createMonkey();
+			addMonkey();
+
+			materials = [
+	            new THREE.MeshPhongMaterial( { color: 0xffff00, shading: THREE.FlatShading } ), // front
+	            new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.SmoothShading } ) // side
+	        ];
+
+
+
+	        console.log(fontName)
+	        loadFont();
+	       // staticEffect();
+
+
+			//container.innerHTML = "";
+
+			container.appendChild( renderer.domElement );
+
+			stats = new Stats();
+			stats.domElement.style.position = 'absolute';
+			stats.domElement.style.top = '0px';
+			container.appendChild( stats.domElement );
+
+			//
+
+			window.addEventListener( 'resize', onWindowResize, false );
+
+		}
+
+		function createSkybox(){
+
+			var skyGeo = new THREE.SphereGeometry(100, 25, 25); 
+			var loader  = new THREE.TextureLoader(),
+        		texture = loader.load( "images/blue-stripes.png" );
+
+        	texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+        	var material = new THREE.MeshPhongMaterial({ 
+			        map: texture,
+			});
+			var sky = new THREE.Mesh(skyGeo, material);
+		    sky.material.side = THREE.BackSide;
+		    scene.add(sky);
+		}
+
+
+		function loadFont() {
+
+	        var loader = new THREE.FontLoader();
+	        var typefile = 'fonts/' + fontName + '_' + fontWeight + '.typeface.json';
+	        console.log(typefile);
+	        loader.load( typefile, function ( response ) {
+
+	            console.log('font loaded');
+
+	            font = response;
+
+	           // refreshText();
+	           // mainletter = createText('a');
+	          //  scene.add(mainletter);
+
+	           // addPhrase('doyouha');
+	            createText('a');
+
+
+	     //       addPhrase('computing', new THREE.Vector3( 0, 0, -10 ), 5);
+
+				animate();
+
+	        } );
+
+	    }
+
+	    function refreshText() {
+
+
+	       var letter = createText(text);
+
+	      //  mainletter.geometry.dispose();
+	       // console.log(mainletter.geometry);
+	      //  mainletter.geometry = letter.geometry;
+
+	    }
+
+	    function removeLetter(){
+	    	
+		    letterGroup.remove(letterPool[letterPool.length-1])
+		    letterPool.splice(-1);
+
+		    TweenMax.to(letterGroup.position, .5, {
+			            //x: "+=2",
+			            x: -2*letterPool.length + 1,
+			          //  delay: .4,
+			          //  repeat: 1,
+			          	ease:"Power3.easeOut",
+			          /*  yoyo: true,
+			            onComplete:function(){
+	                		_this.destroy();
+	                      }
+	                      */
+			        });
+
+	    }
+
+	    function resetLetterGroup(){
+
+		    TweenMax.to(letterGroup.position, .5, {
+			            x: 1,
+			          //  delay: .4,
+			          //  repeat: 1,
+			          	ease:"Power3.easeOut",
+			          /*  yoyo: true,
+			            onComplete:function(){
+	                		_this.destroy();
+	                      }
+	                      */
+			        });
+
+	
+	    }
+
+	    function createText(letter) {
+
+	    	var loader  = new THREE.TextureLoader(),
+        		texture = loader.load( "images/blue-stripes.png" );
+
+	        textGeo = new THREE.TextGeometry( letter, {
+
+	            font: font,
+
+	            size: size,
+	            height: height,
+	            curveSegments: curveSegments,
+
+	            bevelThickness: bevelThickness,
+	            bevelSize: bevelSize,
+	            bevelEnabled: bevelEnabled,
+
+	            material: 0,
+	            extrudeMaterial: 1
+
+	        });
+
+	        textGeo.computeBoundingBox();
+	        textGeo.computeVertexNormals();
+
+
+
+	       
+	        var centerOffset = -0.5 * ( textGeo.boundingBox.max.x - textGeo.boundingBox.min.x );
+
+	        textMesh1 = new THREE.Mesh( textGeo, materials );
+
+	        textMesh1.position.x = 0;//centerOffset;
+	        textMesh1.position.y = 0;//hover+ height;
+	        textMesh1.position.z = 0;
+
+	        textMesh1.rotation.x = 0;
+	        textMesh1.rotation.y = Math.PI * 2;
+
+	        var boxHelper = new THREE.BoxHelper( textMesh1 );
+			boxHelper.material.color.set( 0xff0000 );
+			//textMesh1.add( boxHelper );
+
+
+	        textMesh1.scale.set(.03,.03,.03)
+	        textMesh1.position.x = 2*letterPool.length;
+
+	      //  letters.push(letter);
+            letterPool.push(textMesh1);
+            letterGroup.add(textMesh1);
+
+            var shiftPos = letterPool.length*20;
+
+            if (letterPool.length>1){
+
+	            TweenMax.to(letterGroup.position, .5, {
+			        //    x: "-=2",
+			            x: -2*letterPool.length + 1,
+			          //  delay: .4,
+			          //  repeat: 1,
+			          	ease:"Power3.easeOut",
+			          /*  yoyo: true,
+			            onComplete:function(){
+	                		_this.destroy();
+	                      }
+	                      */
+			        });
+	        }
+
+	        return textMesh1;
+
+
+	       
+
+	        
+
+	    }
+
+	    function addPhrase(word, origin, speed=20){
+
+
+	    	for ( var j = 0; j < word.length; j ++ ) {
+
+				var char = word.charAt(j)
+                var phrase = createText(char);
+
+	    		if (!origin){
+					phrase.position.x = j + 20;
+					phrase.position.y = 0;//(4-cycle)*10;//Math.random()* 200 - 100;
+					phrase.position.z = 0;//Math.random()* 100;// - 100;
+				}
+				scene.add(phrase)
+			}
+
+	    }
+
+	//     player = new Player(0, true);
+ //   player.animate('fly');
+
+
+
+	  //  function createMonkey(){
+
+	    function Monkey(color, key){
+
+
+		     this.monkey = new THREE.Group();
+
+		     scene.add( this.monkey );
+
+
+
+		     var img = Math.floor(Math.random()*heads.length);
+
+	    	 var monkeyTexture = new THREE.TextureLoader().load( "images/"+heads[img]);
+  //annie = new TextureAnimator( enemyTexture, 10, 1, 10, 75 ); // texture, #horiz, #vert, #total, duration.
+			  var monkeyMaterial = new THREE.MeshBasicMaterial( { map: monkeyTexture, side:THREE.DoubleSide, color: 0xffffff } );
+			  monkeyMaterial.transparent = true;
+		/*
+			  monkeyMaterial.depthTest= true
+			  monkeyMaterial.depthWrite= false
+				monkeyMaterial.polygonOffset= true
+				monkeyMaterial.polygonOffsetFactor= -4
+*/
+			  var monkeyGeometry = new THREE.PlaneGeometry(4, 4, 1, 1);
+  			  var monkeyHead = new THREE.Mesh(monkeyGeometry, monkeyMaterial);
+			//  monkey.position.set(shooter.mesh.position.x , shooter.mesh.position.y, shooter.mesh.position.z );
+			  
+			  this.monkey.add(monkeyHead);
+
+
+			  //var runnerTexture = new THREE.ImageUtils.loadTexture( 'img/explosion_sprite_small.png' );
+			  var mouthTexture = new THREE.TextureLoader().load( "images/mouth/spritesheet.png" );
+			  this.mouthAni = new TextureAnimator( mouthTexture, 7, 1, 7, 75 );
+			  this.mouthAni.animBehavior = "once";
+			  //annie = new TextureAnimator( mouthTexture, 10, 1, 10, 75 ); // texture, #horiz, #vert, #total, duration.
+			  var mouthMaterial = new THREE.MeshBasicMaterial( { 
+			  	map: mouthTexture, 
+			  //	side:THREE.DoubleSide, 
+			  	color: 0xffffff } );
+			  mouthMaterial.transparent = true;
+			  mouthMaterial.depthTest= true
+			  mouthMaterial.depthWrite= false
+				mouthMaterial.polygonOffset= true
+				mouthMaterial.polygonOffsetFactor= -4
+			  var mouthGeometry = new THREE.PlaneGeometry(4, 4, 1, 1);
+			  var mouth = new THREE.Mesh(mouthGeometry, mouthMaterial);
+			  mouth.position.set(-.2,-1,.25);
+			  mouth.scale.set(.4,.4,1)
+			  this.monkey.add(mouth);
+
+			  monkeyPool.push(this)
+
+
+			 // monkey.position.x = xpos;//-4;
+
+			  this.monkeyState = 'closed';
+
+
+			  this.animate = function(state, loops) {
+		         console.log('monkeystate='+this.monkeyState)
+		        //this.tilesHorizontal =3;
+
+		       // console.log('state=' + state + ',pState=' + playerState)
+		        if (state != this.monkeyState) {
+		          //  hero.currentTile = 0;
+		          //  hero.numberOfTiles = 3;
+		           // console.error('state=' + state + ',pState=' + playerState)
+		            this.monkeyState = state;
+		            if (state == "sing") {
+		               // console.log("fly")
+		              //  hero.setFrame(0, 1, 'once');
+		              //  hero.setFrame(0, 3, 'freeze');
+
+		            } 
+		        }
+		    }
+
+		    this.update = function(time) {
+		    	this.mouthAni.update(time);
+
+		    }
+
+		    this.setPos = function(xpos =0, ypos=0, zpos=0) {
+		    	
+		    	 this.monkey.position.set(xpos, ypos, zpos);
+		    }
+
+		    this.jump = function() {
+		    	var _this = this;
+		        TweenMax.to(this.monkey.position, .5, {
+		            y: 10,
+		          //  delay: .4,
+		            repeat: 1,
+		          	ease:"Power3.easeOut",
+		            yoyo: true,
+		            onComplete:function(){
+                		_this.destroy();
+                      }
+		        });
+		    }
+
+		    this.destroy = function(){
+		    	console.log('delete me');
+		    	console.log(monkeyPool.length)
+		    	monkeyPool.splice(this, 1);
+		    	scene.remove(this.monkey)
+		    }
+
+		   // return this;
+
+
+	    }
+
+
+	    function addMonkey() {
+
+		    console.log('addMonkey')
+		    var xpos = (Math.random()*20) - 10;
+		    var ypos = -10;//(Math.random()*20) - 10;
+		    var zpos = (Math.random()*6) - 3;
+
+		    var newMonkey = new Monkey();
+		 //   monkeyPool.push(newMonkey)
+		    newMonkey.setPos(xpos, ypos, zpos);
+		    newMonkey.jump();
+		  //  newMonkey.monkey.position.x = pos;
+		   // newMonkey.animate('sing');
+		}
+
+
+
+		function createRandomColor() {
+			return Math.floor( Math.random() * ( 1 << 24 ) );
+		}
+
+		function createMaterial( color ) {
+			color = color || createRandomColor();
+			return new THREE.MeshPhongMaterial( { color: color } );
+		}
+
+		function initInput() {
+
+			document.addEventListener( 'keydown', onDocumentKeyDown, false );
+
+			document.addEventListener('mousedown', addMonkey, false);
+
+		}
+/*
+		function onDocumentKeyDown( event ) {
+
+               
+
+            var keyCode = event.keyCode;
+
+            console.log(keycode)
+
+            // backspace
+
+            if ( keyCode == 8 ) {
+
+             //   event.preventDefault();
+
+                text = text.substring( 0, text.length - 1 );
+            //    refreshText();
+                var newLetter = createText(text);
+                
+
+
+                return false;
+
+            }else if (keyCode ==13){
+
+            	// return / enter
+
+            	linebreak++;
+            }
+
+        }
+*/
+        function onDocumentKeyDown( event ) {
+
+            var keyCode = event.which;
+           // alert(keyCode)
+            info.innerHTML = keyCode;
+
+
+            // backspace
+
+            if ( keyCode == 46 || keyCode == 8 ) {
+            	console.log('delete')
+              //  event.preventDefault();
+                if (letterPool.length>0){
+                	removeLetter();
+                } else{
+                	resetLetterGroup()
+                }
+
+            } else {
+
+                var ch = String.fromCharCode( keyCode );
+                text = ch;
+                console.log('text is '+ text)
+
+                refreshText();
+                addMonkey();
+              //  createLetter(ch, 1);
+
+            }
+
+        }
+
+
+        function TextureAnimator(texture, tilesHoriz, tilesVert, numTiles, tileDispDuration) 
+		{ 
+		  // note: texture passed by reference, will be updated by the update function.
+		    
+		  this.tilesHorizontal = tilesHoriz;
+		  this.tilesVertical = tilesVert;
+		  // how many images does this spritesheet contain?
+		  //  usually equals tilesHoriz * tilesVert, but not necessarily,
+		  //  if there at blank tiles at the bottom of the spritesheet. 
+		  this.numberOfTiles = numTiles;
+		  texture.wrapS = texture.wrapT = THREE.RepeatWrapping; 
+		  texture.repeat.set( 1 / this.tilesHorizontal, 1 / this.tilesVertical );
+
+
+
+		  // how long should each image be displayed?
+		  this.tileDisplayDuration = tileDispDuration;
+
+		  // how long has the current image been displayed?
+		  this.currentDisplayTime = 0;
+
+		  // which image is currently being displayed?
+		  this.currentTile = 0;
+
+		  this.animBehavior=false;
+		/*
+		  this.setFrame = function( frame ){
+		  	this.currentTile = frame;
+		    var currentColumn = this.currentTile % this.tilesHorizontal;
+		    texture.offset.x = currentColumn / this.tilesHorizontal;
+
+		  }
+		 */
+
+		  this.setFrame = function( xpos, ypos, state ){
+		    this.animBehavior = state;
+		    console.log(xpos, ypos)
+		    var currentColumn = xpos % this.tilesHorizontal;
+		    texture.offset.x = currentColumn / this.tilesHorizontal;
+		    var currentRow = ypos % this.tilesVertical;
+		    console.log('currentRow ='+ currentRow)
+		    texture.offset.y = currentRow / this.tilesVertical;
+
+		  }
+		    
+		  this.update = function( milliSec )
+		  {
+		    this.currentDisplayTime += milliSec;
+
+		    if (this.animBehavior == "once") {
+		      this.playOnce();
+		    }else if (this.animBehavior == "loop") {
+		      this.playLoop();
+		    }
+
+
+		  };
+
+		  this.playOnce = function(){
+		      while (this.currentDisplayTime > this.tileDisplayDuration)
+		    {
+		          this.currentDisplayTime -= this.tileDisplayDuration;
+		          if (this.currentTile < this.numberOfTiles-1){
+		              this.currentTile++;
+		           //   if (this.currentTile == this.numberOfTiles)
+		             //   this.currentTile = 0;
+		              var currentColumn = this.currentTile % this.tilesHorizontal;
+		              texture.offset.x = currentColumn / this.tilesHorizontal;
+		            //  var currentRow = Math.floor( this.currentTile / this.tilesHorizontal );
+		             // texture.offset.y = currentRow / this.tilesVertical;
+		           }else{
+		            //flash player
+		            //console.log(this.currentDisplayTime)
+		            // (Math.floor(this.currentDisplayTime)% 2 == 0)? this.opacity=.2 : this.opacity= 1;
+		           }
+		    }
+		  }
+
+		  this.playLoop = function(){
+		      while (this.currentDisplayTime > this.tileDisplayDuration)
+		    {
+
+		          this.currentDisplayTime -= this.tileDisplayDuration;
+		          this.currentTile++;
+		          if (this.currentTile == this.numberOfTiles)
+		            this.currentTile = 0;
+		          var currentColumn = this.currentTile % this.tilesHorizontal;
+		          texture.offset.x = currentColumn / this.tilesHorizontal;
+		        //  var currentRow = Math.floor( this.currentTile / this.tilesHorizontal );
+		         // texture.offset.y = currentRow / this.tilesVertical;
+		       }
+		  } 
+
+
+		  
+		}   
+
+		function onWindowResize() {
+
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+
+			renderer.setSize( window.innerWidth, window.innerHeight );
+
+		}
+
+		function animate() {
+
+			requestAnimationFrame( animate );
+
+			render();
+			//stats.update();
+
+		}
+
+		function render() {
+
+			var deltaTime = clock.getDelta();
+
+		//	updatePhysics( deltaTime );
+
+			for (var n = 0; n < monkeyPool.length; n++) {
+               // console.log(explosionArr[n])
+               monkeyPool[n].update(1000 * deltaTime);
+
+
+            }
+
+		//	annie.update(1000 * deltaTime);
+
+			controls.update( deltaTime );
+
+			//renderer.render( scene, camera );
+
+			if ( postprocessing.enabled ) {
+
+				renderer.toneMappingExposure = Math.pow( params.exposure, 4.0 );
+				composer.render(deltaTime);
+
+			} else {
+
+				renderer.render( scene, camera );
+
+			}
+
+			time += deltaTime;
+
+		}
+
+
+		function staticEffect(){
+            var renderPass = new THREE.RenderPass(scene, camera);
+            var effectFilm = new THREE.FilmPass(0.8, 0.325, 1400, false);
+            //effectFilm.renderToScreen = true;
+
+            composer = new THREE.EffectComposer(renderer);
+            composer.addPass(renderPass);
+            composer.addPass(effectFilm);
+
+            
+            var colorifyPass = new THREE.ShaderPass( THREE.ColorifyShader );
+			colorifyPass.uniforms[ "color" ].value = new THREE.Color( 0xffff00 );
+			colorifyPass.renderToScreen = true;
+			composer.addPass( colorifyPass );
+
+
+            // setup the control gui
+            var controls = new function () {
+                this.scanlinesCount = 1400;
+                this.grayscale = false;
+                this.scanlinesIntensity = 0.3;
+                this.noiseIntensity = 0.8;
+
+                this.updateEffectFilm = function () {
+                    effectFilm.uniforms.grayscale.value = controls.grayscale;
+                    effectFilm.uniforms.nIntensity.value = controls.noiseIntensity;
+                    effectFilm.uniforms.sIntensity.value = controls.scanlinesIntensity;
+                    effectFilm.uniforms.sCount.value = controls.scanlinesCount;
+                };
+            };
+
+
+            var gui = new dat.GUI();
+            gui.add(controls, "scanlinesIntensity", 0, 1).onChange(controls.updateEffectFilm);
+            gui.add(controls, "noiseIntensity", 0, 3).onChange(controls.updateEffectFilm);
+            gui.add(controls, "grayscale").onChange(controls.updateEffectFilm);
+            gui.add(controls, "scanlinesCount", 0, 2048).step(1).onChange(controls.updateEffectFilm);
+        }
+
+
+	</script>
+
+</body>
+</html>

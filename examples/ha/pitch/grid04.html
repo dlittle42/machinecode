@@ -221,13 +221,23 @@
       }
     }
 
+    #vidbox{
+      position: relative;
+    }
+
+    video{
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
 </style>
 </head>
 
 <body>
 	<div id="note"></div>
 	<div class="wrapper">
-	  <div class="box blue">
+	  <div class="box blue" id="vidbox">
 	    <div class="bkgd"></div>
 	    <img src="images/blue-monkey.png">
 	    <div class="mouth"></div>
@@ -306,5 +316,57 @@
 	  </div>
 	  
 	</div>
+
+    <script>
+    navigator.getUserMedia  = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+
+var video = document.createElement('video');
+video.style.width =  document.width/3 + 'px';
+video.style.height = document.height/3 + 'px';
+video.setAttribute('autoplay', '');
+video.setAttribute('muted', '');
+video.setAttribute('playsinline', '');
+
+var facingMode = "user";
+
+var constraints = {
+  audio: false,
+  video: {
+    facingMode: facingMode
+  }
+}
+
+navigator.mediaDevices.getUserMedia(constraints).then(function success(stream) {
+  video.srcObject = stream;
+}).catch(handleMicConnectError);
+
+function handleMicConnectError(e) {
+  console.warn('Could not connect microphone. Possible rejected by the user or is blocked by the browser.');
+  alert(e);
+}
+
+document.getElementById('vidbox').appendChild(video);
+//document.body.appendChild(video);
+//$( ".box:first-child" ).appendChild(video)
+
+video.addEventListener('click', function() {
+  if (facingMode == "user") {
+    facingMode = "environment";
+  } else {
+    facingMode = "user";
+  }
+  
+  constraints = {
+    audio: false,
+    video: {
+      facingMode: facingMode
+    }
+  }  
+  
+  navigator.mediaDevices.getUserMedia(constraints).then(function success(stream) {
+    video.srcObject = stream; 
+  });
+});
+  </script>
 </body>
 </html>

@@ -1,0 +1,678 @@
+<html>
+<head>
+	<meta charset="UTF-8">
+		<script language="javascript" type="text/javascript" src="third-party/p5/p5.min.js"></script>
+		<script language="javascript" type="text/javascript" src="third-party/p5/p5.dom.js"></script> 
+		<script language="javascript" type="text/javascript" src="third-party/p5/p5.sound.js"></script> 
+		<script language="javascript" type="text/javascript" src="main/Shape.js"></script> 
+		<script language="javascript" type="text/javascript" src="main/Tail.js"></script> 
+		<script language="javascript" type="text/javascript" src="main/Controller.js"></script> 
+		<script language="javascript" type="text/javascript" src="sketch.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://tonejs.github.io/build/Tone.min.js"></script>
+		
+		<link href="https://fonts.googleapis.com/css?family=Poppins" rel="stylesheet">
+		
+		<!-- this line removes any default padding and style. might only need one of these values set. -->
+		<style>
+
+		body {
+				padding: 0; margin: 0;
+				font-family: Helvetica, sans-serif;
+				color: #999999;
+				font-weight: regular;
+				font-size: 10pt;				
+			}	
+
+
+
+    .box {
+      background-color: #444;
+      color: #fff;
+      border-radius: 5px;
+      padding: 20px;
+      font-size: 150%;
+      position: relative;
+      overflow: hidden;
+      
+    }
+
+    .box:nth-child(even) {
+   
+      /*background-position: cover;*/
+      
+      
+    }
+
+    .box img{
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      filter: drop-shadow(5px 5px 0px rgba(0,0,0,0.2));
+      
+    }
+
+    .box.active img{
+      animation: bounce .5s ease-out;
+    }
+
+    .note{
+      position: absolute;
+      top: 20px;
+      left: 20px;
+    }
+
+    .bkgd{
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 200%;
+      height: 200%;
+      background-repeat: repeat;
+      
+      transition: all .1s ease-out;
+      opacity: 0;
+    }
+
+
+    .box.active .bkgd{
+      animation: backgroundScroll 5s linear infinite;
+      animation-fill-mode: forwards; 
+      opacity: 1;
+    }
+
+    .box.active .mouth{
+     /* animation: play 0.1s steps(3) forwards;*/
+      background-position-x: -598px;
+   /*   background-position: -589px center; */
+    }
+
+    
+/*
+    .box:hover .bkgd{
+      opacity: 1;
+    }
+*/
+    .wrapper {
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      padding: 40px;
+      box-sizing: border-box;
+      grid-gap: 10px;
+
+      grid-auto-flow: row;
+
+      grid-template-columns: repeat(3, 1fr);
+      grid-auto-rows: 200px;
+    }
+
+
+
+    .blue{
+      
+      background-color: #7FE8EF;
+
+
+    }
+
+    .blue .bkgd{
+      background-image: url(images/blue-stripes.png);
+    }
+
+    .green{
+      
+      background-color: #BDF260;
+
+
+    }
+
+
+    .green .bkgd{
+      background-image: url(images/green-stripes.png);
+
+    }
+
+    .orange{
+      
+      background-color: #FEBE4B;
+
+
+    }
+    .orange .bkgd{
+      background-image: url(images/orange-stripes.png);
+
+    }
+    .pink{
+      
+      background-color: #ffc7d7;
+
+
+    }
+    .pink .bkgd{
+      background-image: url(images/pink-stripes.png);
+
+    }
+    .purple{
+      
+      background-color: #DEB5F6;
+
+
+    }
+    .purple .bkgd{
+      background-image: url(images/purple-stripes.png);
+
+    }
+
+    .mouth{
+      width: 88px;
+      height: 62px;
+    /*  border: 1px solid red; */
+      position: absolute;
+      top: 54%;
+      left: 35%;
+     
+     /* background-image: url(images/mouth/mouth07.png); */
+      background: url('images/mouth/spritesheet.png') left center;
+
+      transition: all .1s steps(6);
+      background-position-x: 0;
+
+    /*  animation: play 0.4s steps(7) infinite;
+      animation-fill-mode: forwards;
+      */
+    }
+/*
+    .mouth:hover{
+      
+       background-position-x: -598px;
+    }
+*/
+    .blue .mouth{
+          transform: translateX(-100%);
+          left: 66%;
+    }
+
+    @keyframes play {
+  
+       from { background-position: 0; }
+        to { background-position: -598px; }
+     }
+
+    @keyframes backgroundScroll {
+     
+         0% {transform: translate(0, -25%) rotate(0.01turn);}
+         100% {transform: translate(-270px, -25%) rotate(0.01turn);}
+       
+   }
+
+   @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% {
+        transform: translate(-50%, -50%);
+      }
+      20% {
+        transform:translate(-50%, -60%);
+      }
+      40% {
+        transform:translate(-50%, -45%);
+      }
+      60% {
+        transform:translate(-50%, -55%);
+      }
+    }
+
+    #vidbox{
+      position: relative;
+    }
+
+    video{
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+
+
+    button{
+      height: 40px;
+      width: 40px;
+      border-radius: 4px;
+      border: solid grey 1px;
+
+    }
+
+    button:focus{
+      outline:none;
+    }
+
+    .black{
+      background-color: #363636;
+      color: white;
+    }
+
+    .grey{
+      background-color: #e3e3e3;
+      border-color:lightgrey;
+    }
+
+    .white{
+      background-color: white;
+    }
+
+    #caps{
+      width: 80px;
+      color: grey;
+      font-size: 9px;
+    }
+
+    #keyboard{
+      -webkit-user-select: none; /* Safari */
+      -moz-user-select: none; /* Firefox */
+      -ms-user-select: none; /* IE/Edge */
+      user-select: none; /* Chrome/Opera */
+      width:525px;
+    }
+
+    #tab{
+      width: 70px;
+    }
+
+    #whiteKeys{
+      margin-top:5px;
+    }
+
+
+</style>
+</head>
+
+<body>
+	<div id="note"></div>
+	<div class="wrapper">
+	  <div class="box blue" id="vidbox">
+	    <div class="bkgd"></div>
+	    <img src="images/blue-monkey.png">
+	    <div class="mouth"></div>
+	    <div class="note">C</div>
+	  </div>
+
+
+	  <div class="box green">
+	    <div class="bkgd"></div>
+
+	    <img src="images/orange-monkey.png">
+	    <div class="mouth"></div>
+	    <div class="note">C#</div>
+	  </div>
+	  <div class="box orange">
+	    <div class="bkgd"></div>
+	    <img src="images/pink-monkey.png">
+	    <div class="mouth"></div>
+	    <div class="note">D</div>
+	  </div>
+	  <div class="box pink">
+	    <div class="bkgd"></div>
+	    <img src="images/yellow-monkey.png">
+	    <div class="mouth"></div>
+	    <div class="note">D#</div>
+	  </div>
+	  <div class="box purple">
+	    <div class="bkgd"></div>
+	    <img src="images/purple-monkey.png">
+	    <div class="mouth"></div>
+	    <div class="note">E</div>
+	  </div>
+	  <div class="box blue">
+	    <div class="bkgd"></div>
+	    <img src="images/blue-monkey.png">
+	    <div class="mouth"></div>
+	    <div class="note">F</div>
+	  </div>
+	  <div class="box green">
+	    <div class="bkgd"></div>
+	    <img src="images/orange-monkey.png">
+	    <div class="mouth"></div>
+	    <div class="note">F#</div>
+	  </div>
+	  <div class="box orange">
+	    <div class="bkgd"></div>
+	    <img src="images/pink-monkey.png">
+	    <div class="mouth"></div>
+	    <div class="note">G</div>
+	  </div>
+	  <div class="box pink">
+	    <div class="bkgd"></div>
+	    <img src="images/yellow-monkey.png">
+	    <div class="mouth"></div>
+	    <div class="note">G#</div>
+	  </div>
+	  <div class="box purple">
+	    <div class="bkgd"></div>
+      <div class="head">
+  	    <img src="images/purple-monkey.png">
+  	    <div class="mouth"></div>
+      </div>
+	    <div class="note">A</div>
+	  </div>
+	  <div class="box blue">
+	    <div class="bkgd"></div>
+	    <img src="images/blue-monkey.png">
+	    <div class="mouth"></div>
+	    <div class="note">Bb</div>
+	  </div>
+	  <div class="box green">
+	    <div class="bkgd"></div>
+	    <img src="images/orange-monkey.png">
+	    <div class="mouth"></div>
+	    <div class="note">B</div>
+	  </div>
+
+   
+      <div id=keyboard>
+        <div id=blackKeys>
+          <button   id=tab>tab</button>
+          <button class=grey>&nbsp;</button>
+          <button class=black id=C#4>W</button>
+          <button class=black id=D#4>E</button>
+          <button class=grey>&nbsp;</button>
+          <button class=black id=F#4>T</button>
+          <button class=black id=G#4>Y</button>
+          <button class=black id=A#4>U</button>
+          <button class=grey>&nbsp;</button>
+          <button class=black id=C#5>O</button>
+          <button class=black id=D#5>P</button>
+        </div>
+        <div id=whiteKeys>
+          <button class=grey style="width:80px" id=caps>AMSynth</button>
+          <button class=white id=C4>A</button>
+          <button class=white id=D4>S</button>
+          <button class=white id=E4>D</button>
+          <button class=white id=F4>F</button>
+          <button class=white id=G4>G</button>
+          <button class=white id=A4>H</button>
+          <button class=white id=B4>J</button>
+          <button class=white id=C5>K</button>
+          <button class=white id=D5>L</button>
+          <button class=white id=E5>;</button>
+        </div>
+      </div>
+
+	  
+	</div>
+
+    <script>
+    navigator.getUserMedia  = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+
+var video = document.createElement('video');
+video.style.width =  document.width/3 + 'px';
+video.style.height = document.height/3 + 'px';
+video.setAttribute('autoplay', '');
+video.setAttribute('muted', '');
+video.setAttribute('playsinline', '');
+
+var facingMode = "user";
+
+var constraints = {
+  audio: false,
+  video: {
+    facingMode: facingMode
+  }
+}
+
+navigator.mediaDevices.getUserMedia(constraints).then(function success(stream) {
+  video.srcObject = stream;
+}).catch(handleMicConnectError);
+
+function handleMicConnectError(e) {
+  console.warn('Could not connect microphone. Possible rejected by the user or is blocked by the browser.');
+  alert(e);
+}
+
+document.getElementById('vidbox').appendChild(video);
+//document.body.appendChild(video);
+//$( ".box:first-child" ).appendChild(video)
+
+video.addEventListener('click', function() {
+  if (facingMode == "user") {
+    facingMode = "environment";
+  } else {
+    facingMode = "user";
+  }
+  
+  constraints = {
+    audio: false,
+    video: {
+      facingMode: facingMode
+    }
+  }  
+  
+  navigator.mediaDevices.getUserMedia(constraints).then(function success(stream) {
+    video.srcObject = stream; 
+  });
+});
+
+
+////////
+
+var synth = new Tone.AMSynth().toMaster();
+var synthName = "AMSynth";
+var mouseDown = false;
+var notesDown = [];
+var keys = ["C4","D4","E4","F4","G4","A4","B4","C5","D5","E5",
+        "C#4","D#4","F#4","G#4","A#4","C#5","D#5"];
+
+$(document).mouseover(function(e){
+  if(mouseDown){
+    // White Keys
+    if(e.target.id == "C4"){ synth.triggerAttack('C4', '8n') }
+    if(e.target.id == "D4"){ synth.triggerAttack('D4', '8n') }
+    if(e.target.id == "E4"){ synth.triggerAttack('E4', '8n') }
+    if(e.target.id == "F4"){ synth.triggerAttack('F4', '8n') }
+    if(e.target.id == "G4"){ synth.triggerAttack('G4', '8n') }
+    if(e.target.id == "A4"){ synth.triggerAttack('A4', '8n') }
+    if(e.target.id == "B4"){ synth.triggerAttack('B4', '8n') }
+    if(e.target.id == "C5"){ synth.triggerAttack('C5', '8n') }
+    if(e.target.id == "D5"){ synth.triggerAttack('D5', '8n') }
+    if(e.target.id == "E5"){ synth.triggerAttack('E5', '8n') }
+    // Black Keys
+    if(e.target.id == "C#4"){ synth.triggerAttack('C#4', '8n') }
+    if(e.target.id == "D#4"){ synth.triggerAttack('D#4', '8n') }
+    if(e.target.id == "F#4"){ synth.triggerAttack('F#4', '8n') }
+    if(e.target.id == "G#4"){ synth.triggerAttack('G#4', '8n') }
+    if(e.target.id == "A#4"){ synth.triggerAttack('A#4', '8n') }
+    if(e.target.id == "C#5"){ synth.triggerAttack('C#5', '8n') }
+    if(e.target.id == "D#5"){ synth.triggerAttack('D#5', '8n') }
+    
+    if(keys.indexOf(e.target.id) != -1){
+      $("#" + e.target.id.replace("#","\\#")).css({ "background-color":"lightgrey" });
+    }
+  }
+});
+
+$(document).mouseout(function(e){
+  if(keys.indexOf(e.target.id) != -1){
+    $("#" + e.target.id.replace("#","\\#")).css({ "background-color":"" });
+  }
+});
+
+$(document).mousedown(function(e){
+  if(e.target.id == "tab"){ 
+    cycleSynth();
+    $("#caps").html(synthName);
+  }
+  
+  mouseDown = true;
+  // White Keys
+  if(e.target.id == "C4"){ synth.triggerAttack('C4', '8n') }
+  if(e.target.id == "D4"){ synth.triggerAttack('D4', '8n') }
+  if(e.target.id == "E4"){ synth.triggerAttack('E4', '8n') }
+  if(e.target.id == "F4"){ synth.triggerAttack('F4', '8n') }
+  if(e.target.id == "G4"){ synth.triggerAttack('G4', '8n') }
+  if(e.target.id == "A4"){ synth.triggerAttack('A4', '8n') }
+  if(e.target.id == "B4"){ synth.triggerAttack('B4', '8n') }
+  if(e.target.id == "C5"){ synth.triggerAttack('C5', '8n') }
+  if(e.target.id == "D5"){ synth.triggerAttack('D5', '8n') }
+  if(e.target.id == "E5"){ synth.triggerAttack('E5', '8n') }
+  // Black Keys
+  if(e.target.id == "C#4"){ synth.triggerAttack('C#4', '8n') }
+  if(e.target.id == "D#4"){ synth.triggerAttack('D#4', '8n') }
+  if(e.target.id == "F#4"){ synth.triggerAttack('F#4', '8n') }
+  if(e.target.id == "G#4"){ synth.triggerAttack('G#4', '8n') }
+  if(e.target.id == "A#4"){ synth.triggerAttack('A#4', '8n') }
+  if(e.target.id == "C#5"){ synth.triggerAttack('C#5', '8n') }
+  if(e.target.id == "D#5"){ synth.triggerAttack('D#5', '8n') }
+  
+  if(keys.indexOf(e.target.id) != -1){
+    $("#" + e.target.id.replace("#","\\#")).css({ "background-color":"lightgrey" });
+  }
+});
+
+$(document).mouseup(function(e){
+  mouseDown = false;
+  synth.triggerRelease();
+  
+  if(keys.indexOf(e.target.id) != -1){
+    $("#" + e.target.id.replace("#","\\#")).css({ "background-color":"" });
+  }
+});
+
+$(document).on("keydown", function(e){
+  if(e.keyCode == 9){
+    cycleSynth();
+    $("#caps").html(synthName);
+  }
+  // White Keys
+  if(e.keyCode == 65){ checkAndAdd('C4') }
+  if(e.keyCode == 83){ checkAndAdd('D4') }
+  if(e.keyCode == 68){ checkAndAdd('E4') }
+  if(e.keyCode == 70){ checkAndAdd('F4') }
+  if(e.keyCode == 71){ checkAndAdd('G4') }
+  if(e.keyCode == 72){ checkAndAdd('A4') }
+  if(e.keyCode == 74){ checkAndAdd('B4') }
+  if(e.keyCode == 75){ checkAndAdd('C5') }
+  if(e.keyCode == 76){ checkAndAdd('D5') }
+  if(e.keyCode == 186){ checkAndAdd('E5') }
+  // Black Keys
+  if(e.keyCode == 87){ checkAndAdd('C#4') }
+  if(e.keyCode == 69){ checkAndAdd('D#4') }
+  if(e.keyCode == 84){ checkAndAdd('F#4') }
+  if(e.keyCode == 89){ checkAndAdd('G#4') }
+  if(e.keyCode == 85){ checkAndAdd('A#4') }
+  if(e.keyCode == 79){ checkAndAdd('C#5') }
+  if(e.keyCode == 80){ checkAndAdd('D#5') }
+  
+  play();
+});
+
+$(document).on("keyup", function(e){
+  // White Keys
+  if(e.keyCode == 65){ checkAndRemove('C4') }
+  if(e.keyCode == 83){ checkAndRemove('D4') }
+  if(e.keyCode == 68){ checkAndRemove('E4') }
+  if(e.keyCode == 70){ checkAndRemove('F4') }
+  if(e.keyCode == 71){ checkAndRemove('G4') }
+  if(e.keyCode == 72){ checkAndRemove('A4') }
+  if(e.keyCode == 74){ checkAndRemove('B4') }
+  if(e.keyCode == 75){ checkAndRemove('C5') }
+  if(e.keyCode == 76){ checkAndRemove('D5') }
+  if(e.keyCode == 186){ checkAndRemove('E5') }
+  // Black Keys
+  if(e.keyCode == 87){ checkAndRemove('C#4') }
+  if(e.keyCode == 69){ checkAndRemove('D#4') }
+  if(e.keyCode == 84){ checkAndRemove('F#4') }
+  if(e.keyCode == 89){ checkAndRemove('G#4') }
+  if(e.keyCode == 85){ checkAndRemove('A#4') }
+  if(e.keyCode == 79){ checkAndRemove('C#5') }
+  if(e.keyCode == 80){ checkAndRemove('D#5') }
+  
+  release();
+});
+
+function checkAndAdd(note){
+  if(notesDown.indexOf(note) == -1){
+    notesDown.unshift(note);
+    $("#" + note.replace("#","\\#")).css({ "background-color":"lightgrey" });
+  }
+}
+
+function checkAndRemove(note){
+  notesDown.splice(notesDown.indexOf(note), 1);
+  $("#" + note.replace("#","\\#")).css({ "background-color":"" });
+}
+
+function cycleSynth(){
+  switch(synthName){
+    case "AMSynth":
+      synthName = "DuoSynth";
+      synth = new Tone.DuoSynth().toMaster();
+      
+      break;
+    case "DuoSynth":
+      synthName = "FMSynth";
+      synth = new Tone.FMSynth().toMaster();
+      break;
+    case "FMSynth":
+      synthName = "MembraneSynth";
+      synth = new Tone.MembraneSynth().toMaster();
+      break;
+    case "MembraneSynth":
+      synthName = "MonoSynth";
+      synth = new Tone.MonoSynth().toMaster();
+      synth.volume = -40;
+      break;
+    case "MonoSynth":
+      synthName = "Synth";
+      synth = new Tone.Synth().toMaster();
+      break;
+    case "Synth":
+      synthName = "AMSynth";
+      synth = new Tone.AMSynth().toMaster();
+      break;
+  }
+}
+
+function play(){
+  synth.triggerAttack(notesDown[0], '8n');
+  //console.log(notesDown);
+}
+
+function release(){
+  if(notesDown.length <= 0){ synth.triggerRelease() } 
+  else { play() }
+}
+
+function runme(){
+  var song = [
+    [0,"G4"], ["0:1","B4"], ["0:2","E4"], ["0:3","G4"], 
+    ["1:0","C4"], ["1:1","E4"], ["1:2","D4"], ["1:3","F#4"],
+    ["2:0","G4"], ["2:1","B4"], ["2:2","E4"], ["2:3","G4"], 
+    ["3:0","C4"], ["3:1","E4"], ["3:2","D4"], ["3:3","F#4"],
+    ["4:0","G4"], ["4:1","G4"], ["4:2","G4"],
+    ["5:1", "G4"], ["5:2", "F#4"],
+  ]
+
+  var synth32 = new Tone.AMSynth().toMaster();
+
+  var part2 = new Tone.Part(function(time, note){
+    synth32.triggerAttackRelease(note, "32n",time);
+  }, song).start("0:0:3").stop("4:0");
+
+
+
+  var part = new Tone.Part(function(time, note){
+    //the notes given as the second element in the array
+    //will be passed in as the second argument
+    synth.triggerAttackRelease(note, "16n", time);
+  }, song).start(0);
+
+
+  Tone.Transport.bpm.value = 90;
+  Tone.Transport.start("+1");
+  //Tone.Transport.stop();
+}
+//runme();
+
+
+  </script>
+</body>
+</html>
