@@ -146,9 +146,9 @@
                     changeModifier(bend);
                     TweenMax.fromTo(bend, 2,
                         {
-                            force: -2
+                            force: -1
                         }, {
-                            force: 2,
+                            force: 1,
                             ease: Cubic.easeInOut,
                             yoyo: true,
                             repeat: 999
@@ -178,7 +178,7 @@
                             repeat: 999
                         });
                 },
-                UserDefined: function () {
+                Ripple: function () {
                     changeModifier(userDefined);
                 },
                 computeNormals: false
@@ -189,7 +189,7 @@
             gui.add(params, 'Twist');
             gui.add(params, 'Bloat');
             gui.add(params, 'Cloth');
-            gui.add(params, 'UserDefined');
+            gui.add(params, 'Ripple');
         }
 
         function animate() {
