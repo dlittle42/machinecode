@@ -263,11 +263,11 @@
 			controls = new THREE.OrbitControls( camera );
 			controls.target.y = 2;
 
-			renderer = new THREE.WebGLRenderer({antialias:true, precision: "mediump"});
-			renderer.setClearColor( 0x7FE8EF );
+			renderer = new THREE.WebGLRenderer({alpha: true, antialias:true, precision: "mediump"});
+		//	renderer.setClearColor( 0x7FE8EF );
 			renderer.setPixelRatio( window.devicePixelRatio );
 			renderer.setSize( window.innerWidth, window.innerHeight );
-			renderer.shadowMap.enabled = true;
+		//	renderer.shadowMap.enabled = true;
 
 			textureLoader = new THREE.TextureLoader();
 

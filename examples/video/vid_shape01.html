@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - materials - video</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				background-color: #bfd1e5;
+				color: #fff;
+				margin: 0px;
+				overflow: hidden;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+				font-weight: bold;
+				text-align:center;
+			}
+
+			a {
+				color:#0078ff;
+			}
+
+			#info {
+				color:#fff;
+				position: absolute;
+				top: 5px; width: 100%;
+				z-index:100;
+			}
+
+		</style>
+	</head>
+	<body>
+
+		<div id="info">
+
+		</div>
+
+		<script src="../../../bower_components/three.js/build/three.js"></script>
+
+		<script src="../../../bower_components/three.js/examples/js/shaders/ConvolutionShader.js"></script>
+		<script src="../../../bower_components/three.js/examples/js/shaders/CopyShader.js"></script>
+
+		<script src="../../../bower_components/three.js/examples/js/postprocessing/EffectComposer.js"></script>
+		<script src="../../../bower_components/three.js/examples/js/postprocessing/RenderPass.js"></script>
+		<script src="../../../bower_components/three.js/examples/js/postprocessing/MaskPass.js"></script>
+		<script src="../../../bower_components/three.js/examples/js/postprocessing/BloomPass.js"></script>
+		<script src="../../../bower_components/three.js/examples/js/postprocessing/ShaderPass.js"></script>
+
+		<script src="../../../bower_components/three.js/examples/js/Detector.js"></script>
+
+		<script src="../../../bower_components/three.js/examples/js/effects/OutlineEffect.js"></script>
+
+		<script src='js/modifier.js'></script>
+
+		<video id="video" autoplay loop webkit-playsinline style="display:none">
+			<source src="video/midnight.mp4" type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"'>
+			<!-- <source src="textures/sintel.ogv" type='video/ogg; codecs="theora, vorbis"'> -->
+		</video>
+
+		<script>
+
+			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+			var container;
+
+			var camera, scene, renderer;
+
+			var video, texture, material, mesh;
+
+			var composer;
+
+			var mouseX = 0;
+			var mouseY = 0;
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+
+			var material;
+
+			var effect;
+
+			var cube_count,
+
+				meshes = [],
+				materials = [],
+
+				xgrid = 20,
+				ygrid = 10;
+
+			init();
+			animate();
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.z = 500;
+
+				scene = new THREE.Scene();
+
+				var light = new THREE.DirectionalLight( 0xffffff );
+				light.position.set( 0.5, 1, 1 ).normalize();
+				scene.add( light );
+				scene.background = new THREE.Color( 0x00ffff )
+
+				renderer = new THREE.WebGLRenderer( { antialias: false } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setClearColor( 0xbfd1e5 );
+				container.appendChild( renderer.domElement );
+
+				video = document.getElementById( 'video' );
+
+				texture = new THREE.VideoTexture( video );
+				texture.minFilter = THREE.LinearFilter;
+				texture.magFilter = THREE.LinearFilter;
+				texture.format = THREE.RGBFormat;
+
+			//	texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+
+//				texture.repeat.x = 100 / 800;
+//texture.repeat.y = 100 / 2000;
+//texture.offset.x = -10;
+//texture.offset.y = -20;
+				//texture.repeat.set( 0.008, 0.008 );
+
+				//
+
+				material = new THREE.MeshBasicMaterial( { map: texture, overdraw: 0.5 } );
+
+				
+
+
+				var plane = new THREE.PlaneGeometry( 640, 360, 4, 4 );
+
+				var mesh = new THREE.Mesh( plane, material );
+				//mesh.scale.x = mesh.scale.y = mesh.scale.z = 1.5;
+				scene.add(mesh);
+				//mesh.position.z = -5;
+
+
+				// Square
+
+				var sqLength = 120;
+
+				var squareShape = new THREE.Shape();
+				squareShape.moveTo( 0, 0 );
+				squareShape.lineTo( 0, sqLength );
+				squareShape.lineTo( sqLength, sqLength );
+				squareShape.lineTo( sqLength, 0 );
+				squareShape.lineTo( 0, 0 );
+
+
+				// Rounded rectangle
+
+				var roundedRectShape = new THREE.Shape();
+
+				( function roundedRect( ctx, x, y, width, height, radius ) {
+
+					ctx.moveTo( x, y + radius );
+					ctx.lineTo( x, y + height - radius );
+					ctx.quadraticCurveTo( x, y + height, x + radius, y + height );
+					ctx.lineTo( x + width - radius, y + height );
+					ctx.quadraticCurveTo( x + width, y + height, x + width, y + height - radius );
+					ctx.lineTo( x + width, y + radius );
+					ctx.quadraticCurveTo( x + width, y, x + width - radius, y );
+					ctx.lineTo( x + radius, y );
+					ctx.quadraticCurveTo( x, y, x, y + radius );
+
+				} )( roundedRectShape, 0, 0, 640, 360, 20 );
+
+
+
+				// Spline shape
+
+				var splinepts = [];
+				splinepts.push( new THREE.Vector2( 70, 20 ) );
+				splinepts.push( new THREE.Vector2( 80, 90 ) );
+				splinepts.push( new THREE.Vector2( - 30, 70 ) );
+				splinepts.push( new THREE.Vector2( 0, 0 ) );
+
+				var splineShape = new THREE.Shape();
+				splineShape.moveTo( 0, 0 );
+				splineShape.splineThru( splinepts );
+
+				var extrudeSettings = { amount: 8, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 1, bevelThickness: 1 };
+
+				// addShape( shape, color, x, y, z, rx, ry,rz, s );
+
+			
+				
+				addShape( roundedRectShape, extrudeSettings, 0x008000, 0,  0, 0, 0, 0, 0, 1 );
+				addShape( splineShape,      extrudeSettings, 0x808080, - 50, -100, 0, 0, 0, 0, 1 );
+				addShape( squareShape,      extrudeSettings, 0x0040f0,  50,  -100, 0, 0, 0, 0, 1 );
+
+
+				renderer.autoClear = false;
+
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+				// postprocessing
+
+	//			effect = new THREE.OutlineEffect( renderer );
+/*
+				effect = new THREE.OutlineEffect( renderer , { 
+			          defaultThickness : 20 , 
+			          defaultColor : new THREE.Color( 0x00ffff ), 
+			          defaultAlpha : 1 , 
+			          defaultKeepAlive : true 
+			        } ); 
+			    */
+/*
+				var renderModel = new THREE.RenderPass( scene, camera );
+				var effectBloom = new THREE.BloomPass( 1.3 );
+				var effectCopy = new THREE.ShaderPass( THREE.CopyShader );
+
+				effectCopy.renderToScreen = true;
+
+				composer = new THREE.EffectComposer( renderer );
+
+				composer.addPass( renderModel );
+				composer.addPass( effectBloom );
+				composer.addPass( effectCopy );
+*/
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function onWindowResize() {
+
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				composer.reset();
+
+			}
+
+
+			function addShape( shape, extrudeSettings, color, x, y, z, rx, ry, rz, s ) {
+
+
+
+				var geometry = new THREE.ShapeBufferGeometry( shape );
+
+				var mesh = new THREE.Mesh( geometry, material);
+				mesh.position.set( x, y, z - 125 );
+				mesh.rotation.set( rx, ry, rz );
+				mesh.scale.set( s, s, s );
+				scene.add( mesh );
+
+
+
+			}
+			
+
+
+			function onDocumentMouseMove(event) {
+
+				mouseX = ( event.clientX - windowHalfX );
+				mouseY = ( event.clientY - windowHalfY ) * 0.3;
+
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+
+			}
+
+			var h, counter = 1;
+
+			function render() {
+
+				var time = Date.now() * 0.00005;
+
+				camera.position.x += ( mouseX - camera.position.x ) * 0.05;
+				camera.position.y += ( - mouseY - camera.position.y ) * 0.05;
+
+				camera.lookAt( scene.position );
+
+
+				//renderer.clear();
+				renderer.render(scene, camera);
+				//effect.render( scene, camera );
+
+				
+			//	composer.render();
+
+			}
+
+
+		</script>
+
+	</body>
+</html>

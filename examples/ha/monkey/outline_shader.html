@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>three.js webgl - blender -json</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+
+        html, body, canvas {
+            margin: 0px;
+            overflow: hidden;
+        }
+        #fps {
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            color: #fff;
+            z-index: 50;
+        }
+
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+    <script type="x-shader/x-vertex" id="vertexShader">
+        uniform float offset;
+        void main() {
+            vec4 pos = modelViewMatrix * vec4( position + normal * offset, 1.0 );
+            gl_Position = projectionMatrix * pos;
+        }
+    </script>
+
+    <script type="x-shader/x-vertex" id="fragmentShader">
+        void main(){
+            gl_FragColor = vec4( 1.0, 0.0, 0.0, 1.0 );
+        }
+    </script>
+
+
+</head>
+
+<body>  
+<span id='fps'></span>
+
+
+<script src="../../../bower_components/three.js/build/three.js"></script>
+    <script src="../../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+    <script src="../../../bower_components/three.js/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="../../../bower_components/three.js/examples/js/shaders/CopyShader.js"></script>
+    <script src="../../../bower_components/three.js/examples/js/postprocessing/MaskPass.js"></script>
+    <script src="../../../bower_components/three.js/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="../../../bower_components/three.js/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="js/AdditiveBlendShader.js"></script>
+
+    <script src="../../../bower_components/three.js/examples/js/Detector.js"></script>
+    <script src="../../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+
+<script>
+
+    var scene, normal, outline, outScene, light, renderer, composer, camera, mesh1, mesh2, mesh3, renderTarget;
+
+
+var screenWidth  = window.innerWidth
+var screenHeight = window.innerHeight
+
+var clock = new THREE.Clock
+
+var elapsedTime = 0
+var frameCount  = 0
+/*
+var shader =
+    'outline' :
+        vertex_shader: [
+            "uniform float offset;",
+            "void main() {",
+                "vec4 pos = modelViewMatrix * vec4( position + normal * offset, 1.0 );",
+                "gl_Position = projectionMatrix * pos;",
+            "}"
+        ].join("\n"),
+
+        fragment_shader: [
+            "void main(){",
+                "gl_FragColor = vec4( 1.0, 0.0, 0.0, 1.0 );",
+            "}"
+        ].join("\n")
+*/
+var shader = new THREE.ShaderMaterial( {
+          vertexShader: document.getElementById( 'vertexShader' ).textContent,
+          fragmentShader: document.getElementById( 'fragmentShader' ).textContent
+        } );
+
+
+function init() {
+
+   // # SCENE
+
+    scene     = new THREE.Scene
+    outScene  = new THREE.Scene
+    setModel()
+
+   // # CAMERA
+
+    camera = new THREE.PerspectiveCamera( 40, screenWidth/screenHeight, 50, 10000);
+    camera.position.set(0, 0, 400);
+
+  //  # LIGHTS
+
+    light = new THREE.DirectionalLight(0xffffff);
+    light.position.set(1, 1, 1);
+    scene.add(light);
+
+  //  # RENDERER
+
+    renderer = new THREE.WebGLRenderer({
+        width: screenWidth,
+        height: screenHeight,
+        antialias: true
+    });
+
+    renderer.setSize(screenWidth, screenHeight);
+    renderer.setClearColor(0x666666);
+    renderer.autoClear = false
+    renderer.gammaInput = true
+    renderer.gammaOutput = true
+
+    document.body.appendChild(renderer.domElement)
+
+   // # EVENTS
+
+    window.addEventListener('resize', onWindowResize, false);
+}
+
+function setModel(){
+
+    geometry = new THREE.TorusKnotGeometry(50, 10, 128, 16);
+
+  //  # shaded model
+    matColor = new THREE.MeshPhongMaterial(0xffffff);
+    mesh1 = new THREE.Mesh(geometry, matColor);
+    scene.add(mesh1);
+/*
+   // # shader
+    uniforms: {
+        offset: { 
+              type: "f",
+              value: 1.0
+            }
+    }
+*/
+    outShader = shader;//shader['outline']
+  /*  
+    matShader = new THREE.ShaderMaterial({
+        uniforms: uniforms,
+        vertexShader: outShader.vertex_shader,
+        fragmentShader: outShader.fragment_shader
+    });
+
+*/
+    matShader = new THREE.ShaderMaterial( {
+
+          uniforms: {
+
+            offset: { // float initialized to 0
+              type: "f",
+              value: 1.0
+            }
+          },
+          vertexShader: document.getElementById( 'vertexShader' ).textContent,
+          fragmentShader: document.getElementById( 'fragmentShader' ).textContent
+
+        } );
+
+    mesh3 = new THREE.Mesh(geometry, matShader);
+    mesh3.material.depthWrite = false; 
+    mesh3.quaternion = mesh1.quaternion;
+    outScene.add(mesh3);
+}
+
+function onWindowResize(){
+
+    screenWidth  = window.innerWidth;
+    screenHeight = window.innerHeight;
+
+    camera.aspect = screenWidth / screenHeight;
+
+    camera.updateProjectionMatrix()
+
+    renderer.setSize(screenWidth, screenHeight);
+}
+
+function animate(){
+
+    updateFps()
+    requestAnimationFrame(animate);
+    render()
+}
+
+function render(){
+
+    now = Date.now()
+    delta = clock.getDelta()
+
+    if (mesh1){
+        mesh1.rotation.y += 0.01
+        mesh3.rotation.y += 0.01
+    }
+    
+    renderer.render( outScene, camera )
+    renderer.render( scene, camera );
+}
+
+function updateFps() {
+
+    elapsedTime += clock.getDelta()
+    frameCount++
+
+    if (elapsedTime >= 1){
+        $('#fps').html(frameCount)
+        frameCount  = 0
+        elapsedTime = 0
+    }
+}
+
+
+init()
+animate()
+
+</script>
+</body>
+</html>

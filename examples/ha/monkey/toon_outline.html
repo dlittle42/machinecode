@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Three.js Geometry Browser</title>
+ 
+   </head>
+   <body>
+
+   <script src="../../../bower_components/three.js/build/three.js"></script>
+
+
+   <script src="../../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+   <script src="../../../bower_components/three.js/examples/js/controls/TrackballControls.js"></script>
+    <script src="../../../bower_components/three.js/examples/js/Detector.js"></script>
+    <script src="../../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+    <script src="../../../bower_components/three.js/examples/js/effects/OutlineEffect.js"></script>
+
+
+   <script>
+
+
+
+
+   //  Scene (); 
+    // scene.updateMatrixWorld( true ); 
+     window.addEventListener ( 'load' , init ); 
+     var scene; 
+     var camera ; 
+     var renderer ; 
+     var controller ; 
+     var point ; 
+     var effect ; 
+     var t = 5;
+
+     function init(){
+     // renderer 
+     renderer = new THREE.WebGLRenderer({ antialias : true }); 
+     // camera 
+   //  camera = new THREE.CameraGrid = new THREE.PerspectiveCamera ( 45 , 1 , alpha : true }); 
+     camera =  new THREE.PerspectiveCamera( 45 , 1 , {alpha : true }); 
+
+     renderer.setPixelRatio( window.devicePixelRatio ); 
+     renderer.setSize( window.innerWidth , window.innerHeight ); 
+     renderer.setClearColor( 0x000000 , 1 ); 
+     document.body.appendChild( renderer.domElement ); 
+     // object controller 
+     geometry = new THREE.SphereGeometry( 100 , 40 , 40 ); 
+     const ball = new THREE.MeshToonMaterial({ 
+       // easy to use toon material toon material It looks like rendering, the options are proper.
+      //  Transparent : t  
+      // Set the outlineParameters for the mesh material so you want to add another color outlines only to the ball / / Sample to the top of OutlineEffect.js It is written, but since the key of the parameter is wrong 
+      });
+
+      ball.OutlineParameters = { 
+        thickness : 0.007 , 
+        color : new THREE.Color ( 0xffffff ), 
+        alpha : 10 , 
+        visible : true , 
+        keepAlive : true
+      }
+
+        scene.Add( ball ); 
+        // Lighting 
+        var directionalLight = new THREE.DirectionalLight( 0xffffff , 1 ); 
+        directionalLight.Position.Set( 100 , 100 , 100 ); 
+        scene.Add( directionalLight ); 
+        // Effect // You can set default color and thickness. If outlineParameters is not set, this is applied 
+        effect = THREE.OutlineEffect( renderer , { 
+          defaultThickness : 0.01 , 
+          defaultColor : new THREE.Color( 0x888888 ), 
+          defaultAlpha : 0.8 , 
+          defaultKeepAlive : true 
+        } ); 
+        // rendering 
+        effect.render( scene , camera );
+      }
+
+   </script>
+
+   </body >
+ </html >

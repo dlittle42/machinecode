@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>three.js webgl - post processing - Outline Pass</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <style>
+            body {
+                background-color: #000000;
+                margin: 0px;
+                overflow: hidden;
+                font-family:Monospace;
+                font-size:13px;
+                text-align:center;
+                font-weight: bold;
+            }
+
+            a {
+                color:#00ff78;
+            }
+
+            #info {
+                color: #fff;
+                position: absolute;
+                top: 10px;
+                width: 100%;
+                text-align: center;
+                display:block;
+            }
+            .dg.ac {
+                z-index: 1 !important; /* FIX DAT.GUI */
+            }
+        </style>
+    </head>
+    <body>
+        <script src="../../../bower_components/three.js/build/three.js"></script>
+        <script src="../../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+        <script src="../../../bower_components/three.js/examples/js/loaders/OBJLoader.js"></script>
+        <script src="js/geometry.js"></script>
+
+        <script src="../../../bower_components/three.js/examples/js/Detector.js"></script>
+
+        <script src="../../../bower_components/three.js/examples/js/shaders/CopyShader.js"></script>
+        <script src="../../../bower_components/three.js/examples/js/shaders/FXAAShader.js"></script>
+        <script src="../../../bower_components/three.js/examples/js/postprocessing/EffectComposer.js"></script>
+        <script src="../../../bower_components/three.js/examples/js/postprocessing/RenderPass.js"></script>
+        <script src="../../../bower_components/three.js/examples/js/postprocessing/ShaderPass.js"></script>
+        <script src="../../../bower_components/three.js/examples/js/postprocessing/OutlinePass.js"></script>
+        <script src="../../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+        <script src='../../../bower_components/three.js/examples/js/libs/dat.gui.min.js'></script>
+
+        <div id="info">
+            
+        </div>
+
+        <script>
+
+var scene, camera, renderer;
+var light, floor;
+var WIDTH,HEIGHT;
+var controls;
+var composer;
+var composer, effectFXAA, outlinePass;
+
+var extrudeSettings = {
+    steps: 2,
+    amount: 2,
+    bevelEnabled: false,
+   // bevelThickness: 1,
+   // bevelSize: 1,
+   // bevelSegments: 1
+};
+
+
+WIDTH = window.innerWidth;
+HEIGHT = window.innerHeight;
+init();
+animation()
+function init () {
+    scene = new THREE.Scene();
+ /*   var textureLoader = new THREE.TextureLoader();
+    textureLoader.load('img/bg.png', function(texture){
+        scene.background = texture;
+    });
+*/
+camera = new THREE.PerspectiveCamera(45, WIDTH/HEIGHT, 0.1, 800);
+camera.position.set(0,150,150);
+scene.add(camera);
+scene.add(new THREE.AmbientLight(0xffffff));
+renderer = new THREE.WebGLRenderer({antialias: true});
+renderer.setSize(WIDTH, HEIGHT);
+renderer.shadowMap.enabled = true;
+document.body.appendChild(renderer.domElement);
+//controls = new OrbitControls(camera);
+controls = new THREE.OrbitControls( camera, renderer.domElement );
+var shape = new THREE.Shape();
+shape.moveTo(0,4);
+shape.lineTo(0,96);
+shape.lineTo(4,100);
+shape.lineTo(96,100);
+shape.lineTo(100,96);
+shape.lineTo(100,4);
+shape.lineTo(96, 0 );
+shape.lineTo(84,0);
+shape.lineTo(80,4);
+shape.lineTo(20, 4);
+shape.lineTo(16, 0);
+shape.lineTo(4, 0 );
+shape.lineTo(0, 4);
+            var geometry = new THREE.ExtrudeGeometry( shape, extrudeSettings );
+         //   var material = new THREE.MeshLambertMaterial( { color: 0x0E2350 } );
+            var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+            mesh = new THREE.Mesh( geometry, material ) ;
+            mesh.rotation.x = -Math.PI/2;
+            mesh.translateX(-50);
+            mesh.translateY(-50);
+            scene.add(mesh);
+
+            composer = new THREE.EffectComposer( renderer );
+            var renderPass = new THREE.RenderPass( scene, camera );
+            composer.addPass( renderPass );
+            outlinePass = new THREE.OutlinePass( new THREE.Vector2( window.innerWidth, window.innerHeight ), scene, camera );
+            outlinePass.edgeStrength = 3;
+            outlinePass.edgeGlow = 3.0;
+            outlinePass.edgeThickness = 0.1;
+            outlinePass.visibleEdgeColor.setHex(0x19C0EE);
+            composer.addPass( outlinePass );
+            effectFXAA = new THREE.ShaderPass( THREE.FXAAShader );
+            effectFXAA.uniforms[ 'resolution' ].value.set( 1 / window.innerWidth, 1 / window.innerHeight );
+            effectFXAA.renderToScreen = true;
+            composer.addPass( effectFXAA );
+            outlinePass.selectedObjects = [mesh];
+        }
+        function animation() {
+            requestAnimationFrame(animation);
+            composer.render();
+            render();
+            controls.update();
+
+        };
+        function render () {
+            renderer.render(scene, camera)
+        };
+
+</script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+	<title>Synth</title>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+	<link rel="icon" type="image/png" sizes="174x174" href="./style/favicon.png">
+	
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script src="third-party/AudioManager.js"></script>
+
+
+</head>
+<body>	
+	<style type="text/css">
+
+		body {
+				color: #7FE8EF;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+
+				background-color: #bfd1e5;
+				margin: 0px;
+				overflow: hidden;
+			}
+
+		img {
+			width: 80%;
+			max-width: 700px;
+			margin-left: auto;
+    		margin-right: auto;
+    		display: block;
+		}
+
+	</style>
+	<button id="trigger">Play</button>
+	<div id="Content">
+		
+		<div id="container"></div>
+		<div class="bkgd active"></div>
+		
+	</div>
+	<div id=info></div>
+<!--
+	<script src="../../../bower_components/three.js/build/three.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/Detector.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.19.0/TweenMax.min.js"></script>
+-->
+<!--
+	<script src="../../../bower_components/three.js/examples/js/ConvexObjectBreaker.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/QuickHull.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/geometries/ConvexGeometry.js"></script>
+
+	<script src="../../../bower_components/three.js/examples/js/utils/GeometryUtils.js"></script>
+-->
+	<script src="../../../bower_components/dat.gui/dat.gui.js"></script>
+
+	<script>
+
+		var channels = ['music', 'sfx', 'ui'];
+		var audioManager = new AudioManager(channels);
+		audioManager.init();
+		audioManager.settings.audioPath = 'audio/';
+		//audioManager.init();
+		
+
+		var volume    = 0.7; // volume is a float in range ]0..1]
+		var panoramic = 0.9; // panoramic is a float in range [-1..1], 0 is the center
+		var pitch = -4.0; 
+		
+
+		var fileName = 'ha-kid-multi';
+	//	audioManager.playSound('sfx', fileName);
+/*
+		audioManager.playSound('sfx', fileName, volume, panoramic, pitch);
+		console.log(audioManager)
+ */
+
+	//audioManager.createSound(fileName).load();
+
+		var sound = audioManager.createSound(fileName);
+
+		sound.setPitch(pitch);
+		sound.play(volume, panoramic, pitch);
+
+		sound.onEnd = function () {
+		    console.log('sound playback ended');
+		    sound.onEnd = null;
+		};
+
+
+		document.getElementById('trigger').addEventListener("click", function(){
+			//alert('tap')
+		//    audioManager.init();
+		 	var pitch = Math.random()*20;
+		    sound.play(volume, panoramic, pitch);
+		});
+
+
+/*
+		// volume and panoramic can be set optionally
+		
+		audioManager.playLoopSound('sfx', fileName, volume, panoramic);
+*/
+	</script>
+
+</body>
+</html>
