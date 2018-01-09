@@ -42,6 +42,25 @@
 
 			}
 
+			#diff{
+
+				color: red;
+				background-color: black;
+				width: auto;
+				height: 40px;
+				position: absolute;
+				left: 10px;
+				top: 10px;
+				padding: 0 4px;
+				font-size: 18px;
+				font-weight: bold;
+				line-height: 40px;
+				opacity: 0;
+				transition: all .3s ease-out;
+				user-select: none;
+
+			}
+
 			h1{
 				font-family: 'Kanit', sans-serif;
 			    letter-spacing: 5px;
@@ -73,6 +92,7 @@
 	<div id="container">
 		<div id="info"></div>
 		<div id="inst">Click to invert effect</div>
+		<div id="diff">0</div>
 
 	</div>
 
@@ -124,7 +144,7 @@
 
 		var mouseCoords = new THREE.Vector2();
 		var raycaster = new THREE.Raycaster();
-		var ballMaterial = new THREE.MeshPhongMaterial( { color: createRandomColor(), wireframe:false } );
+		var randomMaterial = new THREE.MeshPhongMaterial( { color: createRandomColor(), wireframe:false } );
 
 		var time = 0;
 
@@ -135,11 +155,13 @@
 		var initDragX = 0;
 		var endDragX = 0;
 
-		var numObj = 26;
+		var numObj = 8;//26;
 		var stepAngle = Math.PI*2 / numObj;
 		var r = 70;
 
-		var info;
+		var info, hud;
+		var panelArray = [];
+		var activePanel = 0;
 		var isDragging = false;
 		var letterGroup = new THREE.Object3D();
 		var freeDrag = 0;
@@ -257,7 +279,7 @@
 			//camera.rotation.z = r* Math.sin(stepAngle);
 
 
-		//	controls = new THREE.OrbitControls( camera );
+	//		controls = new THREE.OrbitControls( camera );
 		//	controls.target.y = 3;
 	//		controls = new THREE.TrackballControls( camera );
 		//	controls.target.set( 0, 0, 0 )
@@ -303,18 +325,22 @@
 */
 
 			info = document.getElementById("info");
+			hud = document.getElementById("diff");
 
 			var manager = new THREE.LoadingManager();
 
 			manager.onProgress = function ( item, loaded, total ) {
 			 // progressBar.style.width = (loaded / total * 100) + '%';
-			 	console.log(item, loaded, total);
+			 //	console.log(item, loaded, total);
 			};
 
 			manager.onLoad = function (){
-				console.log('all items loaded');
+				
 				if (imgArrIdx < imgArr.length) {
 					loadImages();
+				}else {
+					console.log('all items loaded');
+					createRing();
 				}
 			}
 
@@ -360,6 +386,10 @@
 		}
 
 
+		function toDegrees (angle) {
+		  return angle * (180 / Math.PI);
+		}
+
 
 
 		function loadImages(){
@@ -371,10 +401,10 @@
 			  // set the texture as the map for the material
 			//  materialOne = texture;//new THREE.MeshLambertMaterial( {map: texture, side:THREE.DoubleSide } );
 			  materialArr.push(texture);
-			  console.log("materialArr="+materialArr);
+			 // console.log("materialArr="+materialArr);
 			  imgArrIdx++;
 
-			  createRing();
+			  
 			
 
 
@@ -490,7 +520,7 @@
 
 
           //  textMesh2 = new THREE.Mesh( textGeo2, materials );
-            textMesh2 = new THREE.Mesh( textGeo2, ballMaterial );
+            textMesh2 = new THREE.Mesh( textGeo2, randomMaterial );
 /*
             textMesh2.position.x = 0;//centerOffset;
             textMesh2.position.y = 0;//hover+ height*4;
@@ -516,55 +546,60 @@
 
 		function createRing(){
 
-			
+			console.log(toDegrees(stepAngle))
+			//var theta = (Math.PI*2)/numberOfPoints;
 			
 			for ( var j = 0; j < numObj; j ++ ) {
 
-				//var char = phrase.charAt(j%21)
-              //  var ball = createText(char);
-              	var ballRadius=4;
               	
 				var theta = stepAngle* j;
 				//var dTheta = 2 * Math.PI / 1000;
 
-				//var ball = new THREE.Mesh( new THREE.SphereGeometry( ballRadius, 14, 10 ), ballMaterial );
-			//	var ball = createText(j);
-
 				var geometry = new THREE.PlaneGeometry( 10, 10, 5 );
-				var ball = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {
-					map: materialArr[(j)%imgArr.length], 
+				//console.log(materialArr[(j)%imgArr.length])
+				console.log(materialArr[j])
+				var panel = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {
+					//map: materialArr[(j)%imgArr.length], 
+					map: materialArr[j], 
 					side:THREE.DoubleSide 
 				} ));
 
-				ball.name="obj"+j;
+				panel.name="obj"+j;
 
-				ball.doubleSided = true;
-				//ball.castShadow = true;
-				//ball.receiveShadow = true;
+
+				panel.doubleSided = true;
+				//panel.castShadow = true;
+				//panel.receiveShadow = true;
 				//pos = new THREE.Vector3(10,0,10);
 
-			//	scene.add(ball);
-				letterGroup.add(ball);
-				ball.position.x = r * Math.cos(theta);
-				ball.position.y=0;
-				ball.position.z = r * Math.sin(theta);
+				letterGroup.add(panel);
+			//	scene.add(panel)
 
-			/*	var newSphereGeom= new THREE.SphereGeometry(.5,.5,.5);
-				var sphere= new THREE.Mesh(newSphereGeom, new THREE.MeshBasicMaterial({ color: 0x2266dd }));
-				ball.add(sphere)
-			*/
+				panelArray.push(panel)
 
-				//ball.rotation.y -= (Math.PI)/j;
-				ball.rotation.y = Math.atan2( ( letterGroup.position.x - ball.position.x ), ( letterGroup.position.z - ball.position.z ) );
+				panel.position.x = r * Math.cos(theta+ Math.PI/2) ;
+				panel.position.y=0;
+				panel.position.z = r * Math.sin(theta+ Math.PI/2);
+
+
+
+
+				panel.rotation.y = Math.atan2( -panel.position.x, -panel.position.z );
+				console.log('panel rotation ='+Math.floor(toDegrees(panel.rotation.y)));
+
+				//panel.rotation.y -= (Math.PI)/j;
+			//	panel.rotation.y = Math.atan2( ( letterGroup.position.x - panel.position.x ), ( letterGroup.position.z - panel.position.z ) );
 
 			} 
 
-			var aObj = scene.getObjectByName( "obj0", true );
+	//		var aObj = scene.getObjectByName( "obj0", true );
 		//	letterGroup.lookAt(aObj.position)
-			var rot = Math.atan2( ( letterGroup.position.x - aObj.position.x ), ( letterGroup.position.z - aObj.position.z ) );
+
+
+	//		var rot = Math.atan2( ( letterGroup.position.x - aObj.position.x ), ( letterGroup.position.z - aObj.position.z ) );
 
 		
-
+/*
 			TweenMax.to(letterGroup.rotation, 1,{
                // z:depth,
                 x:0,
@@ -577,7 +612,7 @@
                     
               //  console.log('tweened');
             }});
-
+*/
          //   initShaders();
 
 		}
@@ -599,25 +634,37 @@
 
 
 		function initDrag(event){
+
+
+			//	console.log('pre-active='+panelArray[activePanel].name)
 			//	swapEffect();
 		//	initDragX = mouse.;
 				initDragTime = performance.now();
 				dragDuration = 0;
 				//dragDiff=0;
 				info.textContent = debugDrag(0, 0)
+		
 				isDragging = true;
 				//camera.position.z = 1;
+
+				hud.textContent =0;
+				hud.style.opacity=1;
 
 				if (event.touches){
 				//	console.log('got touches')
 					initDragX = ( event.touches[0].clientX / renderer.domElement.clientWidth ) * 2 - 1;
 					//mouse.y = - ( event.touches[0].clientY / renderer.domElement.clientHeight ) * 2 + 1;
 					//getTouchPointer();
+					hud.style.left  = (event.touches[0].clientX + 5) + 'px';
+      				hud.style.top = (event.touches[0].clientY - 40) + 'px';
 				}else{
 					//console.log('is mouse')
 					initDragX = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
 					//mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
 					//getDesktopPointer();
+
+					hud.style.left  = (event.clientX + 5) + 'px';
+      				hud.style.top = (event.clientY - 40) + 'px';
 				}
 				scaleMask(-11)
 
@@ -631,17 +678,26 @@
 					endDragX = ( event.touches[0].clientX / renderer.domElement.clientWidth ) * 2 - 1;
 					//mouse.y = - ( event.touches[0].clientY / renderer.domElement.clientHeight ) * 2 + 1;
 					//getTouchPointer();
+					hud.style.left  = (event.touches[0].clientX + 5) + 'px';
+      				hud.style.top = (event.touches[0].clientY - 40) + 'px';
 				}else{
 					//console.log('is mouse')
 					endDragX = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
 					//mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
 					//getDesktopPointer();
+					hud.style.left  = (event.clientX + 5) + 'px';
+      				hud.style.top = (event.clientY - 40) + 'px';
 				}
 
+
+
 				dragDiff = (initDragX - endDragX) * stepAngle;
+
+				hud.textContent =dragDiff.toFixed(2);
+				
 			
 				info.textContent = debugDrag(dragDiff, 0)
-			//	letterGroup.rotation.y += dragDiff/numObj;
+				//letterGroup.rotation.y += dragDiff/numObj;
 			}
 
 		}
@@ -654,36 +710,86 @@
 				//letterGroup.position.z = 0;
 
 				info.textContent = debugDrag(dragDiff, dragDuration)
-				var next = dragDiff.toFixed(2)*10;
+				var next = Math.floor(dragDiff.toFixed(2)*10);
+			//	alert(next)
+			//	alert(next%numObj)
+				activePanel=getFocus(next);
+				//activePanel=next%numObj;
+				//alert(activePanel)
 				initAnimation(next);
 				//initAnimation(dragDiff*5);
 				scaleMask(-10)
+				//hud.style.opacity=0;
 
 
 
 
 		}
+
+		function getFocus(num){
+			var idx;// = negArray(panelArray,num%numObj )
+			console.log(panelArray)
+			console.log(num%numObj)
+
+			if (num<0){
+				var rev = panelArray.reverse();
+				idx = rev[Math.abs(num%numObj)]
+			}else{
+				idx = panelArray[num%numObj ];
+			}
+		//	alert(idx)
+			console.log("idx="+idx.name);
+			return idx.name;
+
+		}
+
+		
 
 		function debugDrag(diff, dur){
 			return 'diff: '+diff.toFixed(2)+' / dur: '+dur.toFixed(2);
 		}
 
 		function initAnimation( rot ){
-			console.log('initAnimation' + rot)
+
+			rot=rot*stepAngle;
+		/*	
+			if (rot >0){
+				rot = stepAngle;
+			}else{
+				rot = -stepAngle;
+			}
+	*/
+			console.log('initAnimation=' + rot)
 			//var rot = stepAngle;//Math.PI/3;
 			var time = dragDuration/1000;
+			
 			TweenMax.to(letterGroup.rotation, 1+ time,{
                // z:depth,
                 x:0,
                 y:'+='+ rot ,
+               // y:rot,
                 z:0,
                // delay: delay,
                 ease:"Power3.easeOut",
+                onStart:function(){
+                	console.log('start = '+ letterGroup.rotation.y)
+                },
                 onComplete:function(){
                    // no_geom.verticesNeedUpdate = true;
-                    console.log(letterGroup.rotation.y)
+                  //  console.log(letterGroup.rotation.y)
+                  console.log('end = '+ letterGroup.rotation.y)
+                //  hud.textContent =activePanel;//panelArray[activePanel].name;
+                  var rotations = Math.round(letterGroup.rotation.y/stepAngle);
+                  console.warn(rotations)
+                  var idx = (rotations)%numObj;
+                  console.error(idx)
+                  if (idx <0){
+                  	idx = numObj + idx;
+                  }
+                  hud.textContent = Math.abs(idx);//panelArray[idx].name;
               //  console.log('tweened');
             }});
+         
 		}
 
 		function scaleMask(depth){
@@ -743,12 +849,14 @@
 			//var deltaTime = clock.getDelta();
 			var time = performance.now() * 0.001;
 
-		//	controls.update( deltaTime );
+		//	controls.update( time );
 
 			//renderer.render( scene, camera );
 
 		//	light.rotation.copy( camera.rotation );
 		//	light.updateMatrixWorld( true );
+
+		//	plane.position.z = camera.position.z+2;
 
 			renderer.clear();
   			composer.render(time);
