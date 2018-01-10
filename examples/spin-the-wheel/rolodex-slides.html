@@ -689,7 +689,8 @@
 					//hud.style.left  = (event.clientX + 5) + 'px';
       				//hud.style.top = (event.clientY - 40) + 'px';
 				}
-				scaleMask(-11)
+				//scaleMask(-11)
+				scaleCamera(5)
 
 		}
 
@@ -721,7 +722,9 @@
 			
 				info.innerHTML = debugDrag(dragDiff, 0)
 				xfactor = 0;//10;
-			//	letterGroup.rotation.y += dragDiff/numObj;
+				var diff = dragDiff/(numObj*2)
+				letterGroup.rotation.y += diff;
+				
 				//letterGroup.rotation.y += (prevDragX - endDragX);
 			}
 
@@ -741,7 +744,8 @@
 
 				initAnimation(targetRot);
 				//initAnimation(dragDiff*5);
-				scaleMask(-10)
+				//scaleMask(-10)
+				scaleCamera(-5)
 				//hud.style.opacity=0;
 
 
@@ -827,6 +831,24 @@
                 x:0,
                 y: 0,
                 z:depth,
+               // delay: delay,
+                ease:"Power3.easeOut",
+                onUpdate:function(){
+                   // no_geom.verticesNeedUpdate = true;
+                    
+              //  console.log('tweened');
+            }});
+		}
+
+		function scaleCamera(depth){
+
+			var time = dragDuration/1000;
+			TweenMax.to(camera.position, 1+time,{
+               // z:depth,
+                x:0,
+                y: 0,
+                z:depth,
+              //  z:'+='+ depth,
                // delay: delay,
                 ease:"Power3.easeOut",
                 onUpdate:function(){
