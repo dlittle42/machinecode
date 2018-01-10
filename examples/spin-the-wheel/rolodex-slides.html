@@ -155,8 +155,7 @@
 		var initDragX = 0;
 		var endDragX = 0;
 
-		var numObj = 8;//26;
-		var stepAngle = Math.PI*2 / numObj;
+		
 		var r = 70;
 
 		var info, hud;
@@ -241,8 +240,12 @@
 				"nemo.png",
 				"xd.png",
 				"tru.png",
-				"killbill.png"
+				"killbill.png",
 			]
+
+		var numObj = imgArr.length;
+		var stepAngle = Math.PI*2 / numObj;
+		var showControls = false;//true;
 
 
 		// - Main code -
@@ -279,7 +282,7 @@
 			//camera.rotation.z = r* Math.sin(stepAngle);
 
 
-	//		controls = new THREE.OrbitControls( camera );
+			if(showControls) controls = new THREE.OrbitControls( camera );
 		//	controls.target.y = 3;
 	//		controls = new THREE.TrackballControls( camera );
 		//	controls.target.set( 0, 0, 0 )
@@ -340,6 +343,12 @@
 					loadImages();
 				}else {
 					console.log('all items loaded');
+					console.error('createRing')
+					console.log('imgArr...')
+					console.log(imgArr)
+					console.log('materialArr...')
+					console.log(materialArr)
+
 					createRing();
 				}
 			}
@@ -557,7 +566,7 @@
 
 				var geometry = new THREE.PlaneGeometry( 10, 10, 5 );
 				//console.log(materialArr[(j)%imgArr.length])
-				console.log(materialArr[j])
+				console.log(materialArr[j].image.src)
 				var panel = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {
 					//map: materialArr[(j)%imgArr.length], 
 					map: materialArr[j], 
@@ -577,9 +586,15 @@
 
 				panelArray.push(panel)
 
-				panel.position.x = r * Math.cos(theta+ Math.PI/2) ;
+				panel.position.x = r * Math.cos(theta- (Math.PI/2)) ;
+
+				if(j==0){
+					console.error('obj0.x='+panel.position.x)
+				}
+				//panel.position.x = r * Math.cos(theta) ;
 				panel.position.y=0;
-				panel.position.z = r * Math.sin(theta+ Math.PI/2);
+				panel.position.z = r * Math.sin(theta- Math.PI/2);
+			//	panel.position.z = r * Math.sin(theta);
 
 
 
@@ -849,7 +864,7 @@
 			//var deltaTime = clock.getDelta();
 			var time = performance.now() * 0.001;
 
-		//	controls.update( time );
+			if(showControls) controls.update( time );
 
 			//renderer.render( scene, camera );
 
