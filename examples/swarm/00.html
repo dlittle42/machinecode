@@ -1,0 +1,597 @@
+
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        
+        <title>RTOP 2016</title>
+        <meta name="description" content="Red Tettemer O'Connell + Partners">
+		<link rel="icon" type="image/png" href="">
+        
+		<meta name="viewport" content="width=device-width">
+	
+		<!--
+		<script src="/assets/jquery.self.js?body=1"></script>
+<script src="/assets/jquery_ujs.self.js?body=1"></script>
+<script src="/assets/lib/gsap/src/uncompressed/TweenMax.self.js?body=1"></script>
+<script src="/assets/lib/modernizr-2.6.2.min.self.js?body=1"></script>
+<script src="/assets/lib/plugins.self.js?body=1"></script>
+<script src="/assets/lib/underscore.self.js?body=1"></script>
+-->
+
+<script src="../../bower_components/jquery/dist/jquery.min.js"></script>
+		<script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
+		<script src="../../bower_components/three.js/build/three.js"></script>
+		<script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+
+
+<script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+<script src="../../bower_components/three.js/examples/js/libs/dat.gui.min.js"></script>
+
+<script src="../../bower_components/three.js/examples/js/loaders/OBJLoader.js"></script>
+<script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+<script src="../../bower_components/three.js/examples/js/shaders/CopyShader.js"></script>
+<script src="../../bower_components/three.js/examples/js/shaders/DotScreenShader.js"></script>
+<script src="../../bower_components/three.js/examples/js/shaders/RGBShiftShader.js"></script>
+<script src="../../bower_components/three.js/examples/js/shaders/ColorifyShader.js"></script>
+<script src="../../bower_components/three.js/examples/js/shaders/EdgeShader.js"></script>
+<script src="../../bower_components/three.js/examples/js/shaders/EdgeShader2.js"></script>
+<script src="../../bower_components/three.js/examples/js/shaders/ConvolutionShader.js"></script>
+<script src="../../bower_components/three.js/examples/js/shaders/BleachBypassShader.js"></script>
+<script src="../../bower_components/three.js/examples/js/shaders/KaleidoShader.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/RenderPass.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/MaskPass.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/BloomPass.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/SavePass.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/DotScreenPass.js"></script>
+<script src="../../bower_components/three.js/examples/js/ShaderExtras.js"></script>
+
+<!--
+<script src="/assets/lib/boid.self.js?body=1"></script>
+<script src="/assets/home.self.js?body=1"></script>
+<script src="/assets/application.self.js?body=1"></script>
+-->
+		<meta name="csrf-param" content="authenticity_token" />
+<meta name="csrf-token" content="lSXIM24Omq7mUwqD1c+25q2j+Fg1D5qpkCyy23KIwbFRELQjeYavAMYszpi1Yi9EIKbc7GRmfFF5OKaXiHYqOw==" />
+
+			<link rel='stylesheet' type='text/css' href='https://fonts.googleapis.com/css?family=Arvo:400,700'>
+			<!--
+			<link rel="stylesheet" type="text/css" href="https://cloud.typography.com/6946632/7415152/css/fonts.css">
+		-->
+			<script type="text/javascript" src="http://fast.fonts.net/jsapi/0225f909-390c-4044-aaa1-d98ab6c57bba.js"></script>
+    </head>
+    <body>
+        
+<div id="page-layout">
+	<img src="images/feed.png" width="1168"/>
+</div>
+
+<style type="text/css">
+	body{
+  background-color: #fe0404;
+  transition: all 1s ease-in-out; 
+  height: 100%;
+  overflow: hidden;
+
+}
+
+body.active{
+  background-color: white;
+}
+
+
+#page-layout{
+	position: absolute;
+	top: 1200px;
+	left: 0px;
+	transition: all 1s ease-out; 
+	width: 100%;
+	
+}
+
+#page-layout img{
+	width:1168px;
+  	display:block;
+  	position:absolute;
+  	left:0;
+  	right:0;
+ 
+  	margin:auto;
+}
+
+#page-layout.active{
+
+	top: 200px;
+
+}
+
+
+
+</style>
+
+<script>
+			var camera, scene, renderer, composer;
+			var cameraOrtho, sceneOrtho;
+			var spriteTL, spriteTR, spriteBL, spriteBR, spriteC;
+			var materialArr = [];
+			var mapC, mapB, mapD, mapE, mapF, mapG;
+			var mixing = true;
+			var clickNum = 0;
+			var group;
+			var mouseX=0, mouseY=0, windowHalfX, windowHalfY;
+
+
+			init();
+			animate();
+			function init() {
+				var width = window.innerWidth;
+				var height = window.innerHeight;
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+				
+
+
+				camera = new THREE.PerspectiveCamera( 60, width / height, 1, 2100 );
+				camera.position.z = 1500;
+				cameraOrtho = new THREE.OrthographicCamera( - width / 2, width / 2, height / 2, - height / 2, 1, 10 );
+				cameraOrtho.position.z = 10;
+				scene = new THREE.Scene();
+			//	scene.fog = new THREE.Fog( 0x000000, 1500, 2100 );
+				sceneOrtho = new THREE.Scene();
+
+
+				// create sprites
+				var amount = 24;
+				var radius = 400;
+				var textureLoader = new THREE.TextureLoader();
+				var mapA = textureLoader.load( "logo.png", createHUDSprites );
+				mapB = textureLoader.load( "images/manhole.png" );
+				mapC = textureLoader.load( "images/cowboy.png" );
+				mapD = textureLoader.load( "images/cityhall.png" );
+				mapE = textureLoader.load( "images/skater.png" );
+				mapF = textureLoader.load( "images/elvis.png" );
+				mapG = textureLoader.load( "images/guitar.png" );
+				group = new THREE.Group();
+				var materialG = new THREE.SpriteMaterial( { map: mapG, color: 0xffffff, fog: true } );
+				var materialF = new THREE.SpriteMaterial( { map: mapF, color: 0xffffff, fog: true } );
+				var materialE = new THREE.SpriteMaterial( { map: mapE, color: 0xffffff, fog: true } );
+				var materialD = new THREE.SpriteMaterial( { map: mapD, color: 0xffffff, fog: true } );
+				var materialC = new THREE.SpriteMaterial( { map: mapC, color: 0xffffff, fog: true } );
+				var materialB = new THREE.SpriteMaterial( { map: mapB, color: 0xffffff, fog: true } );
+				materialArr.push(materialB);
+				materialArr.push(materialC);
+				materialArr.push(materialD);
+				materialArr.push(materialE);
+				materialArr.push(materialF);
+				materialArr.push(materialG);
+				materialArr.push(materialB);
+				materialArr.push(materialC);
+				materialArr.push(materialD);
+				materialArr.push(materialE);
+				materialArr.push(materialF);
+				materialArr.push(materialG);
+				materialArr.push(materialB);
+				materialArr.push(materialC);
+				materialArr.push(materialD);
+				materialArr.push(materialE);
+				materialArr.push(materialF);
+				materialArr.push(materialG);
+				materialArr.push(materialB);
+				materialArr.push(materialC);
+				materialArr.push(materialD);
+				materialArr.push(materialE);
+				materialArr.push(materialF);
+				materialArr.push(materialG);
+				for ( var a = 0; a < amount; a ++ ) {
+					var x = Math.random() - 0.5;
+					var y = Math.random() - 0.5;
+					var z = Math.random() - 0.5;
+					material = materialArr[a].clone();
+/*
+
+					if ( z <= -.5) {
+					        material = materialB.clone();
+					}else if (z<=-.4){
+					        material = materialC.clone();
+					}else if (z<=-.3){
+					        material = materialD.clone();
+					}else if (z<=-.2){
+					        material = materialE.clone();
+					}else if (z<=-.1){
+					        material = materialF.clone();
+					}else if (z<=0){
+					        material = materialG.clone();
+					}else if (z<=.1){
+					        material = materialB.clone();
+					}else if (z<=.2){
+					        material = materialC.clone();
+					}else if (z<=.3){
+					        material = materialD.clone();
+					}else if (z<=.4){
+					        material = materialE.clone();
+					  
+					 }else{
+					        material = materialF.clone();
+					}
+					*/
+					/*
+					if ( z < 0 && z>-.2) {
+						material = materialB.clone();
+					} else if ( z < -.2 && z>-.5) {
+						material = materialE.clone();
+					//	material.color.setHSL( 0.5 * Math.random(), 0.75, 0.5 );
+						//material.map.repeat.set( 2, 2 );
+					} else if ( z > 0 && z<.3) {
+						material = materialC.clone();
+					//	material.color.setHSL( 0.5 * Math.random(), 0.75, 0.5 );
+						//material.map.repeat.set( 2, 2 );
+					}else {
+						material = materialD.clone();
+
+					}
+					*/
+					material.rotation = a*30;
+					var sprite = new THREE.Sprite( material );
+					sprite.position.set( x, y, z/2);
+					sprite.position.normalize();
+					sprite.position.multiplyScalar( radius );
+					group.add( sprite );
+				}
+				scene.add( group );
+
+					// texture
+
+				var manager = new THREE.LoadingManager();
+				manager.onProgress = function ( item, loaded, total ) {
+
+						console.log( item, loaded, total );
+
+				};
+
+			
+
+				var texture = new THREE.Texture();
+
+				
+
+
+
+				var ambient = new THREE.AmbientLight( 0x444444 );
+				scene.add( ambient );
+				
+				var directionalLight = new THREE.DirectionalLight( 0xfe0404 );
+				directionalLight.position.set( 0, 0, 1000 ).normalize();
+				scene.add( directionalLight );
+/*
+				var grid = new THREE.GridHelper(1000, 10);
+				scene.add(grid);
+*/
+				// renderer
+				//renderer = new THREE.WebGLRenderer();
+				renderer = new THREE.WebGLRenderer({ alpha: true });
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setClearColor( 0xfe0404, 0 );
+				renderer.autoClear = false; // To allow render overlay on top of sprited sphere
+				document.body.appendChild( renderer.domElement );
+
+/*
+				clearPostPorcessing();
+				composer.addPass( new THREE.RenderPass( scene, camera ) );
+				//enablePostProcessingKaleidoFilter();
+				//enablePostProcessingSobelFilter();
+				enablePostProcessingDotScreenFilter();
+*/
+
+				controls = new THREE.OrbitControls(camera, renderer.domElement);
+				//
+				window.addEventListener( 'resize', onWindowResize, false );
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+			}
+
+			var onProgress = function ( xhr ) {
+						if ( xhr.lengthComputable ) {
+								var percentComplete = xhr.loaded / xhr.total * 100;
+								console.log( Math.round(percentComplete, 2) + '% downloaded' );
+						}
+				};
+
+				var onError = function ( xhr ) {
+				};
+
+
+			function addHeads(){
+
+					 var loader = new THREE.ObjectLoader();
+					loader.load("models/head.json",function ( obj ) {
+
+					//	var mat = new THREE.MeshLambertMaterial( { color: 0xff5b5b} );
+		
+						var gemFrontMaterial = new THREE.MeshPhysicalMaterial( {
+							map: null,
+							color: 0xa01818 ,
+							metalness: 0.0,
+							roughness: 0.5,
+							opacity: 0.6,
+							side: THREE.FrontSide,
+							transparent: false,
+							shading: THREE.SmoothShading,
+							envMapIntensity: 50,
+							premultipliedAlpha: true
+						} );
+						obj.traverse( function ( child )
+					    {
+					        if ( child instanceof THREE.Mesh )
+					           // child.material.color.setHex(0xff5b5b);
+					        	//child.material = boxMaterial;//material;
+					        	child.material = gemFrontMaterial;
+
+					    });
+
+	        
+					
+						
+					   	for ( var i = 0; i < 10; i ++ ) {
+							var head = obj.clone(true);
+					
+							head.position.x = (Math.random()*900) - 450;
+							head.position.y = (Math.random()*900) - 450;
+							head.position.z = (Math.random()*900) - 450;
+							
+					    	head.rotation.y = 30*i;
+					    	head.rotation.x = 30*i;
+
+							head.scale.set(600,600,600);
+							group.add( head );
+
+						}
+
+					}, onProgress, onError );
+			}
+
+			function enablePostProcessingDotScreenFilter()
+			{
+	/*			var effect = new THREE.ShaderPass( THREE.DotScreenShader );
+				effect.uniforms[ 'scale' ].value = 10;
+				//effect.renderToScreen = true;
+				composer.addPass( effect );
+
+				var effect2 = new THREE.ShaderPass( THREE.RGBShiftShader );
+				effect2.uniforms[ 'amount' ].value = 0.0015;
+			//	effect.renderToScreen = true;
+				composer.addPass( effect2 );
+*/
+				var colorifyPass = new THREE.ShaderPass( THREE.ColorifyShader );
+				colorifyPass.uniforms[ "color" ].value = new THREE.Color( 0xff0000 );
+				colorifyPass.renderToScreen = true;
+				composer.addPass( colorifyPass );
+				
+				
+			}
+
+			function clearPostPorcessing(){
+				if(composer){composer.length = 0;}
+				composer = new THREE.EffectComposer( renderer );
+			}
+
+
+
+			function createHUDSprites ( texture ) {
+				var material = new THREE.SpriteMaterial( { map: texture } );
+				var width = material.map.image.width;
+				var height = material.map.image.height;
+				
+				spriteTL = new THREE.Sprite( material );
+				spriteTL.scale.set( width, height, 1 );
+				sceneOrtho.add( spriteTL );
+				/*
+				spriteTR = new THREE.Sprite( material );
+				spriteTR.scale.set( width, height, 1 );
+				sceneOrtho.add( spriteTR );
+				spriteBL = new THREE.Sprite( material );
+				spriteBL.scale.set( width, height, 1 );
+				sceneOrtho.add( spriteBL );
+				spriteBR = new THREE.Sprite( material );
+				spriteBR.scale.set( width, height, 1 );
+				sceneOrtho.add( spriteBR );
+				*/
+				spriteC = new THREE.Sprite( material );
+				spriteC.scale.set( width, height, 1 );
+				sceneOrtho.add( spriteC );
+				updateHUDSprites();
+			}
+			function updateHUDSprites () {
+				var width = window.innerWidth / 2;
+				var height = window.innerHeight / 2;
+				var material = spriteTL.material;
+				var imageWidth = material.map.image.width / 2;
+				var imageHeight = material.map.image.height / 2;
+				/*
+				spriteTL.position.set( - width + imageWidth,   height - imageHeight, 1 ); // top left
+				spriteTR.position.set(   width - imageWidth,   height - imageHeight, 1 ); // top right
+				spriteBL.position.set( - width + imageWidth, - height + imageHeight, 1 ); // bottom left
+				spriteBR.position.set(   width - imageWidth, - height + imageHeight, 1 ); // bottom right
+				*/
+				spriteC.position.set( 0, 0, 1 ); // center
+			}
+			function onWindowResize() {
+				var width = window.innerWidth;
+				var height = window.innerHeight;
+				camera.aspect = width / height;
+				camera.updateProjectionMatrix();
+				cameraOrtho.left = - width / 2;
+				cameraOrtho.right = width / 2;
+				cameraOrtho.top = height / 2;
+				cameraOrtho.bottom = - height / 2;
+				cameraOrtho.updateProjectionMatrix();
+				updateHUDSprites();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function onDocumentMouseMove( event ) {
+				//mouseX = event.clientX - windowHalfX;
+				//mouseY = event.clientY - windowHalfY;
+
+				mouseX = ( event.clientX - windowHalfX ) / 2;
+				mouseY = ( event.clientY - windowHalfY ) / 2;
+			}
+
+
+			function animate() {
+				requestAnimationFrame( animate );
+				render();
+			}
+			function render() {
+
+					// CAMERA AND LIGHT
+					camera.position.x +=  (mouseX - camera.position.x ) * 0.036;
+					camera.position.y += ( - ( mouseY ) - camera.position.y ) * 0.0036;
+
+					cameraOrtho.position.x +=  (mouseX/2 - cameraOrtho.position.x ) * 0.02;
+					cameraOrtho.position.y += ( - ( mouseY/2 ) - cameraOrtho.position.y ) * 0.002;
+
+
+				var time = Date.now() / 1000;
+
+				if (mixing ==true){
+					for ( var i = 0, l = group.children.length; i < l; i ++ ) {
+						
+
+
+						var sprite = group.children[ i ];
+					//	console.log("type?="+getObjectType(sprite));
+						if (getObjectType(sprite)=="Sprite"){
+							var material = sprite.material;
+							var scale = Math.sin( time + sprite.position.x * 0.01 ) * 0.8 + 1.5;
+							var imageWidth = 1;
+							var imageHeight = 1;
+							if ( material.map && material.map.image && material.map.image.width ) {
+								imageWidth = material.map.image.width;
+								imageHeight = material.map.image.height;
+							}
+							
+							sprite.scale.set( scale * imageWidth, scale * imageHeight, 1.0 );
+							if ( material.map == mapB ) {
+								sprite.material.rotation += 0.1 * ( i / l );
+								material.opacity = Math.sin( time + sprite.position.x * 0.01 ) * 0.4 + 0.6;
+							}
+							
+							material.opacity = Math.sin( time + sprite.position.x * 0.01 ) * 0.4 + 0.6;
+						}else{
+							//sprite.materials[0].opacity = Math.sin( time + sprite.position.x * 0.01 ) * 0.4 + 0.6;
+							sprite.traverse( function ( child )
+						    {
+						       // if ( child instanceof THREE.Mesh )
+						          //  child.material.color.opacity = Math.sin( time + sprite.position.x * 0.01 ) * 0.4 + 0.6;
+						        	//child.material = boxMaterial;//material;
+
+						    });
+							sprite.rotation.y += 0.01 * ( i / l );
+						}
+						
+					}
+
+					group.rotation.x = time * 0.1;
+					group.rotation.y = time * 0.25;
+					group.rotation.z = time * 0.5;
+				}
+			//	console.log(camera.position.x);
+				renderer.clear();
+				//composer.render(scene, camera);
+				renderer.render( scene, camera );
+				renderer.clearDepth();
+				renderer.render( sceneOrtho, cameraOrtho );
+			}
+
+
+			function getObjectType( object ) {
+
+			    var types = {
+
+			        'Scene': THREE.Scene,
+			        'PerspectiveCamera': THREE.PerspectiveCamera,
+			        'AmbientLight': THREE.AmbientLight,
+			        'DirectionalLight': THREE.DirectionalLight,
+			        'HemisphereLight': THREE.HemisphereLight,
+			        'PointLight': THREE.PointLight,
+			        'SpotLight': THREE.SpotLight,
+			        'Mesh': THREE.Mesh,
+			        'Sprite': THREE.Sprite,
+			        'Object3D': THREE.Object3D
+
+			    };
+
+			    for ( var type in types ) {
+
+			        if ( object instanceof types[ type ] ) return type;
+
+			    }
+
+			};
+
+
+
+
+			document.addEventListener('mousedown', onDocumentMouseDown, false);
+
+			function onDocumentMouseDown(event) {
+				console.log('mousedown');
+				if (clickNum==0){
+					addHeads();
+					clickNum++;
+				}else{
+				
+					$('body').addClass('active');
+					$('#page-layout').addClass('active');
+					mixing =false;
+					TweenMax.to(camera.position ,5,{
+						x:0,
+						y:-1400,
+						ease:"Power3.easeOut",
+						onUpdate:function(){
+	                  //  console.log('tweened');
+
+	                }});
+/*
+	                for ( var i = 0, l = group.children.length; i < l; i ++ ) {
+	                	var sprite = group.children[ i ];
+	                	TweenMax.to(sprite.position ,5,{
+							x:camera.position.x-10,
+								y:4000,
+								z:camera.position.z-15,
+							ease:"Power3.easeOut",
+							onUpdate:function(){
+		                  //  console.log('tweened');
+
+		                }});
+
+	                }
+	       */
+	       			TweenMax.to(group.position ,2,{
+					x:0,
+					y:-3000,
+					ease:"Power3.easeOut",
+					onUpdate:function(){
+                  //  console.log('tweened');
+
+                }});
+                }
+
+				
+
+			}
+		</script>
+        <script>
+            var _gaq=[['_setAccount','UA-XXXXX-X'],['_trackPageview']];
+            (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+            g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
+            s.parentNode.insertBefore(g,s)}(document,'script'));
+        </script>
+    </body>
+</html>

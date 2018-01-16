@@ -1,0 +1,756 @@
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - interactive - buffergeometry</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link href="https://fonts.googleapis.com/css?family=Open+Sans|Patua+One" rel="stylesheet">
+		<style>
+			body {
+				color: #cccccc;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+
+				background-color: #050505;
+				margin: 0px;
+			
+				height: 100%;
+			}
+
+			h1{
+				
+			
+				color: #333;
+
+			}
+			#WebGL-output{
+			        width: 100%;
+			    height: 100%;
+			      position: fixed;
+			      top: 0;
+			      left: 0;
+			      z-index: -1;
+			}
+
+			#output {
+			  width: 100%;
+			  height: auto;
+			 /* background: #eee; */
+			  position: fixed;
+			  top: 0;
+			  left: 0;
+			  font-weight: bold;
+			  text-align: center;
+			  line-height: 2;
+			}
+
+			#output #scrolling {
+			  color: green;
+			}
+			#output #stopped {
+			  color: red;
+			}
+
+
+			#info {
+				position: absolute;
+				top: 0px; width: 100%;
+				padding: 5px;
+			}
+
+
+			a {
+
+				color: #0080ff;
+			}
+
+			p{
+
+			    margin: 100px auto;
+
+			    font-family: 'Open Sans', sans-serif;
+			    font-size: 1.5em;
+			    max-width: 550px;
+			    color: white;
+			    opacity: 0;
+			    
+			}
+
+
+
+			article{
+
+
+			    line-height: 1.8em;
+			    opacity: 1;
+			    width: 100%;
+			    margin: 100px auto;
+			    width: 50%;
+
+			}
+			#logo{
+				    width: 77%;
+				    margin: 0 auto;
+				    background-color: yellow;
+				    height: 300px;
+			}
+
+			#logo h1{
+				text-align: left;
+				font-size: 64px;
+				width: 200px;
+				text-transform: uppercase;
+				font-size: 100px;
+    			line-height: 60px;
+				font-family: 'Patua One', sans-serif;
+				
+			}
+
+			#logo span{
+				
+				mix-blend-mode: multiply; 
+			}
+
+			.bgClip {
+			    background:url('images/texture.jpg');
+			  
+			    background-position:50% 50%;
+			  /*  font-size:200px; 
+			    text-transform:uppercase;
+			    text-align:center;
+			    */
+			    color:transparent;
+			    -webkit-font-smoothing:antialiased;
+			    -webkit-background-clip:text;
+			    -moz-background-clip:text;
+			    background-clip:text;
+			    -webkit-text-fill-color:transparent;
+			    margin:0;
+			    
+			}
+
+		</style>
+	</head>
+	<body>
+
+		<div id="output"></div>
+		
+		<div id="WebGL-output"></div>
+		
+		<script src="../../bower_components/jquery/dist/jquery.min.js"></script>
+		<script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
+		<script src="../../bower_components/three.js/build/three.js"></script>
+		<script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+		<script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+		<script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+		<!-- <script src="../../bower_components/three.js/examples/js/renderers/Projector.js"></script> -->
+
+		<script>
+
+		
+
+			var container, stats;
+			var camera, scene, raycaster, renderer;
+
+			var mouse = new THREE.Vector2(), INTERSECTED;
+			var radius = 100, theta = 0;
+			var objects = [];
+			var panelObjects = [];
+			var particleMaterial;
+			var activePanel;
+			var viewWidth = window.innerWidth;
+			var viewHeight = window.innerHeight;
+			var vector, scaledVector;
+
+			var controls;
+
+			var materialOne;
+			var materialArr = [];
+			var imgArrIdx = 0;
+			var textureLoader;
+
+			var imgArr = [
+				"ahoy.jpg",
+				"flowers.jpg",
+				"hodgepodge.png",
+				//"geometry.png",
+				"lines.png",
+				"magnus-2051.png",
+				"patternfills.gif",
+				"asteroids.jpg",
+				"ripples.jpg",
+				"cuadros.png",
+				//"swirl_pattern.png",
+				//"topography.png",
+				//"wormz.png",
+			]
+
+			init();
+			animate();
+
+			function init() {
+
+
+				container = document.getElementById('WebGL-output');
+				
+
+				scene = new THREE.Scene();
+			//	scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
+			scene.background = new THREE.Color( 0x00ffff )
+
+				//renderer = new THREE.WebGLRenderer();
+				renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+				//renderer.setClearColor( scene.fog.color );
+				renderer.setClearColor( 0xF2F2EF );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild(renderer.domElement);
+
+				//camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 1000 );
+				camera.position.z = 40;
+				camera.position.y = 0;
+
+				// CONTROLS
+				controls = new THREE.OrbitControls( camera, renderer.domElement );
+				//controls.addEventListener( 'change', render ); // add this only if there is no animation loop (requestAnimationFrame)
+				//controls.enableDamping = true;
+				//controls.dampingFactor = 0.25;
+				//controls.enableZoom = false;
+
+				scene.add( new THREE.AxisHelper( 30 ) );
+
+				/*
+				var light = new THREE.DirectionalLight( 0xffffff, 1 );
+				light.position.set( 1, 1, 1 ).normalize();
+				scene.add( light );
+				
+
+				var grid = new THREE.GridHelper(100, 10);
+		        scene.add(grid);
+
+		        var ambient = new THREE.AmbientLight( 0xffffff);
+		        scene.add( ambient );
+
+		        var directionalLight = new THREE.DirectionalLight( 0xffffff );
+		        directionalLight.position.set( 0, 0, 100 );
+		        scene.add( directionalLight );
+
+		        var directionalLight2 = new THREE.DirectionalLight( 0xffeedd );
+		        directionalLight2.position.set( 100, 0, 0 );
+		        scene.add( directionalLight2 );
+
+		        var directionalLight3 = new THREE.DirectionalLight( 0xffffff );
+		        directionalLight3.position.set( 0, 100, 0 );
+		        scene.add( directionalLight3 );
+*/
+
+// so many lights
+var light = new THREE.DirectionalLight( 0xffffff, 1 );
+light.position.set( 0, 1, 0 );
+scene.add( light );
+
+var light = new THREE.DirectionalLight( 0xffffff, 0.5 );
+light.position.set( 0, -1, 0 );
+scene.add( light );
+
+var light = new THREE.DirectionalLight( 0xffffff, 1 );
+light.position.set( 1, 0, 0 );
+scene.add( light );
+
+var light = new THREE.DirectionalLight( 0xffffff, 0.5 );
+light.position.set( 0, 0, 1 );
+scene.add( light );
+
+var light = new THREE.DirectionalLight( 0xffffff, 1 );
+light.position.set( 0, 0, -1 );
+scene.add( light );
+
+var light = new THREE.DirectionalLight( 0xffffff, 0.5 );
+light.position.set( -1, 0, 0 );
+scene.add( light );
+
+
+
+		        //load textures 
+
+			
+				var manager = new THREE.LoadingManager();
+				manager.onProgress = function ( item, loaded, total ) {
+				 // progressBar.style.width = (loaded / total * 100) + '%';
+				 	console.log(item, loaded, total);
+				};
+
+				manager.onLoad = function (){
+					console.log('all items loaded');
+					if (imgArrIdx < imgArr.length) {
+						loadImages();
+					}else{
+						createGridWall();
+					}
+				}
+
+				manager.onError = function (){
+					console.log('loading error');
+				}
+
+
+			//	new THREE.MeshBasicMaterial( { map: videoTexture, overdraw: true, side:THREE.DoubleSide } );
+
+				// create a loader to get an image from a URL
+				textureLoader = new THREE.TextureLoader(manager);
+				// we've gotta set this to use cross-origin images
+				textureLoader.crossOrigin = true;
+
+				// load in the image
+				
+				loadImages();
+
+
+				/*
+				for ( var i = 0; i < 2000; i ++ ) {
+
+					var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
+
+					object.position.x = Math.random() * 800 - 400;
+					object.position.y = Math.random() * 800 - 400;
+					object.position.z = Math.random() * 800 - 400;
+
+					object.rotation.x = Math.random() * 2 * Math.PI;
+					object.rotation.y = Math.random() * 2 * Math.PI;
+					object.rotation.z = Math.random() * 2 * Math.PI;
+
+					object.scale.x = Math.random() + 0.5;
+					object.scale.y = Math.random() + 0.5;
+					object.scale.z = Math.random() + 0.5;
+
+					scene.add( object );
+
+					TweenMax.to(object.position ,Math.random()*200,{
+						x:0,
+						y:0,
+						ease:"Power3.easeOut",
+						onUpdate:function(){
+                      //  console.log('tweened');
+                    }});
+
+				}
+				*/
+
+				raycaster = new THREE.Raycaster();
+
+				stats = new Stats();
+				container.appendChild( stats.dom );
+
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+				document.addEventListener( 'mouseup', onDocumentMouseUp, false );
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function loadImages(){
+				
+				textureLoader.load("images/"+imgArr[imgArrIdx], function(texture) {
+				  // this code makes the texture repeat
+				//  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+				//  texture.repeat.set( 10, 10 );
+				  // set the texture as the map for the material
+				//  materialOne = texture;//new THREE.MeshLambertMaterial( {map: texture, side:THREE.DoubleSide } );
+				   texture.wrapS = THREE.RepeatWrapping;
+                	texture.wrapT = THREE.RepeatWrapping;
+               		texture.repeat.set( 4, 4 );
+               		//texture.rotation = .25;
+               	//	texture.matrixAutoUpdate = false;
+
+                	texture.needsUpdate = true;
+
+				  materialArr.push(texture);
+				  console.log("materialArr="+materialArr);
+				  imgArrIdx++;
+				
+
+
+				
+				 })
+
+
+
+
+			}
+
+
+
+			function createGridWall(){
+				//var geometry = new THREE.BoxBufferGeometry( 20, 20, 20 );
+					var geometry = new THREE.PlaneBufferGeometry( 10, 10, 5 );
+					//var geometry = new THREE.PlaneGeometry( 10, 10, 5 );
+
+					var objWidth = 10;
+					var maxRow = 4;
+					var maxCol = 4;
+					var hspacing = 14;
+					var vspacing = 14;
+					var xoffset = ((objWidth + hspacing)* maxRow)/2;
+					var idx = 0;
+
+					for (var i = 0; i < maxRow; i++) {
+					     for (var j = 0; j < maxCol; j++) {
+					      	//var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
+					      	console.error(idx%imgArr.length)
+					      	console.log(materialArr[(idx%imgArr.length)])
+					      //	var object = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {map: materialArr[(idx%imgArr.length)], side:THREE.DoubleSide } ));
+
+					      	var object = new PanelTexture(geometry, materialArr[(idx%imgArr.length)], (Math.random()*10)/100, (Math.random()*10)/100, idx)
+
+					      	object.doubleSided = true;
+					      	object.geometry.computeBoundingSphere(); // this isn't calculated automatically
+							object.geometry.boundingSphere.center;
+
+							var xpos = (hspacing * j)- (objWidth*maxRow)/2;//((hspacing * j) - hspacing/2) - xoffset;
+							var ypos = (objWidth*maxCol)/2 - (vspacing  * i);//(vspacing  * i)  - ((vspacing/2)*maxRow);
+							var zpos = Math.random() * 400 - 200;
+
+							object.position.x = xpos;
+							object.position.y = ypos;
+							object.position.z = 0;
+							object.origin = [xpos, ypos];
+							
+							idx++;
+					     }
+					 }
+
+
+					 particleMaterial = new THREE.SpriteMaterial( { color: 0x0f0f0f, fog: true } );
+			}
+
+			function PanelTexture(geo, mat, xspeed, yspeed, inc){
+
+				  var alpha = new THREE.TextureLoader().load( 'images/monkeyface_mask_large.jpg');
+
+				  var material = new THREE.MeshBasicMaterial( {
+				  	map: mat, 
+				  //	transparent:true,
+			//	 	alphaMap : alpha,
+				  	side:THREE.DoubleSide,
+				  	alphaTest: 0.5, 
+				  	opacity: 1, 
+				  	//roughness: 1
+				  } )
+
+				 // material.alphaMap = alphaMap;
+
+             //     material.alphaMap.magFilter = THREE.NearestFilter;
+               //   material.alphaMap.wrapT = material.alphaMap.wrapS = THREE.RepeatWrapping;
+                 // material.alphaMap.repeat.x = 1;
+
+
+				  var panel = new THREE.Mesh( geo, material);
+
+				   
+
+
+				  this.name = "obj"+inc;
+				  this.mesh = panel;
+				  this.xvel = xspeed;
+				  this.yvel = yspeed;
+				  scene.add( panel );
+				  objects.push( panel );
+				  panelObjects.push(this)
+
+
+				  this.update = function(){
+				   // console.log('player update:'+this.name)
+				    this.mesh.material.map.offset.x+=this.xvel;
+				   // this.mesh.material.alphaMap.offset.x-=this.xvel;
+				    this.mesh.material.map.offset.y+=this.yvel;
+				  //  this.mesh.material.map.rotation=Math.PI/4;
+
+				  }
+
+				  this.animate = function(state, loops){
+				    console.log('player animate')
+				    
+				  }
+					/*
+
+				  this.destroy = function(){
+				  	console.log('destroy')
+				  	this.shadow.destroy();
+				  	scene.remove(this.mesh);
+				    //playerPool.splice(this, 1);
+				   // console.log(enemyPool)
+
+				  }
+				  */
+
+				  return panel;
+				}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function onDocumentMouseMove( event ) {
+
+				event.preventDefault();
+
+				mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+				mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+			}
+
+			function onDocumentMouseDown( event ) {
+
+				event.preventDefault();
+
+			//	console.log(THREE.Vector3( 0, 0, -1 ).applyQuaternion( camera.quaternion ).add( camera.position ));
+
+				mouse.x = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
+				mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
+
+				raycaster.setFromCamera( mouse, camera );
+
+				vector = new THREE.Vector3( 0, 0, -1 );
+				vector.applyQuaternion( camera.quaternion ).add( camera.position );
+
+				console.log(vector);
+
+				scaledVector=vector.clone().multiplyScalar(0.95);
+
+				console.log("scaled:"+scaledVector.y);
+
+				var intersects = raycaster.intersectObjects( objects );
+
+				if ( intersects.length > 0 ) {
+
+					if (activePanel == intersects[ 0 ].object){
+						activePanel = null;
+						TweenMax.to(intersects[0].object.position, 1, {
+							x:intersects[0].object.origin[0],
+							y:intersects[0].object.origin[1],
+							z:0,
+							delay: 0,
+							//ease:"Power3.easeOut",
+							ease: Back.easeInOut.config(.5),
+							onUpdate:function(){
+	                      //  console.log('tweened');
+
+	                    	}
+						});
+
+						TweenMax.to(intersects[0].object.rotation, 1, {
+							x:0,
+							y:0,
+							z:0,
+							delay: 0,
+							//ease:"Power3.easeOut",
+							ease: Back.easeInOut.config(.5),
+							onUpdate:function(){
+	                      //  console.log('tweened');
+	                    	}
+						});
+
+					}else{
+						activePanel = intersects[ 0 ].object;
+					}
+
+					intersects[ 0 ].object.material.color.setHex( 0xe02323 );
+
+					var newSphereGeom= new THREE.SphereGeometry(.5,.5,.5);
+					var sphere= new THREE.Mesh(newSphereGeom, new THREE.MeshBasicMaterial({ color: 0x2266dd }));
+
+					sphere.position.copy( intersects[ 0 ].point );
+					sphere.scale.x = sphere.scale.y = 1;
+					scene.add( sphere );
+
+					drawRayLine( raycaster );
+					/*
+					TweenMax.to(intersects[0].object.position, 1, {
+						x:camera.position.x,
+						y:camera.position.y,
+						z:camera.position.z -50,
+						delay: .5,
+						//ease:"Power3.easeOut",
+						ease: Back.easeInOut.config(.5),
+						onUpdate:function(){
+                      //  console.log('tweened');
+                    	}
+					});
+					TweenMax.to(intersects[0].object.rotation, 1, {
+						x:camera.rotation.x,
+						y:camera.rotation.y,
+						z:camera.rotation.z,
+						delay: 1,
+						//ease:"Power3.easeOut",
+						ease: Back.easeInOut.config(.5),
+						onUpdate:function(){
+                      //  console.log('tweened');
+                    	}
+					});
+					*/
+
+				}
+
+				/*
+				// Parse all the faces
+				for ( var i in intersects ) {
+
+					intersects[ i ].face.material[ 0 ].color.setHex( Math.random() * 0xffffff | 0x80000000 );
+
+				}
+				*/
+			}
+
+			function onDocumentMouseUp( event ) {
+
+				event.preventDefault();
+				if (activePanel){
+					TweenMax.to(activePanel.position, 1, {
+						x:scaledVector.x,
+						y:scaledVector.y,
+						z:scaledVector.z,
+						delay: 0,
+						ease:"Power3.easeOut",
+						//ease: Back.easeInOut.config(.5),
+						onComplete:function(){
+                      //  console.log('tweened');
+                      		console.log("x:"+activePanel.position.x+", y:"+ activePanel.position.y+ ", z:"+ activePanel.position.z);
+                      		
+
+                    	}
+					});
+					
+					//activePanel.translateOnAxis(activePanel.worldToLocal(new THREE.Vector3(0,0,5)),50);
+					TweenMax.to(activePanel.rotation, 1, {
+						x:camera.rotation.x,
+						y:camera.rotation.y,
+						z:camera.rotation.z,
+						delay: 0,
+						//ease:"Power3.easeOut",
+						ease: Back.easeInOut.config(.5),
+						onUpdate:function(){
+                      //  console.log('tweened');
+                    	}
+					});
+					//activePanel = null;
+
+				}
+
+			}
+			function getFactorPos( val, factor, step )
+			{
+			    return step / factor * val;                
+			}
+
+			function addNewParticle(pos, scale)
+			{
+			    if( !scale )
+			    {
+			        scale = 16;
+			    }
+			    var particle = new THREE.Sprite( particleMaterial );
+			    particle.position = pos;
+			    particle.scale.x = particle.scale.y = scale;
+			    scene.add( particle );
+			}
+
+			function drawParticleLine(pointA,pointB)
+			{
+			    var factor = 50;
+			    for( var i = 0; i < factor; i++ )
+			    {
+			        var x = getFactorPos( pointB.x - pointA.x, factor, i );
+			        var y = getFactorPos( pointB.y - pointA.y, factor, i );
+			        var z = getFactorPos( pointB.z - pointA.z, factor, i );
+			        addNewParticle( new THREE.Vector3( pointA.x+x,pointA.y+y,pointA.z+z ), Math.max(2, viewWidth / 500 ) );
+			    }
+			}
+
+			function drawRayLine(rayCaster)
+			{
+			    var scale = viewWidth*2;
+			    var rayDir = new THREE.Vector3(rayCaster.ray.direction.x*scale,rayCaster.ray.direction.y*scale,rayCaster.ray.direction.z*scale);
+			    var rayVector = new THREE.Vector3(camera.position.x + rayDir.x, camera.position.y + rayDir.y, camera.position.z + rayDir.z);
+			    drawParticleLine(camera.position, rayVector);
+			}                       
+
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+				stats.update();
+				controls.update();
+			
+
+			}
+
+			function render() {
+
+				camera.lookAt( scene.position );
+
+				for (var n=0; n<objects.length;n++){
+					//objects[n].material.map.offset.x+=.05;
+					//objects[n].mesh.material.map.offset.x+=.05;
+					panelObjects[n].update();
+					//objects[n].material.map.rotation.
+				}
+/*
+				theta += 0.1;
+
+				camera.position.x = radius * Math.sin( THREE.Math.degToRad( theta ) );
+				camera.position.y = radius * Math.sin( THREE.Math.degToRad( theta ) );
+				camera.position.z = radius * Math.cos( THREE.Math.degToRad( theta ) );
+				camera.lookAt( scene.position );
+
+				camera.updateMatrixWorld();
+
+				// find intersections
+
+				raycaster.setFromCamera( mouse, camera );
+				*/
+/*
+				var intersects = raycaster.intersectObjects( scene.children );
+
+				if ( intersects.length > 0 ) {
+
+					if ( INTERSECTED != intersects[ 0 ].object ) {
+
+						//if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+
+						INTERSECTED = intersects[ 0 ].object;
+						//INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+						//INTERSECTED.material.emissive.setHex( 0xff0000 );
+
+					}
+
+				} else {
+
+					//if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+
+					INTERSECTED = null;
+
+				}
+*/
+				renderer.render( scene, camera );
+			
+
+			}
+
+
+		</script>
+
+	</body>
+</html>

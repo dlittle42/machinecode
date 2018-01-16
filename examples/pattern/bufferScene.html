@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>three.js webgl - materials - pattern</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <style>
+            body {
+                background-color: #bfd1e5;
+                color: #fff;
+                margin: 0px;
+                overflow: hidden;
+                font-family:Monospace;
+                font-size:13px;
+                text-align:center;
+                font-weight: bold;
+                text-align:center;
+            }
+
+            a {
+                color:#0078ff;
+            }
+
+            #info {
+                color:#fff;
+                position: absolute;
+                top: 5px; width: 100%;
+                z-index:100;
+            }
+
+        </style>
+    </head>
+    <body>
+
+        <div id="info">
+
+        </div>
+
+        <script src="../../bower_components/three.js/build/three.js"></script>
+
+        <script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+
+        <script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+        <script src="../../bower_components/three.js/examples/js/controls/TrackballControls.js"></script>
+
+        <script src="../../bower_components/three.js/examples/js/shaders/ConvolutionShader.js"></script>
+        <script src="../../bower_components/three.js/examples/js/shaders/CopyShader.js"></script>
+
+        <script src="../../bower_components/three.js/examples/js/postprocessing/EffectComposer.js"></script>
+        <script src="../../bower_components/three.js/examples/js/postprocessing/RenderPass.js"></script>
+        <script src="../../bower_components/three.js/examples/js/postprocessing/MaskPass.js"></script>
+        <script src="../../bower_components/three.js/examples/js/postprocessing/BloomPass.js"></script>
+        <script src="../../bower_components/three.js/examples/js/postprocessing/ShaderPass.js"></script>
+
+        <script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+
+        <script src="../../bower_components/three.js/examples/js/effects/OutlineEffect.js"></script>
+
+
+<script>
+  var planeObject;
+
+///////////////////This is the basic scene setup
+var scene = new THREE.Scene();
+var width = window.innerWidth;
+var height = window.innerHeight;
+var camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 1000 );
+
+var ambient = new THREE.AmbientLight( 0x444444 );
+scene.add( ambient );
+
+var directionalLight = new THREE.DirectionalLight( 0xfe0404 );
+directionalLight.position.set( 0, 0, 1000 ).normalize();
+scene.add( directionalLight );
+
+var renderer = new THREE.WebGLRenderer();
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+///////////////////This is where we create our off-screen render target
+//Create a different scene to hold our buffer objects
+var bufferScene = new THREE.Scene();
+//Create the texture that will store our result
+var bufferTexture = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter});
+
+//Let's create a red box
+var redMaterial = new THREE.MeshStandardMaterial({color:0xF06565});
+var boxGeometry = new THREE.BoxGeometry( 5, 5, 5 );
+var boxObject = new THREE.Mesh( boxGeometry, redMaterial );
+boxObject.position.z = -10; 
+bufferScene.add(boxObject);//We add it to the bufferScene instead of the normal scene!
+
+
+var ambient = new THREE.AmbientLight( 0x444444 );
+bufferScene.add( ambient );
+
+var directionalLight = new THREE.DirectionalLight( 0xfe0404 );
+directionalLight.position.set( 0, 0, 1000 ).normalize();
+bufferScene.add( directionalLight );
+
+///And a blue plane behind it
+var blueMaterial = new THREE.MeshBasicMaterial({color:0x7074FF})
+
+var texture = new THREE.TextureLoader().load( "images/patternfills.gif" );
+texture.wrapS = THREE.RepeatWrapping;
+texture.wrapT = THREE.RepeatWrapping;
+texture.repeat.set( 4, 4 );
+
+console.log(texture)
+//mesh = new THREE.Mesh(geometry, material);
+var plane = new THREE.PlaneBufferGeometry( 100, 100 );
+ planeObject = new THREE.Mesh( plane, new THREE.MeshBasicMaterial( {
+    //map: materialArr[(j)%imgArr.length], 
+    map: texture, 
+    side:THREE.DoubleSide 
+} ));
+
+//var plane = new THREE.PlaneBufferGeometry( window.innerWidth, window.innerHeight );
+//var planeObject = new THREE.Mesh(plane,blueMaterial);
+planeObject.position.z = -15;
+bufferScene.add(planeObject);//We add it to the bufferScene instead of the normal scene!
+
+////////////////////////////Now we use our bufferTexture as a material to render it onto our main scene
+var boxMaterial = new THREE.MeshBasicMaterial({map:bufferTexture});
+var boxGeometry2 = new THREE.BoxGeometry( 5, 5, 5 );
+var mainBoxObject = new THREE.Mesh(boxGeometry2,boxMaterial);
+mainBoxObject.position.z = -10;
+scene.add(mainBoxObject);
+
+//Render everything!
+function render() {
+
+  requestAnimationFrame( render );
+
+  //Make the box rotate on box axises
+  boxObject.rotation.y += 0.01;
+  boxObject.rotation.x += 0.01;
+
+  planeObject.material.map.offset.y += .05;
+
+  //Rotate the main box too
+  mainBoxObject.rotation.y += 0.01;
+  mainBoxObject.rotation.x += 0.01;
+
+  //Render onto our off screen texture
+  renderer.render(bufferScene,camera,bufferTexture);
+
+  //Finally, draw to the screen
+  renderer.render( scene, camera );
+
+}
+render();
+</script>
+
+    </body>
+</html>
