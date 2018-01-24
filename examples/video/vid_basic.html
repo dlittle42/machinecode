@@ -28,6 +28,18 @@
 				z-index:100;
 			}
 
+			.video-holder{
+				height: 1px;
+				width: 1px;
+				overflow: hidden;
+				transform: translate(-1, -1);
+			}
+
+			video{
+				height: 1px;
+				width: 1px;
+			}
+
 		</style>
 	</head>
 	<body>
@@ -51,10 +63,12 @@
 
 		<script src="../../bower_components/three.js/examples/js/effects/OutlineEffect.js"></script>
 
-		<video id="video" autoplay loop webkit-playsinline style="display:none">
-			<source src="video/whatisha.mp4" type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"'>
-			<!-- <source src="textures/sintel.ogv" type='video/ogg; codecs="theora, vorbis"'> -->
-		</video>
+		<div class="video-holder">
+			<video id="video" autoplay loop playsinline muted style="">
+				<source src="video/whatisha.mp4" type='video/mp4'>
+				<!-- <source src="textures/sintel.ogv" type='video/ogg; codecs="theora, vorbis"'> -->
+			</video>
+		</div>
 
 		<script>
 
@@ -109,6 +123,10 @@
 				container.appendChild( renderer.domElement );
 
 				video = document.getElementById( 'video' );
+
+				console.log(video)
+
+			//	alert(video)
 
 				texture = new THREE.VideoTexture( video );
 				texture.minFilter = THREE.LinearFilter;

@@ -267,7 +267,7 @@
 		function init(){
 			loadTick();
 			initGraphics();
-			initShaders();
+		//	initShaders();
 			initInput();
 		}
 
@@ -309,7 +309,7 @@
 			camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
 
 			scene = new THREE.Scene();
-			scene2 = new THREE.Scene();
+		
 
 			camera.position.x = 0;
 			camera.position.y = 0;
@@ -355,7 +355,7 @@
 
 			scene.add( light );
 
-			scene.add( new THREE.AxisHelper( 30 ) );
+		//	scene.add( new THREE.AxisHelper( 30 ) );
 
 			container.appendChild( renderer.domElement );
 /*
@@ -422,7 +422,7 @@
 			  plane.position.z=-10;
 
 			  scene.add(letterGroup)
-			  scene2.add(plane)
+			
 
 			 
 			//
@@ -463,133 +463,8 @@
 
 		}
 
-		function initShaders(){
-			  var clearPass = new THREE.ClearPass();
-			  var clearMaskPass = new THREE.ClearMaskPass();
-
-			  var maskPass1 = new THREE.MaskPass(scene, camera);
-			  maskPass2 = new THREE.MaskPass(scene2, camera);
-			  //maskPass1.inverse = true
-			  //maskPass2.inverse = true
-			  var renderPass = new THREE.RenderPass(scene, camera);
-
-			  var screenDotPass = new THREE.DotScreenPass(new THREE.Vector2(0,0), 0.2, 0.8);
-
-			   var effectFilm = new THREE.FilmPass(0.8, 0.325, 1400, false);
-        	//effectFilm.renderToScreen = true;
-
-			  var colorifyPass = new THREE.ShaderPass( THREE.ColorifyShader );
-			      colorifyPass.uniforms[ "color" ].value = new THREE.Color( 0xffff32 );
-			     // colorifyPass.renderToScreen = true;
-			 
-			 var rgbEffect = new THREE.ShaderPass( THREE.RGBShiftShader );
-			 rgbEffect.uniforms[ 'amount' ].value = 0.015;
-			//rgbEffect.renderToScreen = true;
-
-			 var luminosityPass = new THREE.ShaderPass( THREE.LuminosityShader );
-
-
-
-			  var outputPass = new THREE.ShaderPass(THREE.CopyShader);
-			  outputPass.renderToScreen = true;
-
-			  var renderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
-			    minFilter: THREE.LinearFilter,
-			    magFilter: THREE.LinearFilter,
-			  //  format: THREE.RGBFormat,
-			    stencilBuffer: true
-			  });
-
-			  // Create composer and add passes
-			  composer = new THREE.EffectComposer(renderer, renderTarget);
-			  
-			  composer.addPass(renderPass);
-
-			  composer.addPass(maskPass1);
-			 // composer.addPass( rgbEffect );
-			 // composer.addPass(luminosityPass);
-			  composer.addPass(maskPass2);
-			  
-			  composer.addPass(screenDotPass);
-			 // composer.addPass(effectFilm);
-			  composer.addPass(colorifyPass);
-
-			  composer.addPass(clearMaskPass);
-			  
-			  composer.addPass(outputPass);
-		}
-
-
-		function loadFont() {
-
-            var loader = new THREE.FontLoader();
-            var typefile = 'fonts/' + fontName + '_' + fontWeight + '.typeface.json';
-            console.log(typefile);
-            loader.load( typefile, function ( response ) {
-
-                font = response;
-
-                createRing();
-
-            } );
-
-        }
-
-        function createText(word) {
-
-
-            textGeo2 = new THREE.TextGeometry( alphabet[word], {
-
-
-                font: font,
-
-                size: size,
-                height: height,
-                curveSegments: curveSegments,
-
-                bevelThickness: bevelThickness,
-                bevelSize: bevelSize,
-                bevelEnabled: bevelEnabled,
-
-                material: 0,
-                extrudeMaterial: 1
-
-            });
-
-         //   textGeo2.computeBoundingBox();
-          //  textGeo2.computeVertexNormals();
-
-           
-
-           // var centerOffset = -0.5 * ( textGeo2.boundingBox.max.x - textGeo2.boundingBox.min.x );
-
-            
-
-
-          //  textMesh2 = new THREE.Mesh( textGeo2, materials );
-            textMesh2 = new THREE.Mesh( textGeo2, randomMaterial );
-/*
-            textMesh2.position.x = 0;//centerOffset;
-            textMesh2.position.y = 0;//hover+ height*4;
-            textMesh2.position.z = 0;
-*/
-         //   textMesh2.rotation.x = 0;
-            textMesh2.rotation.y = -Math.PI * 2;
-            textMesh2.name = alphabet[word];
-
-          //  scene.add( textMesh2 );
-
-            return textMesh2;
-
- 
-
-
-            
-
-            
-        }
-
-
+	
+		
 
 		function createRing(){
 
@@ -640,33 +515,7 @@
 				panel.rotation.y = Math.atan2( -panel.position.x, -panel.position.z );
 				console.log('panel rotation ='+Math.floor(toDegrees(panel.rotation.y)));
 
-				//panel.rotation.y -= (Math.PI)/j;
-			//	panel.rotation.y = Math.atan2( ( letterGroup.position.x - panel.position.x ), ( letterGroup.position.z - panel.position.z ) );
 
-			} 
-
-	//		var aObj = scene.getObjectByName( "obj0", true );
-		//	letterGroup.lookAt(aObj.position)
-
-
-	//		var rot = Math.atan2( ( letterGroup.position.x - aObj.position.x ), ( letterGroup.position.z - aObj.position.z ) );
-
-		
-/*
-			TweenMax.to(letterGroup.rotation, 1,{
-               // z:depth,
-                x:0,
-                y: rot,
-                z:0,
-               // delay: delay,
-                ease:"Power3.easeOut",
-                onUpdate:function(){
-                   // no_geom.verticesNeedUpdate = true;
-                    
-              //  console.log('tweened');
-            }});
-*/
-         //   initShaders();
 
 		}
 
@@ -676,14 +525,7 @@
 			return Math.floor( Math.random() * ( 1 << 24 ) );
 		}
 
-		function swapEffect(){
-
-		  if (maskPass2.inverse==true){
-		      maskPass2.inverse=false;
-		  }else{
-		    maskPass2.inverse=true;
-		  }
-		}
+		
 
 
 		function initDrag(event){
@@ -733,17 +575,9 @@
 				if (event.touches){
 					//console.log('got touches')
 					endDragX = ( event.touches[0].clientX / renderer.domElement.clientWidth ) * 2 - 1;
-					//mouse.y = - ( event.touches[0].clientY / renderer.domElement.clientHeight ) * 2 + 1;
-					//getTouchPointer();
-				//	hud.style.left  = (event.touches[0].clientX + 5) + 'px';
-      			//	hud.style.top = (event.touches[0].clientY - 40) + 'px';
 				}else{
 					//console.log('is mouse')
 					endDragX = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
-					//mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
-					//getDesktopPointer();
-				//	hud.style.left  = (event.clientX + 5) + 'px';
-      			//	hud.style.top = (event.clientY - 40) + 'px';
 				}
 
 				prevDragX = endDragX;
@@ -758,7 +592,6 @@
 				var diff = dragDiff/(numObj*2)
 				letterGroup.rotation.y += diff;
 				
-				//letterGroup.rotation.y += (prevDragX - endDragX);
 			}
 
 		}
@@ -943,17 +776,8 @@
 
 			if(showControls) controls.update( time );
 
-			//renderer.render( scene, camera );
-
-		//	light.rotation.copy( camera.rotation );
-		//	light.updateMatrixWorld( true );
-
-		//	plane.position.z = camera.position.z+2;
-
 			renderer.clear();
-  			composer.render(time);
 
-			//time += deltaTime;
 
 		}
 

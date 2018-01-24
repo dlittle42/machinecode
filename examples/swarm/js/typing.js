@@ -1,125 +1,4 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-	<title>Typing</title>
-
-	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-	<link rel="icon" type="image/png" sizes="174x174" href="./style/favicon.png">
-	<!--
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/0.12.27/Tone.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-	<script src="js/draggabilly.js"></script>
-	<script src="js/StartAudioContext.js"></script>
-	<script src="js/Interface.js"></script>
-	<script src="js/Keyboard.js"></script>
-	<script src="third-party/AudioManager.js"></script>
-	
-	<link rel="stylesheet" type="text/css" href="css/keyboard.css">
--->
-
-	<script>
-		// jshint ignore: start
-	</script>
-
-</head>
-<body>	
-	<style type="text/css">
-
-		body {
-				color: #7FE8EF;
-				font-family:Monospace;
-				font-size:13px;
-				text-align:center;
-
-				background-color: #bfd1e5;
-				margin: 0px;
-				overflow: hidden;
-			}
-
-		img {
-			width: 80%;
-			max-width: 700px;
-			margin-left: auto;
-    		margin-right: auto;
-    		display: block;
-		}
-
-		#Keyboard {
-			margin: 3px!important;
-		}
-
-		.Keyboard{
-			position: absolute;
-			left:0;
-			bottom:0;
-		}
-		#Content{
-			height: 100%;
-		}
-		#info{
-			position: absolute;
-		    top: 0px;
-		    left: 100px;
-		    font-size: 48px;
-		    background-color: black;
-		}
-		.bkgd{
-	      position: absolute;
-	      top: 0;
-	      left: 0;
-	      width: 200%;
-	      height: 200%;
-	      background-repeat: repeat;
-	      background-image: url(images/orange-stripes.png);
-	      transform: translate(0, -25%) rotate(0.01turn);
-	      
-	      transition: all .1s ease-out;
-	      opacity: 0;
-	      z-index: -1;
-	    }
-	    .bkgd.active{
-	      animation: backgroundScroll 5s linear infinite;
-	      animation-fill-mode: forwards; 
-	      opacity: 1;
-	    }
-
-	    @keyframes backgroundScroll {
-     
-         0% {transform: translate(0, -25%) rotate(0.01turn);}
-         100% {transform: translate(-270px, -25%) rotate(0.01turn);}
-       
-   		}
-	</style>
-
-	<div id="Content">
-		
-		<div id="container"></div>
-		<div class="bkgd active"></div>
-		
-	</div>
-	<div id=info></div>
-
-	<script src="../../../bower_components/three.js/build/three.js"></script>
-	<script src="../../../bower_components/three.js/examples/js/libs/ammo.js"></script>
-	<script src="../../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
-	<script src="../../../bower_components/three.js/examples/js/Detector.js"></script>
-	<script src="../../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
-
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.19.0/TweenMax.min.js"></script>
-<!--
-	<script src="../../../bower_components/three.js/examples/js/ConvexObjectBreaker.js"></script>
-	<script src="../../../bower_components/three.js/examples/js/QuickHull.js"></script>
-	<script src="../../../bower_components/three.js/examples/js/geometries/ConvexGeometry.js"></script>
-
-	<script src="../../../bower_components/three.js/examples/js/utils/GeometryUtils.js"></script>
--->
-	<script src="../../../bower_components/dat.gui/dat.gui.js"></script>
-
-	<script>
-
-
-		/////////////////////////
+/////////////////////////
 
 		// Detects webgl
 		if ( ! Detector.webgl ) {
@@ -163,7 +42,7 @@
 
 	        curveSegments = 4,
 
-	        bevelThickness = 2,
+	        bevelThickness = 1,
 	        bevelSize = .3,//1.5,
 	        bevelSegments = 10,
 	        bevelEnabled = true,
@@ -173,8 +52,8 @@
 	    //    fontName = "Slukoni";//"optimer", // helvetiker, optimer, gentilis, droid sans, droid serif
 	    //    fontWeight = "Medium";//"bold"; // normal bold
 
-	        fontName = "MarshyKate";
-	        fontWeight = "Medium"
+	        fontName = "MarshyKate",
+	        fontWeight = "Medium";
 
 	    var mirror = false;
 
@@ -183,20 +62,7 @@
 
 	    var depthMaterial, effectComposer, depthRenderTarget, composer;
 
-	    var params = {
-	      projection: 'normal',
-	      background: false,
-	      exposure: 1.0,
-	      bloomStrength: 1.5,
-	      bloomThreshold: 0.35,
-	      bloomRadius: 0.4
-	    };
 
-	    var reverseFontMap = [];
-	    var reverseWeightMap = [];
-
-	 //   for ( var i in fontMap ) reverseFontMap[ fontMap[i] ] = i;
-	 //   for ( var i in weightMap ) reverseWeightMap[ weightMap[i] ] = i;
 
 ///---------------------------------------
 
@@ -273,7 +139,8 @@
 
 			var light = new THREE.DirectionalLight( 0xffffff, 1 );
 			light.position.set( 0, 10, 5 );
-		/*	light.castShadow = true;
+		/*	
+			light.castShadow = true;
 			var d = 14;
 			light.shadow.camera.left = -d;
 			light.shadow.camera.right = d;
@@ -285,7 +152,7 @@
 
 			light.shadow.mapSize.x = 1024;
 			light.shadow.mapSize.y = 1024;
-			*/
+		*/
 
 			scene.add( light );
 
@@ -301,7 +168,7 @@
 			//addMonkey();
 
 			materials = [
-	            new THREE.MeshPhongMaterial( { color: 0x111111, shading: THREE.FlatShading } ), // front
+	            new THREE.MeshPhongMaterial( { color: 0x111100, shading: THREE.FlatShading } ), // front
 	            new THREE.MeshPhongMaterial( { color: 0x333333, shading: THREE.SmoothShading } ) // side
 	        ];
 
@@ -382,6 +249,22 @@
 	       // console.log(mainletter.geometry);
 	      //  mainletter.geometry = letter.geometry;
 
+	    }
+
+	    function addSpace(){
+	    	wordWidth-=20;
+	    	TweenMax.to(letterGroup.position, .5, {
+	            //x: "+=2",
+	            x: wordWidth,
+	          //  delay: .4,
+	          //  repeat: 1,
+	          	ease:"Power3.easeOut",
+	          /*  yoyo: true,
+	            onComplete:function(){
+            		_this.destroy();
+                  }
+                  */
+	        });
 	    }
 
 	    function removeLetter(){
@@ -480,10 +363,12 @@
 	        textMesh1 = new THREE.Mesh( textGeo, materials );
 
 	        textMesh1.position.x = getLetterOffset();//centerOffset;
-	        textMesh1.position.y = 0;//hover+ height;
-	        textMesh1.position.z = 0;//centerOffsetZ;//0;
+	      //  textMesh1.position.y = 0;//hover+ height;
+	        textMesh1.position.y = (Math.random()*40)-20;//hover+ height;
+	        textMesh1.position.z = 20;//centerOffsetZ;//0;
 
-	        textMesh1.rotation.x = 0;
+	        textMesh1.rotation.x = (Math.random()*40)-20;
+	        textMesh1.rotation.y = (Math.random()*40)-20;
 	       // textMesh1.rotation.y = Math.PI * 2;
 	        textMesh1.width = letWidth;
 
@@ -502,20 +387,31 @@
             letterPool.push(textMesh1);
             letterGroup.add(textMesh1);
 
-         //   var shiftPos = letterPool.length*20;
-/*
-            if (letterPool.length>1){
 
-	            TweenMax.to(letterGroup.position, .5, {
+            TweenMax.to(textMesh1.position, .6, {
 			        //    x: "-=2",
-			            x: getLetterOffset()*-1,
+			        	//x: getLetterOffset(),
+			            z: 0,
+			            y: 0,
 			          //  delay: .4,
 			          //  repeat: 1,
 			          	ease:"Power3.easeOut",
+			          	//ease: Elastic.easeOut.config(1, 0.3)
 			       
 			        });
-	        }
-	        */
+
+             TweenMax.to(textMesh1.rotation, .4, {
+			        //    x: "-=2",
+			        	//x: getLetterOffset(),
+			            x: 0,
+			            y:0,
+			          //  delay: .4,
+			          //  repeat: 1,
+			          	ease:"Power3.easeOut",
+			          	//ease: Elastic.easeOut.config(1, 0.3)
+			       
+			        });
+
 
 	        return textMesh1;
 
@@ -525,27 +421,6 @@
 	        
 
 	    }
-/*
-	    function addPhrase(word, origin, speed=20){
-
-
-	    	for ( var j = 0; j < word.length; j ++ ) {
-
-				var char = word.charAt(j)
-                var phrase = createText(char);
-
-	    		if (!origin){
-					phrase.position.x = j + 20;
-					phrase.position.y = 0;//(4-cycle)*10;//Math.random()* 200 - 100;
-					phrase.position.z = 0;//Math.random()* 100;// - 100;
-				}
-				scene.add(phrase)
-			}
-
-	    }
-*/
-	//     player = new Player(0, true);
- //   player.animate('fly');
 
 
  		function getLetterOffset(){
@@ -587,10 +462,14 @@
           //	$( ".bkgd" ).addClass("active");
          // 	$('.bkgd').css('background-image', 'url(images/' + colors[idx] + '-stripes.png)').addClass("active");
 
+          	if (keyCode == 32){
+          		// spacebar
+          		console.log('spacebar')
 
-            // backspace
+            
 
-            if ( keyCode == 46 || keyCode == 8 ) {
+            }else if ( keyCode == 46 || keyCode == 8 ) {
+            	// backspace
             	console.log('delete')
               //  event.preventDefault();
                 if (letterPool.length>0){
@@ -651,65 +530,13 @@
 
 			sky.material.map.offset.x += .005;
 
-			//renderer.render( scene, camera );
+			renderer.render( scene, camera );
 
-			if ( postprocessing.enabled ) {
-
-				renderer.toneMappingExposure = Math.pow( params.exposure, 4.0 );
-				composer.render(deltaTime);
-
-			} else {
-
-				renderer.render( scene, camera );
-
-			}
+		
 
 			time += deltaTime;
 
 		}
 
 
-		function staticEffect(){
-            var renderPass = new THREE.RenderPass(scene, camera);
-            var effectFilm = new THREE.FilmPass(0.8, 0.325, 1400, false);
-            //effectFilm.renderToScreen = true;
-
-            composer = new THREE.EffectComposer(renderer);
-            composer.addPass(renderPass);
-            composer.addPass(effectFilm);
-
-            
-            var colorifyPass = new THREE.ShaderPass( THREE.ColorifyShader );
-			colorifyPass.uniforms[ "color" ].value = new THREE.Color( 0xffff00 );
-			colorifyPass.renderToScreen = true;
-			composer.addPass( colorifyPass );
-
-
-            // setup the control gui
-            var controls = new function () {
-                this.scanlinesCount = 1400;
-                this.grayscale = false;
-                this.scanlinesIntensity = 0.3;
-                this.noiseIntensity = 0.8;
-
-                this.updateEffectFilm = function () {
-                    effectFilm.uniforms.grayscale.value = controls.grayscale;
-                    effectFilm.uniforms.nIntensity.value = controls.noiseIntensity;
-                    effectFilm.uniforms.sIntensity.value = controls.scanlinesIntensity;
-                    effectFilm.uniforms.sCount.value = controls.scanlinesCount;
-                };
-            };
-
-
-            var gui = new dat.GUI();
-            gui.add(controls, "scanlinesIntensity", 0, 1).onChange(controls.updateEffectFilm);
-            gui.add(controls, "noiseIntensity", 0, 3).onChange(controls.updateEffectFilm);
-            gui.add(controls, "grayscale").onChange(controls.updateEffectFilm);
-            gui.add(controls, "scanlinesCount", 0, 2048).step(1).onChange(controls.updateEffectFilm);
-        }
-
-
-	</script>
-
-</body>
-</html>
+		

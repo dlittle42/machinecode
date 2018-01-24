@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>bufferScene2 alphaMap</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <style>
+            body {
+                background-color: #bfd1e5;
+                color: #fff;
+                margin: 0px;
+                overflow: hidden;
+                font-family:Monospace;
+                font-size:13px;
+                text-align:center;
+                font-weight: bold;
+                text-align:center;
+            }
+
+            a {
+                color:#0078ff;
+            }
+
+            #info {
+                color:#fff;
+                position: absolute;
+                top: 5px; width: 100%;
+                z-index:100;
+            }
+
+        </style>
+    </head>
+    <body>
+
+        <div id="info">
+
+        </div>
+
+        <script src="../../bower_components/three.js/build/three.js"></script>
+
+        <script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+
+        <script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+        <script src="../../bower_components/three.js/examples/js/controls/TrackballControls.js"></script>
+
+        <script src="../../bower_components/three.js/examples/js/shaders/ConvolutionShader.js"></script>
+        <script src="../../bower_components/three.js/examples/js/shaders/CopyShader.js"></script>
+
+        <script src="../../bower_components/three.js/examples/js/postprocessing/EffectComposer.js"></script>
+        <script src="../../bower_components/three.js/examples/js/postprocessing/RenderPass.js"></script>
+        <script src="../../bower_components/three.js/examples/js/postprocessing/MaskPass.js"></script>
+        <script src="../../bower_components/three.js/examples/js/postprocessing/BloomPass.js"></script>
+        <script src="../../bower_components/three.js/examples/js/postprocessing/ShaderPass.js"></script>
+
+        <script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+
+        <script src="../../bower_components/three.js/examples/js/effects/OutlineEffect.js"></script>
+
+
+      <script>
+          var planeObject;
+          var controls;
+
+          var textureLoader;
+
+          var imgArr = [
+            "ahoy.jpg",
+            "flowers.jpg",
+            "hodgepodge.png",
+            //"geometry.png",
+            "lines.png",
+            "magnus-2051.png",
+            "patternfills.gif",
+            "asteroids.jpg",
+            "ripples.jpg",
+            "cuadros.png",
+            //"swirl_pattern.png",
+            //"topography.png",
+            //"wormz.png",
+          ]
+
+          var materialArr=[];
+          var imgArrIdx=0;
+          var xVel = 0;
+          var yVel = .05;
+
+        ///////////////////This is the basic scene setup
+        var scene = new THREE.Scene();
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+        var camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 1000 );
+        camera.position.z = 500;
+
+        controls = new THREE.OrbitControls( camera );
+
+        var ambient = new THREE.AmbientLight( 0x444444 );
+        scene.add( ambient );
+
+        var directionalLight = new THREE.DirectionalLight( 0xfe0404 );
+        directionalLight.position.set( 0, 0, 1000 ).normalize();
+        scene.add( directionalLight );
+
+      //  var renderer = new THREE.WebGLRenderer();
+      //  renderer.setSize( window.innerWidth, window.innerHeight );
+        
+
+        var renderer = new THREE.WebGLRenderer( { antialias: false } );
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.setClearColor( 0xbfd1e5 );
+        document.body.appendChild( renderer.domElement );
+
+
+        var manager = new THREE.LoadingManager();
+        manager.onProgress = function ( item, loaded, total ) {
+         // progressBar.style.width = (loaded / total * 100) + '%';
+          console.log(item, loaded, total);
+        };
+
+        manager.onLoad = function (){
+          console.log('all items loaded');
+          if (imgArrIdx < imgArr.length) {
+            loadImages();
+          }else{
+            //createGridWall();
+          }
+        }
+
+        manager.onError = function (){
+          console.log('loading error');
+        }
+
+
+      //  new THREE.MeshBasicMaterial( { map: videoTexture, overdraw: true, side:THREE.DoubleSide } );
+
+        // create a loader to get an image from a URL
+        textureLoader = new THREE.TextureLoader(manager);
+        // we've gotta set this to use cross-origin images
+        textureLoader.crossOrigin = true;
+
+        // load in the image
+        
+        loadImages();
+
+        ///////////////////This is where we create our off-screen render target
+        //Create a different scene to hold our buffer objects
+        var bufferScene = new THREE.Scene();
+        //Create the texture that will store our result
+        var bufferTexture = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter});
+
+/*
+
+        //Let's create a red box
+        var redMaterial = new THREE.MeshStandardMaterial({color:0xF06565});
+        var boxGeometry = new THREE.BoxGeometry( 50, 50, 50 );
+        var boxObject = new THREE.Mesh( boxGeometry, redMaterial );
+        boxObject.position.z = 60; 
+        bufferScene.add(boxObject);//We add it to the bufferScene instead of the normal scene!
+
+*/
+
+        var ambient = new THREE.AmbientLight( 0x444444 );
+        bufferScene.add( ambient );
+
+        var directionalLight = new THREE.DirectionalLight( 0xfe0404 );
+        directionalLight.position.set( 0, 0, 1000 ).normalize();
+        bufferScene.add( directionalLight );
+
+        ///And a blue plane behind it
+        var blueMaterial = new THREE.MeshBasicMaterial({color:0x7074FF})
+
+        var texture = new THREE.TextureLoader().load( "images/patternfills.gif" );
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set( 4, 4 );
+
+        console.log(texture)
+        //mesh = new THREE.Mesh(geometry, material);
+        var plane = new THREE.PlaneBufferGeometry( window.innerWidth, window.innerWidth );
+         planeObject = new THREE.Mesh( plane, new THREE.MeshBasicMaterial( {
+            //map: materialArr[(j)%imgArr.length], 
+            map: texture, 
+            side:THREE.DoubleSide 
+        } ));
+
+        //var plane = new THREE.PlaneBufferGeometry( window.innerWidth, window.innerHeight );
+        //var planeObject = new THREE.Mesh(plane,blueMaterial);
+        planeObject.position.z = -15;
+        bufferScene.add(planeObject);//We add it to the bufferScene instead of the normal scene!
+        var patPlane = planeObject.clone()
+        scene.add(patPlane)
+
+        ////////////////////////////Now we use our bufferTexture as a material to render it onto our main scene
+
+        var geometry = new THREE.PlaneBufferGeometry( 200, 200, 4, 4 );
+
+         var alpha = new THREE.TextureLoader().load( 'images/monkeyface_inverse.jpg');
+
+
+        var boxMaterial = new THREE.MeshBasicMaterial({
+          map:bufferTexture,
+          transparent:true,
+          alphaMap : alpha,
+          side:THREE.DoubleSide,
+          alphaTest: 0.5, 
+          opacity: 1, 
+        });
+      //  var boxGeometry2 = new THREE.BoxGeometry( 5, 5, 5 );
+      //  var mainBoxObject = new THREE.Mesh(boxGeometry2,boxMaterial);
+        var mainBoxObject = new THREE.Mesh(geometry,boxMaterial);
+        mainBoxObject.position.z = -10;
+        scene.add(mainBoxObject);
+
+
+
+        var drawing = new THREE.TextureLoader().load( 'images/monkeyface01.png');
+
+
+        var drawMaterial = new THREE.MeshBasicMaterial({
+          map:drawing,
+          transparent:true,
+         // alphaMap : alpha,
+          side:THREE.DoubleSide,
+         // alphaTest: 0.5, 
+         // opacity: 1, 
+        });
+
+    //    drawMaterial.depthTest = true
+  //  drawMaterial.depthWrite = false
+  //  drawMaterial.polygonOffset = true
+  //  drawMaterial.polygonOffsetFactor = -4
+      //  var boxGeometry2 = new THREE.BoxGeometry( 5, 5, 5 );
+      //  var mainBoxObject = new THREE.Mesh(boxGeometry2,boxMaterial);
+        var drawingObject = new THREE.Mesh(geometry,drawMaterial);
+        drawingObject.position.z = -5;
+        drawingObject.position.x = -10;
+    //    scene.add(drawingObject);
+
+        document.addEventListener('mousedown', changeTexture, false);
+
+
+
+        function changeTexture(event){
+       /*   var nTexture = THREE.ImageUtils.loadTexture( "images/asteroids.jpg" );
+          nTexture.wrapS = THREE.RepeatWrapping;
+        nTexture.wrapT = THREE.RepeatWrapping;
+        nTexture.repeat.set( 4, 4 );
+        */
+         var rand = Math.floor(Math.random()*materialArr.length);
+         yVel = ((Math.random()*5)-10)/1000;
+         xVel = ((Math.random()*5)-6)/100;
+
+          planeObject.material.map = materialArr[rand];
+          planeObject.material.needsUpdate = true;
+        }
+
+
+        function loadImages(){
+        
+        textureLoader.load("images/"+imgArr[imgArrIdx], function(texture) {
+          // this code makes the texture repeat
+        //  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+        //  texture.repeat.set( 10, 10 );
+          // set the texture as the map for the material
+        //  materialOne = texture;//new THREE.MeshLambertMaterial( {map: texture, side:THREE.DoubleSide } );
+           texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set( 4, 4 );
+            //texture.rotation = .25;
+          //  texture.matrixAutoUpdate = false;
+
+            texture.needsUpdate = true;
+
+          materialArr.push(texture);
+          imgArrIdx++;
+  
+        
+
+
+        
+         })
+
+
+
+
+      }
+
+
+        //Render everything!
+        function render() {
+
+          requestAnimationFrame( render );
+
+          var time = Date.now() * 0.00005;
+
+               controls.update( time );
+
+          //Make the box rotate on box axises
+        //  boxObject.rotation.y += 0.01;
+        //  boxObject.rotation.x += 0.01;
+
+          planeObject.material.map.offset.y += yVel;
+          planeObject.material.map.offset.x += xVel;
+
+          //Rotate the main box too
+      //    mainBoxObject.rotation.y += 0.01;
+      //    mainBoxObject.rotation.x += 0.01;
+
+          //Render onto our off screen texture
+          renderer.render(bufferScene,camera,bufferTexture);
+
+
+          //Finally, draw to the screen
+          renderer.render( scene, camera );
+
+        }
+        render();
+      </script>
+
+    </body>
+</html>
