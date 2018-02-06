@@ -1,0 +1,234 @@
+<html>
+  <head>
+    <title> Three.js GLSL shader 01</title>
+    <style>
+      html, body {
+        font-family: Monospace;
+        width: 100%;
+        height: 100%;
+        background-color: #000;
+        color: #000;
+        margin: 0px;
+        overflow: hidden;
+      }
+
+      #info {
+        position: absolute;
+        padding: 10px;
+        width: 100%;
+        text-align: center;
+        a {
+          text-decoration: underline;
+          cursor: pointer;
+        }
+
+      }
+
+    </style>
+  </head>
+
+  <body>
+
+  
+    <script src="../../bower_components/three.js/build/three.js"></script>
+    <script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+    <script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+    <script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+  <!--
+  <script id="vertexShader" type="x-shader/x-vertex">
+    uniform float time;
+    varying vec2 vUv;
+
+    void main() {
+
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+
+    }
+  </script>
+
+  
+  <script id="fragmentShader" type="x-shader/x-fragment">
+    varying vec2 vUv;
+    uniform float time;
+
+    void main() {
+
+        // colour is RGBA: u, v, 0, 1
+       // gl_FragColor = vec4( vec3( vUv, 0. ), 1. );
+        gl_FragColor = vec4(abs(sin(u_time)),0.0,0.0,1.0);
+
+    }
+
+  </script>
+
+  -->
+
+  <script id="vertexShader" type="x-shader/x-vertex">
+  
+
+    void main() {
+      //gl_Position = vec4( position, 1.0 );
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    //  gl_Position = vec4( position, 1.0 );
+     // gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4( position, 1.0 );
+    }
+  </script>
+
+
+  <script id="fragmentShader" type="x-shader/x-fragment">
+    precision mediump float;
+
+    uniform float time;
+    uniform vec2 mouse;
+    uniform vec2 resolution;
+
+    void main() {
+      vec2 st = gl_FragCoord.xy/resolution.xy;
+
+      vec3 influenced_color = vec3(0.745,0.678,0.539);
+      
+      vec3 influencing_color_A = vec3(0.653,0.918,0.985); 
+      vec3 influencing_color_B = vec3(0.980,0.576,0.113);
+      
+      vec3 color = mix(influencing_color_A,
+                       influencing_color_B,
+                       step(0.4,st.x));
+      
+      gl_FragColor = vec4(color,1.0);
+        //fade color
+        //gl_FragColor = vec4(sin(time /  5.0)+0.1,sin(time /  10.0)+0.1,0.0,1.0);
+    }
+
+
+  </script>
+
+
+  <script>
+    /*
+    window.THREE = require('three');
+    window.OrbitControls = require('three-orbit-controls')(THREE);
+    window.Stats = require('stats.js');
+    */
+    // The setting up the scene, which contains all objects
+    let scene = new THREE.Scene();
+
+    // Camera with 45 deg FoV and aspect ratio of window's innerWidth/innerHeight, render distance interval [1,5000]
+    let camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 1, 5000);
+    camera.position.z = 30;
+
+    // Setting up orbit controlling of the camera
+    let controls = new THREE.OrbitControls(camera);
+
+    //giving the document a WebGL renderer
+    let renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    var canvas = document.body.appendChild( renderer.domElement );
+    renderer.setClearColor(0xffffff, 1);
+
+    var startTime = Date.now();
+
+    // Adding a visualization of the x, y, and z axes
+    let axisHelper = new THREE.AxisHelper(4);
+    scene.add(axisHelper);
+
+    var geometry = new THREE.PlaneGeometry( 10, 10, 20, 20 );
+
+
+
+    var uniforms = {
+      time: { type: "f", value: 1.0 },
+      resolution: { type: "v2", value: new THREE.Vector2() },
+      mouse: { type: "v2", value: new THREE.Vector2() },
+    };
+
+
+
+
+    material = new THREE.ShaderMaterial( {
+      uniforms: uniforms,
+      vertexShader: document.getElementById( 'vertexShader' ).textContent,
+      fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
+      side:THREE.DoubleSide
+     // wireframe: true
+    });
+
+    var object = new THREE.Mesh( geometry, material );
+    scene.add(object)
+
+    var light = new THREE.AmbientLight( 0x404040 ); // soft white light
+        scene.add( light );
+        
+        var directionalLight = new THREE.DirectionalLight(0xffffff);
+        directionalLight.position.set(1, 1, 1).normalize();
+        scene.add(directionalLight);
+
+    // Adding DOM element which displays FPS performance between rendered frames
+    let stats = new Stats();
+    stats.showPanel(0);
+    document.body.appendChild(stats.dom);
+
+    resize();
+
+
+    document.addEventListener( 'mousemove', recordMousePosition, false );
+    document.addEventListener( 'touchmove', recordMousePosition, false );
+
+
+    function recordMousePosition(e) {
+      // normalize the mouse position across the canvas
+      // so in the shader the values go from -1 to +1
+     // var canvas = renderer.domElement;
+     // var rect = canvas.getBoundingClientRect();
+
+      //uniforms.mouse.value.x = (e.clientX - rect.left) / window.innerWidth  *  2 - 1;
+      //uniforms.mouse.value.y = (e.clientY - rect.top ) / window.innerHeight * -2 + 1; 
+      if (e.touches){
+        uniforms.mouse.value.x = (e.touches[0].clientX) / window.innerWidth  *  2 - 1;
+        uniforms.mouse.value.y = (e.touches[0].clientY) / window.innerHeight * -2 + 1; 
+      }else{
+        uniforms.mouse.value.x = (e.clientX) / window.innerWidth  *  2 - 1;
+        uniforms.mouse.value.y = (e.clientY) / window.innerHeight * -2 + 1;     
+      } 
+    }
+
+
+    function resize() {
+      //var canvas = renderer.domElement;
+      var dpr    = window.devicePixelRatio;  // make 1 or less if too slow
+      var width  = canvas.clientWidth  * dpr;
+      var height = canvas.clientHeight * dpr;
+      if (width != canvas.width || height != canvas.height) {
+        renderer.setSize( width, height, false );
+        uniforms.resolution.value.x = renderer.domElement.width;
+        uniforms.resolution.value.y = renderer.domElement.height;
+      }
+    }
+
+    function render (time) {
+      // Begin recording framerate
+      stats.begin();
+      // Updating camera controls
+      controls.update();
+
+
+      uniforms.time.value = time * .01;//0.001;
+
+      // Rendering the scene
+      renderer.render(scene, camera);
+
+      // Finish recording framerate (now updates the FPS displayed on stats DOM element)
+      stats.end();
+
+      // Telling the browser that the function render seeks to reanimate frame
+      window.requestAnimationFrame(render);
+    }
+
+    // Initial call of render()
+    requestAnimationFrame(render);
+
+
+
+  </script>
+  </body>
+</html>

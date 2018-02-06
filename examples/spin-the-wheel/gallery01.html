@@ -125,7 +125,8 @@
 	<script src="../../bower_components/howler.js/dist/howler.min.js"></script>
 	<script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.js"></script>
-	<script type="text/javascript" src="js/gallery2.js"></script>
+<!--	<script type="text/javascript" src="js/gallery2.js"></script> -->
+	<script type="text/javascript" src="js/galleryring.js"></script>
 
 
 		<script>
@@ -148,11 +149,6 @@
 
 
 
-		var initDragX = 0;
-		var endDragX = 0;
-
-		
-		var r = 40;
 
 		var info, hud;
 /*		var panelArray = [];
@@ -192,8 +188,7 @@
 
 
 		var showControls = false;//true;
-		var postDragRotation = 0;
-		var prevDragX = 0;
+		
 	//	var targetRot=0;
 		var tick;
 		var delay = 0, count = 0;
@@ -332,7 +327,8 @@
 
 			  letterGroup.add( new THREE.AxisHelper( 30 ) );
 
-			  var gview = new Gallery(imgArr, letterGroup);
+			  var gview = new GalleryRing(imgArr, letterGroup);
+			//  gview.loadImages();
 			 // gview.initLoader();
 			
 
@@ -440,7 +436,7 @@
               //  console.log('tweened');
             }});
 		}
-
+/*
 
 		function initInput() {
 
@@ -460,7 +456,7 @@
 			
 
 		}
-
+*/
 		function onWindowResize() {
 
 

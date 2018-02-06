@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>pie</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #f0f0f0;
+				margin: 0px;
+				overflow: hidden;
+			}
+
+			#diff{
+
+				color: red;
+				background-color: black;
+				width: auto;
+				height: 40px;
+				position: absolute;
+				left: 10px;
+				top: 10px;
+				padding: 0 4px;
+				font-size: 18px;
+				font-weight: bold;
+				line-height: 40px;
+				opacity: 0;
+				transition: all .3s ease-out;
+				user-select: none;
+				z-index: 20000;
+
+			}
+		</style>
+	</head>
+	<body>
+
+		<div id="diff">0</div>
+
+		<script src="../../bower_components/three.js/build/three.js"></script>
+		<script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.19.0/TweenMax.min.js"></script>
+		<script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+
+		<script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+
+		<script>
+
+			var stats, hud;
+			var camera, scene, raycaster, renderer, controls;
+
+			var mouse = new THREE.Vector2(), INTERSECTED;
+			var rot = Math.PI / 3;
+			var sliceArr=[];
+			var paused = false;
+			var down = false;
+			var sx = 0, sy = 0;
+			var values = [];
+			var thickness = 10;
+			var SHADOW_MAP_WIDTH = 2048, SHADOW_MAP_HEIGHT = 2048;
+		
+
+			init();
+			animate();
+
+			function init() {
+
+				if (!Detector.webgl) {
+
+			        Detector.addGetWebGLMessage();
+			        return true;
+			    }
+
+			    hud = document.getElementById("diff");
+
+
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.y = 10;
+    			camera.position.x = 0;
+    			camera.position.z = 10;
+
+    			var xpos=Math.cos(rot) * 170;
+    			var ypos=150;
+    			var zpos= Math.sin(rot) * 170;
+
+
+
+
+    			TweenMax.to(camera.position, .2,{
+	                x:xpos,
+	                y:ypos,
+	                z:zpos,
+	              //ease:"Power3.easeOut",
+	           });
+
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0xf0f0f0 );
+
+				controls = new THREE.OrbitControls( camera );
+
+				light = new THREE.SpotLight();
+			    light.castShadow = true;
+			      light.shadow = new THREE.LightShadow( new THREE.PerspectiveCamera( 50, .5, 1200, 2500 ) );
+			    light.shadow.bias = 0.0001;
+			    light.shadow.camera.near = 1;
+				light.shadow.camera.far = 1000;
+				light.shadow.camera.fov = 30;
+				
+
+
+				light.shadow.mapSize.width = SHADOW_MAP_WIDTH;
+				light.shadow.mapSize.height = SHADOW_MAP_HEIGHT;
+			    light.position.set(-170, 300, 100);
+			    scene.add(light);
+
+			    ambientLight = new THREE.AmbientLight(0x123456);
+			    ambientLight.position.set(20, 150, -120);
+			    scene.add(ambientLight);
+
+
+				var plane = new THREE.Mesh(
+			            new THREE.BoxBufferGeometry(200, 20, 200),
+			            new THREE.MeshPhongMaterial({
+			            	color: 0xFFFFFF,
+			            	shininess: 150,
+				            specular: 0x111111
+				        })
+			    );
+			    plane.position.y = -40;
+			    plane.receiveShadow = true;
+			    plane.doubleSided = true;
+			    plane.name = 'Plane';
+			    scene.add(plane);
+
+			    var segments = 4+ Math.floor(Math.random() * 10);
+			    
+			    for (var i = 0; i < segments; i++) {
+			        values[i] = Math.floor(Math.random() * 200);
+			    }
+			    pieGraph(values, thickness);
+
+/////////////
+/*
+var material = new THREE.MeshStandardMaterial( { color : 0x00cc00 } );
+
+//create a triangular geometry
+var geometry = new THREE.Geometry();
+geometry.vertices.push( new THREE.Vector3( -50, -50, 0 ) );
+geometry.vertices.push( new THREE.Vector3(  50, -50, 0 ) );
+geometry.vertices.push( new THREE.Vector3(  50,  50, 0 ) );
+
+//create a new face using vertices 0, 1, 2
+var normal = new THREE.Vector3( 0, 1, 0 ); //optional
+var color = new THREE.Color( 0xffaa00 ); //optional
+var materialIndex = 0; //optional
+var face = new THREE.Face3( 0, 1, 2, normal, color, materialIndex );
+
+//add the face to the geometry's faces array
+geometry.faces.push( face );
+
+//the face normals and vertex normals can be calculated automatically if not supplied above
+geometry.computeFaceNormals();
+geometry.computeVertexNormals();
+
+scene.add( new THREE.Mesh( geometry, material ) );
+
+*/
+/////////////
+
+				raycaster = new THREE.Raycaster();
+
+				renderer = new THREE.WebGLRenderer({antialias:true, precision: "mediump"});
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+
+				renderer.shadowMap.enabled = true;
+				renderer.shadowMap.type = THREE.BasicShadowMap;
+				//renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+				document.body.appendChild(renderer.domElement);
+
+				stats = new Stats();
+				document.body.appendChild( stats.dom );
+
+				document.addEventListener( 'touchstart', onDown, false );
+				document.addEventListener( 'mousedown', onDown, false );
+				document.addEventListener( 'touchmove', onMove, false );
+				document.addEventListener( 'mousemove', onMove, false );
+				document.addEventListener( 'touchend', onUp, false );
+				document.addEventListener( 'mouseup', onUp, false );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function pieSum(){
+				var sum=0;
+				for (var i = 0; i < values.length; i++) {
+			        sum += values[i];
+			    }
+			    return sum;
+			}
+
+			function pieGraph(values, thickness) {
+			    var sum = pieSum();
+
+			    var cur = 0;
+			    for (var i = 0; i < values.length; i++) {
+			        var end = ((2*Math.PI) * values[i]) / sum;
+			       // console.log(sum +' '+ end)
+			        var slice = pieSegment(cur, cur + end, thickness, values[i])
+			        sliceArr.push(slice);
+			        scene.add(slice);
+			     //   animateIn(slice, i)
+			        cur += end;
+			      //  piece++;
+			    }
+			    return pieGraph;
+			}
+
+			function pieSegment(start, end, thickness, value) {
+			    var material = new THREE.MeshPhongMaterial({color: createRandomColor(),
+			    	wireframe:true});
+
+			    var shape = new THREE.Shape();
+			    shape.moveTo(0, 0);
+			    shape.arc(0, 0, 40, start, end, false);
+			    shape.lineTo(0, 0);
+
+				var extrudeSettings = {
+                    steps           : 2,
+                    bevelEnabled    : false,
+                    amount          : thickness,
+                    curveSegments   : 50
+                };
+
+			    var geometry = new THREE.ExtrudeGeometry( shape, extrudeSettings );
+			    geometry.dynamic=true;
+			    geometry.verticesNeedUpdate = true;
+			    geometry.computeFaceNormals();
+			    geometry.computeBoundingSphere();
+
+			    console.log(geometry.faces)
+
+			    var segment = new THREE.Mesh(geometry, material);
+			    segment.rotation.x = Math.PI / 2;
+			  //  segment.position.y = (Math.random()*400)+200;
+			    segment.value = value;
+			  //  segment.castShadow = true;
+
+				return segment;
+			}
+
+			function createRandomColor() {
+			    return Math.floor( Math.random() * ( 1 << 24 ) );
+			}
+
+			function animateIn(obj, del){
+
+			    TweenMax.to(obj.position, 1,{
+			                y: 0,
+			                delay: .5+ del/10,
+			                ease:"Power3.easeOut",
+				});
+			}
+
+			function extrudeMore(obj, val){
+				var diff = val/100;
+				if(obj.position.y>0){
+					TweenMax.to(obj.scale, .5,{
+			                z: 1,
+			                ease:"Power3.easeOut",
+			               });
+					TweenMax.to(obj.position, .5,{
+			                y: 0,// - thickness,
+			                ease:"Power3.easeOut",
+			            });
+				}else{
+					TweenMax.to(obj.scale, 1,{
+			                z: diff,
+			                ease:"Power3.easeOut",
+			               });
+					TweenMax.to(obj.position, 1,{
+			                y: (val/10),// - thickness,
+			                ease:"Power3.easeOut",
+			            });
+				}
+
+			}
+
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function onMove( event ) {
+
+
+
+				event.preventDefault();
+
+				
+
+				if (event.touches){
+				//	console.log('got touches')
+					mouse.x = ( event.touches[0].clientX / window.innerWidth ) * 2 - 1;
+					mouse.y = - ( event.touches[0].clientY / window.innerHeight ) * 2 + 1;
+				}else{
+					//console.log('is mouse')
+					mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+					mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+					hud.style.left  = (event.clientX + 5) + 'px';
+      				hud.style.top = (event.clientY - 40) + 'px';
+				}
+
+
+			}
+
+			function onDown(event){
+				//console.log(INTERSECTED)
+				down = true;
+			    sx = event.clientX;
+			    sy = event.clientY;
+				if (INTERSECTED) extrudeMore(INTERSECTED,INTERSECTED.value )
+			}
+
+			function onUp(event){
+			    down = false;
+			}
+			//
+
+			function goRaycast(){
+				raycaster.setFromCamera( mouse, camera );
+
+				var intersects = raycaster.intersectObjects( sliceArr );
+
+				if ( intersects.length > 0 ) {
+
+					if ( INTERSECTED != intersects[ 0 ].object ) {
+
+						if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+
+						INTERSECTED = intersects[ 0 ].object;
+						INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+						INTERSECTED.material.emissive.setHex( 0xff0000 );
+						hud.textContent =INTERSECTED.value;
+						hud.style.opacity=1;
+					}
+
+				} else {
+
+					if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+
+					INTERSECTED = null;
+					hud.style.opacity=0;
+
+				}
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+				stats.update();
+
+			}
+
+			function render() {
+
+				var time = performance.now() * 0.001;
+				controls.update( time );
+				camera.lookAt( scene.position );
+
+				camera.updateMatrixWorld();
+
+				goRaycast();
+			
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>

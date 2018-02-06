@@ -131,7 +131,7 @@ function Gallery(imgArr, letterGroup){
 
   this.initDrag = function(event){
      
-   // alert(this.prevDragX)
+    //alert(this.prevDragX)
 
       if(event.touches) this.damper=2;
 
@@ -179,7 +179,7 @@ function Gallery(imgArr, letterGroup){
           //console.log('got touches')
           this.endDragX = ( event.touches[0].clientX / renderer.domElement.clientWidth ) * 2 - 1;
         }else{
-          //console.log('is mouse')
+          console.log('is mouse')
           this.endDragX = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
         }
 
@@ -200,18 +200,21 @@ function Gallery(imgArr, letterGroup){
     }
 
     this.endDrag= function(event){
+      console.log(_this.parent)
+        console.log(this.isDragging)
+        console.log(_this.isDragging)
     //  initDragX = mouse.;
-        this.endDragTime = performance.now();
-        this.isDragging = false;
-        this.dragDuration = this.endDragTime - this.initDragTime;
-        this.postDragRotation = _this.parent.rotation.y;
+        _this.endDragTime = performance.now();
+        _this.isDragging = false;
+        _this.dragDuration = _this.endDragTime - _this.initDragTime;
+        _this.postDragRotation = _this.parent.rotation.y;
         //letterGroup.position.z = 0;
 
       //  info.innerHTML = debugDrag(dragDiff, dragDuration)
-        var next = Math.floor(this.dragDiff.toFixed(2)*10);
-        this.targetRot += next;
-
-        _this.initAnimation(this.targetRot);
+        var next = Math.floor(_this.dragDiff.toFixed(2)*10);
+        _this.targetRot += next;
+        console.warn(_this.targetRot)
+    //    _this.initAnimation(_this.targetRot);
         //initAnimation(dragDiff*5);
         //scaleMask(-10)
   //////      scaleCamera(-5)
@@ -224,7 +227,7 @@ function Gallery(imgArr, letterGroup){
 
     this.initAnimation = function( rot ){
 
-      alert(rot)
+      console.log('init animation: '+rot)
 
       rot=rot*_this.stepAngle;
     /*  
@@ -248,8 +251,8 @@ function Gallery(imgArr, letterGroup){
                 ease:"Power3.easeOut",
                 onStart:function(){
                   console.log('start = '+ _this.parent.rotation.y)
-                  console.log('start deg = '+ _this.toDegrees(_this.parent.rotation.y).toFixed(2));
-                  console.log('start deg = '+ _this.toDegrees(_this.parent.rotation.y).toFixed(2));
+                  console.log('start deg = '+ this.toDegrees(_this.parent.rotation.y).toFixed(2));
+                  console.log('start deg = '+ this.toDegrees(_this.parent.rotation.y).toFixed(2));
                  // playTick(Math.abs(_this.activePanel - rot));
                 },
                 onUpdate:function(){
@@ -279,6 +282,7 @@ function Gallery(imgArr, letterGroup){
 
 
   this.initInput = function() {
+      console.log('obj init input')
     
       window.addEventListener( 'touchstart', this.initDrag, false);
       window.addEventListener( 'mousedown', this.initDrag, false);
@@ -286,7 +290,7 @@ function Gallery(imgArr, letterGroup){
       window.addEventListener( 'touchmove', this.onDragMove, false);
       window.addEventListener( 'mousemove', this.onDragMove, false);
 
-      window.addEventListener( 'touchend', this.endDrag, false);
+     window.addEventListener( 'touchend', this.endDrag, false);
       window.addEventListener( 'mouseup', this.endDrag, false);
     
       window.addEventListener( 'keydown', this.onKeyPress, false);
