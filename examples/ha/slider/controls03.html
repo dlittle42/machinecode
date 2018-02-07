@@ -137,6 +137,12 @@
 				//"wormz.png",
 			]
 
+			var colors = [0xBBEF39, 0x7ED321, 
+			0xC997E8, 0x75239E, 
+			0xFFBA44, 0xEC8219,
+			0x33CCCC, 0x009999,
+			0xF895BF, 0xFA5A90];
+
 			var groove;
 
 			init();
@@ -329,6 +335,19 @@
 				groove.position.y = -35;
 				groove.position.x = 0;
 				groove.position.z = 1;
+
+
+				for (var i = 0; i < 10; i++) {
+					var geometry = new THREE.SphereGeometry(2, 2, 10);
+					var mat = new THREE.MeshBasicMaterial({
+						color : colors[Math.floor(Math.random()*colors.length)], 
+						shading: THREE.FlatShading
+					});
+					var hotspot = new THREE.Mesh( geometry, mat );
+					hotspot.position.x = i*40 + Math.random()*20 -100;
+					hotspot.position.y = 0;
+					groove.add(hotspot)
+				}
 			}
 
 			function createGridWall(){
@@ -364,7 +383,7 @@
 						//	var xpos = (hspacing * j)- (objWidth*maxRow)/2;//((hspacing * j) - hspacing/2) - xoffset;
 						//	var ypos = (objWidth*maxCol)/2 - (vspacing  * i);//(vspacing  * i)  - ((vspacing/2)*maxRow);
 
-							var ypos = Math.random()*100 - 50;
+							var ypos = Math.random()*100 - 25;
 
 							var scale = Math.random()*5 + 1;
 						//	var zpos = Math.random() * 400 - 200;
@@ -449,12 +468,7 @@
 				  return panel;
 				}
 
-			function addHotspots(){
-				for (var i = 0; i < 10; i++) {
-					
-				}
-			}
-
+			
 
 			function addBkgd(){
 				var plane = new THREE.Mesh(
@@ -547,8 +561,8 @@
 				camera.updateProjectionMatrix();
 
 				renderer.setSize( width, height );
-				composer.setSize( width, height );
-				effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight );
+			//	composer.setSize( width, height );
+			//	effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight );
 			}
 
 			function scaleKnob(size){
