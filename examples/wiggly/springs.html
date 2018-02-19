@@ -1,0 +1,252 @@
+
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>Springs</title>
+		<link href="css/style.css" rel="stylesheet" type="text/css" />
+	</head>
+	<body>
+		<canvas id="world"></canvas>
+	
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/89/three.min.js"></script>
+	<script src="../../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+	<script>
+		class Springs {
+
+		  constructor(geometry, opts = {}) {
+		    this.geometry = geometry;
+		    this.vertices = geometry.vertices;
+		    this.displacement = opts.displacement || .2;
+		    this.strength = opts.strength || 0.002;
+		    this.dampen = opts.dampen || 1
+
+		    geometry.faces.forEach(face =>
+		      edges(face).map(edge => ({
+		        start: geometry.vertices[edge.start],
+		        end: geometry.vertices[edge.end]
+		      })).forEach(edge => this.springify(edge))
+		    );
+		  }
+
+		  springify(edge) {
+
+		    var start = edge.start;
+		    var end = edge.end;
+
+		    if (!start.springs) this.prepare(start);
+
+		    start.velocity = start.velocity || new THREE.Vector3();
+
+		    if (!end.springs) this.prepare(end)
+
+		    start.springs.push({ start, end, length: start.length(end) })
+		  }
+
+		  prepare(vertice) {
+		    vertice.springs = [];
+		    vertice.normal = vertice.clone().normalize();
+		    vertice.origin = vertice.clone()
+		  };
+
+		  displace(face) {
+		    let verts = [face.a, face.b, face.c];
+		    for (let i = 0; i < verts.length; ++i) {
+		      var current = this.vertices[verts[i]];
+		      var displacement = current.normal.clone().multiplyScalar(this.displacement);
+		      current.velocity.add(displacement)
+		    }
+		  }
+
+		  update() {
+		    var vertices = this.vertices,
+		      springs = null, currentSpring = null,
+		      extension = 0,
+		      length = 0,
+		      vertex = null,
+		      numVertices = vertices.length,
+		      acceleration = new THREE.Vector3();
+
+		    while (numVertices--) {
+
+		      vertex = vertices[numVertices];
+		      springs = vertex.springs;
+
+		      if (!springs) continue;
+
+		      for (var v = 0, l = springs.length; v < l; v++) {
+
+		        currentSpring = springs[v];
+		        length = currentSpring.start.length(currentSpring.end);
+
+		        extension = currentSpring.length - length;
+		        acceleration.copy(currentSpring.start.normal).multiplyScalar(extension * this.strength);
+		        currentSpring.start.velocity.add(acceleration);
+
+		        acceleration.copy(currentSpring.end.normal).multiplyScalar(extension * this.strength);
+		        currentSpring.end.velocity.add(acceleration);
+
+		        currentSpring.start.add(currentSpring.start.velocity);
+		        currentSpring.end.add(currentSpring.end.velocity);
+
+		        currentSpring.start.velocity.multiplyScalar(this.dampen);
+		        currentSpring.end.velocity.multiplyScalar(this.dampen);
+		      }
+
+		      vertex.add(vertex.origin.clone().sub(vertex).multiplyScalar(0.03));
+		    }
+
+		    this.geometry.verticesNeedUpdate = true;
+		    this.geometry.computeFaceNormals();
+		    this.geometry.computeVertexNormals();
+
+		  }
+		}
+		/////////////////////////////////////
+
+		var parameters = {
+		  dampen: 1.5,
+		  speed: 0.5,
+		  color: 0xdca728,
+		};
+
+		// Setup
+		var viewport = viewportSize();
+
+		// Camera
+		var camera = new THREE.PerspectiveCamera(75, aspectRatio(viewport.width, viewport.height), 0.1, 3000);
+		camera.position.set(0, 0, 300);
+		camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+		// Scene
+		var scene = new THREE.Scene();
+
+		// Renderer
+		var renderer = new THREE.WebGLRenderer({
+		  canvas: document.getElementById('world'),
+		  alpha: true,
+		  antialias: true
+		});
+
+		renderer.setSize(viewport.width, viewport.height);
+		renderer.shadowMap.enabled = true;
+
+		var controls = new THREE.OrbitControls(camera);
+
+		// Mouse handling
+		var raycaster = new THREE.Raycaster();
+		var mouse = new THREE.Vector2();
+		var mouseSensible = [];
+		var mouseHandlers = {};
+
+		// Mesh
+		let mesh = new THREE.Mesh(
+		  new THREE.IcosahedronGeometry(100, 1),
+		//   new THREE.SphereGeometry(100, 10),
+		  new THREE.MeshPhongMaterial({
+		    color: parameters.color,
+		    shading: THREE.FlatShading,
+		  })
+		);
+		let springs = new Springs(mesh.geometry);
+		sensibilize(mesh, intersectData => springs.displace(intersectData.face));
+
+		// Lights
+		var globalLight = new THREE.HemisphereLight(0xFFFFFF, 0xFFFFFF, .5);
+
+		var keyLight = new THREE.DirectionalLight(0xFFFFFF, .5);
+		keyLight.position.set(-20, 0, 50);
+		keyLight.castShadow = true;
+
+		var shadowLight = new THREE.DirectionalLight(0xFFFFFF, .3);
+		shadowLight.position.set(-100, 100, -100);
+		shadowLight.castShadow = true;
+
+		var backLight = new THREE.DirectionalLight(0xFFFFFF, .2);
+		backLight.position.set(90, 150, -100);
+		backLight.castShadow = true;
+
+		// Add objects to the scene
+		scene.add(globalLight);
+		scene.add(keyLight);
+		scene.add(shadowLight);
+		scene.add(backLight);
+		scene.add(mesh);
+
+		window.addEventListener('resize', resizeHandler);
+		document.body.addEventListener('mousemove', mouseMoveHandler);
+
+		render();
+
+		// Events
+		function resizeHandler() {
+		  viewport = viewportSize();
+		  camera.aspect = aspectRatio(viewport.width, viewport.height);
+		  camera.updateProjectionMatrix();
+		  renderer.setSize(viewport.width, viewport.height)
+		}
+
+		function mouseMoveHandler(e) {
+		  mouse = new THREE.Vector2(e.clientX, e.clientY);
+		}
+
+		function sensibilize(mesh, callback) {
+		  mouseSensible.push(mesh);
+		  mouseHandlers[mesh.uuid] = callback
+		}
+
+		function mouseTrace() {
+
+		  var mouseVector = getMouseVector(mouse, renderer.domElement);
+		  raycaster.setFromCamera(mouseVector, camera);
+
+		  var intersects = raycaster.intersectObjects(mouseSensible, true);
+		  var i = intersects.length - 1;
+
+		  while (i > -1) {
+		    var curr = intersects[i--];
+		    var fn = mouseHandlers[curr.object.uuid];
+		    if (typeof fn === 'function') {
+		      fn(curr)
+		    }
+		  }
+		}
+
+		function render() {
+		  mouseTrace();
+		  controls.update();
+		  springs.update();
+		  renderer.render(scene, camera);
+		  requestAnimationFrame(render);
+		}
+
+		function edges(face) {
+		  return [
+		    { start: face.a, end: face.b },
+		    { start: face.b, end: face.c },
+		    { start: face.c, end: face.a }
+		  ];
+		}
+
+		function aspectRatio(w, h) {
+		  return w / h;
+		}
+
+		function viewportSize() {
+		  return {
+		    width: window.innerWidth,
+		    height: window.innerHeight
+		  };
+		};
+
+		function getMouseVector(mouse, target){
+		  return new THREE.Vector3(
+		    (mouse.x / target.width) * 2 - 1,
+		    -(mouse.y / target.height) * 2 + 1
+		  );
+		}
+	</script>
+	</body>
+	
+</html>

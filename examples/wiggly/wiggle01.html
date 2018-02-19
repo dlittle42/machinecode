@@ -1,0 +1,425 @@
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <title>wiggly</title>
+        <meta charset="utf-8">
+    </head>
+
+    <body>
+        <div id="container"></div>
+    </body>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/89/three.min.js"></script>
+    <script src="../../../bower_components/three.js/examples/js/renderers/CanvasRenderer.js"></script>
+    <script src="../../../bower_components/three.js/examples/js/renderers/Projector.js"></script>
+    <script src="../../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+    <script src="js/traer.js"></script>
+
+</head>
+<body>
+
+    <div id="ico-container"></div>
+
+<script>
+    // A soft-bodied icosahedron, naturally.
+//(function() {
+
+    var SIZE = 320,
+        
+        container, 
+
+        scene, 
+        camera, 
+        renderer,
+        projector,
+        geometry, 
+        mesh,
+        strokeMesh, 
+        controls,
+
+        particleSystem,
+        centerParticle,
+        mouseParticle,
+
+        stuck = false,
+        unstickTimeout,
+
+        pressDisabled = false,
+
+        mousePosition = {},
+
+        noteSounds = [],
+        wobbleSounds = [],
+        arpSound,
+        soundIndex = 0;
+
+
+    function init() {
+        
+
+
+        particleSystem = new ParticleSystem(0, 0, 0, 0.02);
+        particleSystem.originalDrag = particleSystem.drag;
+
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera( 15, 1, 1, 10000 );
+        camera.position.z = 700;
+
+        renderer = new THREE.CanvasRenderer();
+        renderer.setClearColor(0xffffff);
+        renderer.setSize(SIZE, SIZE);
+
+        container.appendChild( renderer.domElement );
+
+        projector = new THREE.Projector();
+
+        geometry = new THREE.IcosahedronGeometry(100, 0);
+            
+        var strokeMaterial = new THREE.MeshBasicMaterial({ 
+            wireframe: true, 
+            color: 0x454E68, 
+            wireframeLinewidth: window.devicePixelRatio || 1
+        });
+
+        var lightDir = new THREE.Vector3( 0, 0.5, 0 );
+   /*     var normalMaterial = new THREE.CanvasShaderMaterial({ 
+            overdraw: 0.3, 
+            program: function( element, normal, color ) {
+                var f = Math.max(0, normal.dot(lightDir)/2.0);
+                color.setRGB(normal.x, normal.y, normal.z).multiplyScalar(0.5).addScalar(0.5);
+                color.r += f
+                color.g -= Math.max(0, normal.dot(lightDir)/2.0);
+                color.offsetHSL(0, 0.1, 0);
+            } 
+        });
+
+        */
+
+        var basicMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff, overdraw: 0.3 } );
+
+       // var material = new THREE.MeshFaceMaterial([ basicMaterial, normalMaterial ]);
+        var material = new THREE.MeshFaceMaterial([ basicMaterial, basicMaterial ]);
+        mesh = new THREE.Mesh( geometry, material);
+
+        strokeMesh = new THREE.Mesh(geometry, strokeMaterial);
+
+        scene.add( mesh );
+        scene.add( strokeMesh );
+
+        geometry.vertices.forEach(function(g) {
+
+            g.particle = particleSystem.makeParticle(1, g.x, g.y, g.z);
+            g.particle.position.original = {};
+            _.extend(g.particle.position.original, g.particle.position);
+
+        });
+
+        centerParticle = particleSystem.makeParticle(1, 0, 0, 0);
+        centerParticle.makeFixed();
+
+        mouseParticle = particleSystem.makeParticle(1, 0, 0, 0);
+        mouseParticle.makeFixed();
+
+        geometry.vertices.forEach(function(g) {
+
+            particleSystem.makeAttraction(centerParticle, g.particle, -5000, 10);
+            particleSystem.makeAttraction(mouseParticle, g.particle, -200000, 90);
+
+            geometry.vertices.forEach(function(o) {
+                if (o !== g) {
+                    particleSystem.makeAttraction(o.particle, g.particle, -5000, 10);
+                }
+            });
+            
+        });
+
+        mesh.scale.multiplyScalar(0);
+
+        geometry.faces.forEach(function(f, i) {
+
+            var a = geometry.vertices[f.a].particle;
+            var b = geometry.vertices[f.b].particle;
+            var c = geometry.vertices[f.c].particle;
+
+            particleSystem.makeSpring(a, b, 0.01, 0.015, 0);
+            particleSystem.makeSpring(b, c, 0.01, 0.015, 0);
+            particleSystem.makeSpring(c, a, 0.01, 0.015, 0);
+
+            particleSystem.makeSpring(centerParticle, b, 0.01, 0.05, 0);
+            particleSystem.makeSpring(centerParticle, c, 0.01, 0.05, 0);
+            particleSystem.makeSpring(centerParticle, a, 0.01, 0.05, 0);
+
+            f.index = i;
+
+        });
+
+        [
+            particleSystem.springs,
+            particleSystem.attractions,
+            particleSystem.particles
+        ]
+        .forEach(function(list) {
+            list.forEach(function(i) {
+                var original = {};
+                _.extend(original, i);
+                i.original = original;
+            });
+        });
+
+        container.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            press(e.clientX, e.clientY);
+        }, false);
+
+        container.addEventListener('touchstart', function(e) {
+            press(e.touches[0].clientX, e.touches[0].clientY);
+        }, false);
+
+        container.addEventListener('touchend', function(e) {
+            e.preventDefault();
+        }, false);
+
+        controls = new THREE.TrackballControls( camera, container );
+
+        controls.rotateSpeed = 0.3;
+        controls.noZoom = true;
+        controls.noPan = true;
+
+        controls.staticMoving = false;
+
+        reset();
+        impulse(10);
+
+    }
+
+    function unstick() {
+
+        stuck = false;
+        particleSystem.drag = particleSystem.originalDrag;
+        mouseParticle.mass = 1;
+
+    }
+
+    function reset() {
+
+        soundIndex = 0;
+        unstick();
+        geometry.faces.forEach(function(f) {
+            f.materialIndex = 0;
+        });
+
+    }
+
+    function press(x, y) {
+
+        if (pressDisabled) return;
+
+        var offset = renderer.domElement.getBoundingClientRect();
+
+        var mousePosition = {
+            x: (x - offset.left)/SIZE*2 - 1,
+            y: -(y - offset.top)/SIZE*2 + 1
+        };
+
+        var vector = new THREE.Vector3( mousePosition.x, mousePosition.y, 0.5 );
+        projector.unprojectVector( vector, camera );
+
+        var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+        var intersects = raycaster.intersectObjects( [mesh] );
+
+        if (intersects.length > 0) {
+
+            var f = intersects[0].face;
+
+            var changed = false;
+
+            if (f.materialIndex == 0) {
+
+                if (noteSounds[0]) {
+                    noteSounds[f.index % noteSounds.length].play();
+                }
+
+                mouseParticle.position.x = intersects[0].point.x;
+                mouseParticle.position.y = intersects[0].point.y;
+                mouseParticle.position.z = intersects[0].point.z;
+
+                f.materialIndex = 1;
+                changed = true;
+
+            } 
+
+            impulse(3);
+
+            var complete = true;
+            _.each(geometry.faces, function(f) {
+                if (f.materialIndex != 1) {
+                    complete = false;
+                }
+            });
+
+            if (complete) {
+                stick(false);
+                pop();
+            } else { 
+                wobbleSounds[soundIndex++ % wobbleSounds.length].play();
+            }
+
+        }
+
+    }
+
+    function impulse(strength) {
+        geometry.vertices.forEach(function(v) {
+            var angle = Math.PI*2*Math.random();
+            v.particle.velocity.x = strength*Math.cos(angle);
+            v.particle.velocity.y = strength*Math.sin(angle);
+        });
+    }
+
+    function pop() {
+
+        ga('send', 'pageview', '/finish-ico');
+
+        pressDisabled = true;
+        
+        arpSound.play({ time: 0.5 });
+
+        setTimeout(function() {
+
+            particleSystem.attractions.forEach(function(p) {
+                p.constant = 4300;
+            });
+
+            particleSystem.springs.forEach(function(p) {
+                p.constant = 0;
+            });
+
+        }, 500);
+
+        setTimeout(function() {
+
+            reset();
+
+            particleSystem.particles.forEach(function(p) {
+                p.velocity.x = 0;
+                p.velocity.y = 0;
+                p.velocity.z = 0;
+                _.extend(p.position, p.position.original);
+            });
+
+            particleSystem.attractions.forEach(function(p) {
+                _.extend(p, p.original);
+            });
+            
+            particleSystem.springs.forEach(function(p) {
+                _.extend(p, p.original);
+            });
+            
+            particleSystem.particles.forEach(function(p) {
+                _.extend(p, p.original);
+            });
+
+            impulse(3);
+
+            pressDisabled = false;
+
+            wobbleSounds[5].play();
+
+        }, 3500);
+
+    }
+
+    function stick(reset) {
+
+        mouseParticle.mass = 1;
+        particleSystem.drag = 2;
+        stuck = true;
+
+        clearTimeout(unstickTimeout);
+
+        if (reset) {
+            unstickTimeout = setTimeout(function() {
+                impulse(10);
+                unstick();
+            }, 500);
+        }
+
+    }
+
+    function animate() {
+
+        requestAnimationFrame( animate );
+
+        particleSystem.tick();
+
+        mouseParticle.position.x = 1000000;
+        mouseParticle.position.y = 1000000;
+
+        geometry.vertices.forEach(function(g) {
+
+            g.x = g.particle.position.x;
+            g.y = g.particle.position.y;
+            g.z = g.particle.position.z;
+
+            g.clampScalar(-70, 70);
+
+        });
+
+        geometry.computeFaceNormals();
+
+        controls.update();
+
+        mesh.scale.x += (1-mesh.scale.x)*0.02;
+        mesh.scale.y += (1-mesh.scale.y)*0.02;
+        mesh.scale.z += (1-mesh.scale.z)*0.02;
+
+        strokeMesh.scale.copy(mesh.scale);
+
+        renderer.render( scene, camera );
+
+    };
+
+    function loadSounds(callback) {
+
+        var load = _.after(17, callback);
+
+        Sound.ready(function() {
+            for (var i = 1; i <= 8; i++) {
+                var s = new Sound('sound/s' + i + '.mp3', load);
+                noteSounds.push(s);
+            }
+            for (var i = 1; i <= 9; i++) {
+                var s = new Sound('sound/w' + i + '.mp3', load);
+                wobbleSounds.push(s);
+            }
+            arpSound = new Sound('sound/arp.mp3');
+        });
+
+    }
+/*
+    window.ico = function() {
+        container = document.getElementById('ico-container');
+        loadSounds(function() {
+            init();
+            animate();
+            var img = new Image();
+            img.src = 'img/pianoroll.gif';
+        });
+    };
+
+    */
+
+//})();
+
+container = document.getElementById('ico-container');
+       // loadSounds(function() {
+            init();
+            animate();
+         //   var img = new Image();
+         //   img.src = 'img/pianoroll.gif';
+       // });
+
+</script>
+</body>
+</html>

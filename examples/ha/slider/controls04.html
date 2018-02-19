@@ -159,7 +159,7 @@
 				document.body.appendChild( container );
 
 				camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 2000 );
-				camera.position.set( 00, 0, 200 );
+				camera.position.set( 0, 0, 200 );
 				//console.log(camera.position.z)
 
 				scene = new THREE.Scene();
@@ -321,12 +321,15 @@
 			}
 
 			function createSlideRule(){
-				var geometry = new THREE.PlaneBufferGeometry( 400, 2, 5 );
-				//geometry.applyMatrix( new THREE.Matrix4().setTranslation( 200, 0, 0 ) );
+				var width = viewWidth;
+				alert(width)
+				var geometry = new THREE.PlaneGeometry( 200, 2, 5 );
+			//	geometry.applyMatrix( new THREE.Matrix4().setTranslation( 50, 50, 0 ) );
 
 				standardMaterial = new THREE.MeshStandardMaterial( {
 					map: null,
 					color: 0xffffff,
+					wireframe:true,
 					metalness: 1.0,
 					shading: THREE.FlatShading
 				} );
@@ -340,12 +343,14 @@
 
 	        //  groove.geometry.translate( -100, 0, 0 );
 
+	        
+
 				scene.add(groove)
 
 				groove.position.y = -35;
-				groove.position.x = 0;
-				groove.position.z = 1;
-
+				groove.position.x = 35;
+				groove.position.z = 0;
+/*
 
 				for (var i = 0; i < 10; i++) {
 					var geometry = new THREE.SphereGeometry(2, 2, 10);
@@ -358,6 +363,7 @@
 					hotspot.position.y = 0;
 					groove.add(hotspot)
 				}
+				*/
 			}
 
 			function createGridWall(){
@@ -502,7 +508,7 @@
 				//console.log(vProjectedMousePos)
 				drag=true;
 				scaleKnob(10)
-				modifyGroove(1);
+			//	modifyGroove(1);
 
 
 				event.preventDefault();
@@ -546,7 +552,7 @@
             function onRelease(e) {
             	drag=false
             	scaleKnob(0)
-            	modifyGroove(0);
+            //	modifyGroove(0);
                
             }
             // Follows the mouse event
@@ -575,7 +581,7 @@
 					//mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
 
 				 // Make the sphere follow the mouse
-				  var vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
+				    var vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
 					vector.unproject( camera );
 					var dir = vector.sub( camera.position ).normalize();
 					var distance = - camera.position.z / dir.z;
@@ -677,7 +683,7 @@
 				    ball.position.x += (dX / 4);
 			 //	}
 			//	}
-			    groove.position.x -= (dX / 4);
+			//    groove.position.x -= (dX / 4);
 
 			    scrollGroup.position.x -= (dX / 4)*10;
 			   /// scrollGroup.position.y += (dY / 4);

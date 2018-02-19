@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Mailchimp Signup form</title>
+    <meta name="description" content="Mailchimp Signup form using Ajax">
+    <style>
+        body {
+            background-image: linear-gradient(120deg, rgb(209, 219, 233), rgb(240, 250, 243));
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 'Helvetica Neue', Arial, sans-serif;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .wrapper {
+            width: 50%;
+            max-width: 600px;
+            margin: 20% auto;
+        }
+
+        .box {
+            box-shadow: 0px 0px 10px #afc0d9;
+            background-color: #fff;
+            padding: 35px;
+            border-radius: .25rem;
+            text-align: center;
+        }
+
+
+        h1 {
+            color: rgb(53, 114, 210);
+            font-size: 17px;
+            font-weight: bold;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        p {
+            margin-top: 10px;
+            margin-bottom: 25px;
+            font-size: 20px;
+            font-weight: 300;
+        }
+
+        input {
+            border: 1px solid rgb(220, 219, 235);
+            border-radius: 4px;
+            font-size: 13px;
+            padding: 10px;
+            color: #000;
+            transition: all .15s ease-in;
+        }
+
+        input[type=email] {
+            width: 60%;
+        }
+
+        input[type=submit] {
+            background-color: rgb(53, 114, 210);
+            color: #fff;
+            font-weight: bold;
+            border: 1px solid transparent;
+        }
+
+        input[type=submit]::focus {
+            border: 1px solid #fff;
+        }
+
+        input:focus {
+            border-color: rgb(53, 114, 210);
+            box-shadow: 0px 0px 8px 2px rgba(53, 114, 210, .5);
+            outline: none;
+        }
+
+        input::placeholder {
+            color: #999;
+        }
+
+        #subscribe-result p {
+            margin-top: 35px;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <h1>Mailchimp Signup form</h1>
+        <div class="box">
+         <!--   <form action="http://hackinout.us15.list-manage.com/subscribe/post-json?u=e44c1f194bec93e238615469e&amp;id=fa63cb4ac7&c=?"
+                method="get" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="validate">
+            -->
+
+            <form action="https://supercomputingmachine.us17.list-manage.com/subscribe/post" method="POST" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="validate">
+                <input type="hidden" name="u" value="24aac6271c74a96ab7c1b22dc">
+                <input type="hidden" name="id" value="751665908b">
+            <!--    <input type="email" value="" name="EMAIL" class="email" id="mce-EMAIL" placeholder="lovely-human@example.com" required> -->
+                <input type="email" autocapitalize="off" autocorrect="off" name="MERGE0" id="MERGE0" size="25" value="">
+                <div style="position: absolute; left: -5000px;" aria-hidden="true">
+                    <input type="text" name="b_e44c1f194bec93e238615469e_f6f826e769" tabindex="-1" value="">
+                </div>
+
+
+                <div class="submit_container clear">
+                    <input type="submit" class="formEmailButton" name="submit" value="Subscribe">
+                </div>
+                <input type="hidden" name="ht" value="8da2d9eaeb408964ace88881e89ce73e697e0d40:MTUxOTA3MjU0MS4wODg0">
+                <input type="hidden" name="mc_signupsource" value="hosted">
+
+
+            <!--    <input type="submit" value="subscribe" name="subscribe" id="mc-embedded-subscribe" class="mc-button"> -->
+                <div id="subscribe-result">
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script>
+
+        $(document).ready(function () {
+              var $form = $('#mc-embedded-subscribe-form')
+              if ($form.length > 0) {
+                $('form input[type="submit"]').bind('click', function (event) {
+                  if (event) event.preventDefault()
+                  register($form)
+                })
+              }
+            })
+
+            function register($form) {
+              $('#mc-embedded-subscribe').val('Sending...');
+              $.ajax({
+                type: $form.attr('method'),
+                url: $form.attr('action'),
+                data: $form.serialize(),
+                cache: false,
+                dataType: 'json',
+                contentType: 'application/json; charset=utf-8',
+                error: function (err) { alert('Could not connect to the registration server. Please try again later.') },
+                success: function (data) {
+                  $('#mc-embedded-subscribe').val('subscribe')
+                  if (data.result === 'success') {
+                    // Yeahhhh Success
+                    console.log(data.msg)
+                    $('#mce-EMAIL').css('borderColor', '#ffffff')
+                    $('#subscribe-result').css('color', 'rgb(53, 114, 210)')
+                    $('#subscribe-result').html('<p>Thank you for subscribing. We have sent you a confirmation email.</p>')
+                    $('#mce-EMAIL').val('')
+                  } else {
+                    // Something went wrong, do something to notify the user.
+                    console.log(data.msg)
+                    $('#mce-EMAIL').css('borderColor', '#ff8282')
+                    $('#subscribe-result').css('color', '#ff8282')
+                    $('#subscribe-result').html('<p>' + data.msg.substring(4) + '</p>')
+                  }
+                }
+              })
+            };
+    </script>
+
+</body>
+</html>

@@ -14,7 +14,9 @@
   "dependencies": {
     "cannon": "^0.6.2",
     "countup.js": "^1.9.3",
+    "debounce": "^1.1.0",
     "del": "^2.0.2",
+    "glsl-noise": "0.0.0",
     "gulp": "^3.9.0",
     "gulp-concat": "^2.6.0",
     "gulp-data": "^1.2.0",

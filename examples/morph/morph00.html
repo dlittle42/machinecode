@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>morph00</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			* {
+			  margin: 0;
+			  padding: 0
+			}
+
+			html {
+			  height: 100%
+			}
+
+			body {
+			  height: 100%;
+			  overflow: hidden
+			}
+
+			canvas {
+			  position: absolute
+			}
+
+
+		</style>
+	</head>
+	<body>
+
+		<div id="info">
+
+		</div>
+
+		<div id="canvas"></div>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/89/three.min.js"></script>
+		<!--<script src="../../bower_components/three.js/examples/js/controls/TrackballControls.js"></script>-->
+		<script src="../../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+
+		
+		<script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+		<script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+		<script src="../../bower_components/dat.gui/dat.gui.js"></script>
+
+
+		<script>
+
+			// from https://codepen.io/ykob/pen/NqXoYG?editors=0010
+
+			
+			//var debounce = require('./debounce');
+			
+
+			var bodyWidth = document.body.clientWidth;
+			var bodyHeight = document.body.clientHeight;
+			var fps = 60;
+			var frameTime;
+			var lastTimeRender = +new Date();
+
+			var canvas;
+			var renderer;
+			var scene;
+			var camera;
+			var light;
+			var globe;
+			var ball;
+
+			function getDegree(radian) {
+			    return radian / Math.PI * 180;
+			  };
+  
+			function getRadian(degrees) {
+			    return degrees * Math.PI / 180;
+			  };
+
+			var initThree = function() {
+			  canvas = document.getElementById('canvas');
+			  renderer = new THREE.WebGLRenderer({
+			    antialias: true
+			  });
+			  if (!renderer) {
+			    alert('Three.jsの初期化に失敗しました。');
+			  }
+			  renderer.setSize(bodyWidth, bodyHeight);
+			  canvas.appendChild(renderer.domElement);
+			  renderer.setClearColor(0xeeeeee, 1.0);
+			  
+			  scene = new THREE.Scene();
+			};
+
+			var init = function() {
+			  var ballGeometry = new THREE.SphereGeometry(140, 60, 60);
+			  var ballMaterial = new THREE.MeshPhongMaterial({
+			    color: 0xffffff
+			  });
+
+			  initThree();
+			  
+			//  camera = new Camera();
+			  camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 10000 );
+			camera.position.z = 800;
+			//  camera.init(get.radian(45), getRadian(0), bodyWidth, bodyHeight);
+			  
+			  var light = new THREE.DirectionalLight( 0xffffff );
+				light.position.set( 0.5, 1, 1 ).normalize();
+				scene.add( light );
+			  
+			  ball = new Mesh();
+			  ball.init(scene, ballGeometry, ballMaterial);
+
+
+			  scene.add( new THREE.AxesHelper( 30 ) );
+
+			  controls = new THREE.OrbitControls( camera, renderer.domElement );
+			  
+			  renderloop();
+			/*  debounce(window, 'resize', function(event){
+			    resizeRenderer();
+			  });
+			  */
+			};
+
+			var render = function() {
+			  renderer.clear();
+			  
+			  ball.updateVertices();
+			  
+			  renderer.render(scene, camera);
+			};
+
+			var renderloop = function() {
+			  var now = +new Date();
+			  requestAnimationFrame(renderloop);
+
+			  if (now - lastTimeRender > 1000 / fps) {
+			    render();
+			    lastTimeRender = +new Date();
+			  }
+			 // camera.trackball.update();
+			};
+
+			var resizeRenderer = function() {
+			  bodyWidth  = document.body.clientWidth;
+			  bodyHeight = document.body.clientHeight;
+			  renderer.setSize(bodyWidth, bodyHeight);
+			//  camera.init(get.radian(45), get.radian(0), bodyWidth, bodyHeight);
+			};
+
+			
+
+
+			class Mesh {
+
+  
+
+  			constructor(){
+
+		//	var Mesh = function() {
+			    this.r = 0;
+			    this.x = 0;
+			    this.y = 0;
+			    this.z = 0;
+			    this.geometry;
+			    this.material;
+			    this.mesh;
+			    this.vertexArr = [];
+			    this.vertexDeg = [];
+			    this.vertexWaveCoe = 0;
+			  };
+
+			  init(scene, geometry, material) {
+			    this.geometry = geometry;
+			    this.material = material;
+			    this.mesh = new THREE.Mesh(this.geometry, this.material);
+			    this.r = this.geometry.parameters.radius;
+			    this.vertexWaveCoe = this.r / 4;
+
+			    this.geometry.mergeVertices();
+			    this.updateVerticesInt();
+			    this.setPosition();
+			    
+			    scene.add(this.mesh);
+			  };
+
+			  setPosition() {
+			    this.mesh.position.set(this.x, this.y, this.z);
+			  };
+			  
+			  updateElement() {
+			    this.mesh.geometry.computeVertexNormals();
+			    this.mesh.geometry.computeFaceNormals();
+			    this.mesh.geometry.verticesNeedUpdate = true;
+			    this.mesh.geometry.elementsNeedUpdate = true;
+			    this.mesh.geometry.normalsNeedUpdate = true;
+			  };
+			  
+			 updateVerticesInt() {
+			    var vertices = this.mesh.geometry.vertices;
+			    for (var i = 0; i < vertices.length; i++) {
+			      var r = this.r;
+			      this.vertexArr[i] = r;
+			      //this.vertexDeg[i] = get.randomInt(0, 360);
+			      this.vertexDeg[i] = vertices[i].y / 1.8;
+			    }
+			    this.updateElement();
+			  };
+			  
+			  updateVertices() {
+			    var vertices = this.mesh.geometry.vertices;
+			    for (var i = 0; i < this.vertexArr.length; i++) {
+			      var r;
+			      this.vertexDeg[i] += 12;
+			      r = this.vertexArr[i] + Math.sin(getRadian(this.vertexDeg[i])) * this.vertexWaveCoe;
+			      vertices[i].normalize().multiplyScalar(r);
+			    }
+			    this.updateElement();
+			  };
+			 }
+		//	  return this;
+		//	};
+			
+
+			init();
+
+
+		</script>
+
+	</body>
+</html>

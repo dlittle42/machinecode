@@ -29,8 +29,10 @@
 
 		<script src="../../bower_components/three.js/build/three.js"></script>
 		<script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
-
+<!--
 		<script src="../../bower_components/three.js/examples/js/effects/OutlineEffect.js"></script>
+-->
+		<script src="outline2.js"></script>
 
 		<script src="../../bower_components/three.js/examples/js/Detector.js"></script>
 		<script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
@@ -61,22 +63,22 @@
 				camera.position.set( 0.0, 400, 400 * 3.5 );
 
 				//
-
+/*
 				var reflectionCube = new THREE.CubeTextureLoader()
 					.setPath( 'textures/cube/SwedishRoyalCastle/' )
 					.load( [ 'px.jpg', 'nx.jpg', 'py.jpg', 'ny.jpg', 'pz.jpg', 'nz.jpg' ] );
 				reflectionCube.format = THREE.RGBFormat;
-
+*/
 				scene = new THREE.Scene();
-				scene.background = reflectionCube;
+			//	scene.background = reflectionCube;
 
 				// Materials
-
+/*
 				var imgTexture = new THREE.TextureLoader().load( "textures/planets/moon_1024.jpg" );
 				imgTexture.wrapS = imgTexture.wrapT = THREE.RepeatWrapping;
 				imgTexture.anisotropy = 16;
 				imgTexture = null;
-
+*/
 				var shininess = 50, specular = 0x333333, bumpScale = 1;
 
 				var materials = [];
@@ -102,14 +104,14 @@
 							var diffuseColor = new THREE.Color().setHSL( alpha, 0.5, gamma * 0.5 + 0.1 ).multiplyScalar( 1 - beta * 0.2 );
 
 							var material = new THREE.MeshToonMaterial( {
-								map: imgTexture,
-								bumpMap: imgTexture,
+							//	map: imgTexture,
+							//	bumpMap: imgTexture,
 								bumpScale: bumpScale,
 								color: diffuseColor,
 								specular: specularColor,
 								reflectivity: beta,
 								shininess: specularShininess,
-								envMap: alphaIndex % 2 === 0 ? null : reflectionCube
+								//envMap: alphaIndex % 2 === 0 ? null : reflectionCube
 							} );
 
 							var mesh = new THREE.Mesh( geometry, material );
@@ -173,6 +175,7 @@
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setClearColor( 0xFFFFFF );
 				container.appendChild( renderer.domElement );
 
 				renderer.gammaInput = true;
