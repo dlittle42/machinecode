@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>text anime.js</title>
+    <meta name="description" content="Text animation with anime.js">
+
+    <link rel="stylesheet" type="text/css" href="css/font.css" />
+
+    <style>
+
+    body {
+		                background-color: #bfd1e5;
+		                color: #fff;
+		                margin: 0px;
+		                overflow: hidden;
+		                font-family:Monospace;
+		                font-size:13px;
+		                text-align:center;
+		                font-weight: bold;
+		                text-align:center;
+		            }
+
+
+		#marketing{
+			width: 600px;
+			height: 100%;
+			border: 1px solid yellow;
+			margin: 0 auto;
+		}
+
+    .ml9 {
+  position: relative;
+  font-weight: 200;
+  font-size: 4em;
+}
+
+
+ h1{
+	font-family: 'marshy';
+	font-size: 48px;
+	-webkit-text-stroke: 1px black;
+    color: white;
+    text-shadow: 3px 3px 0 #000, 
+    -1px -1px 0 #000, 
+    1px -1px 0 #000, 
+    -1px 1px 0 #000, 
+    1px 1px 0 #000;
+    user-select: none;
+}
+
+.ml9 .text-wrapper {
+  position: relative;
+  display: inline-block;
+  padding-top: 0.2em;
+  padding-right: 0.5em;
+  padding-left: 0.5em;
+  padding-bottom: 0.1em;
+  overflow: hidden;
+}
+
+.ml9 .letter {
+  transform-origin: 50% 100%;
+  display: inline-block;
+  line-height: 1em;
+}
+</style>
+
+ </head>
+ <body>
+<div id="marketing">
+<h1 class="ml9">
+  <span class="text-wrapper">
+    <span class="letters">When you HA, you can make someone laugh or feel happy.</span>
+  </span>
+</h1>
+</div>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/2.0.2/anime.min.js"></script>
+
+<script>
+// Wrap every letter in a span
+$('.ml9 .letters').each(function(){
+  $(this).html($(this).text().replace(/([^\x00-\x80]|\w)/g, "<span class='letter'>$&</span>"));
+});
+
+anime.timeline({loop: true})
+  .add({
+    targets: '.ml9 .letter',
+    scale: [0, 1],
+    duration: 1500,
+    elasticity: 600,
+    delay: function(el, i) {
+      return 45 * (i+1)
+    }
+  }).add({
+    targets: '.ml9',
+    opacity: 0,
+    duration: 1000,
+    easing: "easeOutExpo",
+    delay: 1000
+  });
+</script>
+
+</body>
+</html>

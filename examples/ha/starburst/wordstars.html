@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html >
+<head>
+  <meta charset="UTF-8">
+  <title>3D Fireworks - three.js</title>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
+
+  <link rel="stylesheet" type="text/css" href="css/font.css" />
+      <link rel="stylesheet" href="css/style.css">
+      <style>
+      body {
+		                background-color: #bfd1e5;
+		                color: #fff;
+		                margin: 0px;
+		                overflow: hidden;
+		                font-family:Monospace;
+		                font-size:13px;
+		                text-align:center;
+		                font-weight: bold;
+		                text-align:center;
+		            }
+
+
+		#thanks{
+			width: 600px;
+			height: 100%;
+			border: 1px solid yellow;
+			margin: 200px auto;
+			    position: absolute;
+    top: 0;
+    left: 25%;
+		}
+
+    .ml9 {
+  position: relative;
+  font-weight: 200;
+  font-size: 4em;
+}
+
+
+ h1{
+	font-family: 'marshy';
+	font-size: 64px;
+	-webkit-text-stroke: 1px black;
+    color: white;
+    text-shadow: 3px 3px 0 #000, 
+    -1px -1px 0 #000, 
+    1px -1px 0 #000, 
+    -1px 1px 0 #000, 
+    1px 1px 0 #000;
+    user-select: none;
+}
+
+.ml9 .text-wrapper {
+  position: relative;
+  display: inline-block;
+  padding-top: 0.2em;
+  padding-right: 0.5em;
+  padding-left: 0.5em;
+  padding-bottom: 0.1em;
+  overflow: hidden;
+}
+
+.ml9 .letter {
+  transform-origin: 50% 100%;
+  display: inline-block;
+  line-height: 1em;
+}
+</style>
+
+  
+</head>
+
+<body>
+  <canvas id="canvas"></canvas>
+
+<div id="stats"></div>
+
+<div id="thanks">
+<h1 class="ml9">
+  <span class="text-wrapper">
+    <span class="letters">AWESOME!</span>
+  </span>
+</h1>
+<button id="again">Again</button>
+</div>
+
+<div class="instructions">Click anywhere</div>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/84/three.min.js'></script>
+<script src='http://cdnjs.cloudflare.com/ajax/libs/stats.js/r11/Stats.min.js'></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/2.0.2/anime.min.js"></script>
+
+    <script  src="js/index2.js"></script>
+
+
+
+<script>
+// Wrap every letter in a span
+$('.ml9 .letters').each(function(){
+ // $(this).html($(this).text().replace(/([^\x00-\x80]|\w)/g, "<span class='letter'>$&</span>"));
+ // $(this).html($(this).text().replace( /([a-zA-Z0-9_\!\-]\w)/g, "<span class='letter'>$&</span>"));
+  $(this).html($(this).text().replace( /([^\A-Z]|\!|\w)/g, "<span class='letter'>$&</span>"));
+ 
+});
+
+var awesomeTimeline = anime.timeline({ loop: false });
+
+/*anime.timeline({
+  loop: false,
+    complete: function(anim) {
+      console.log('letter='+anim.completed);
+    }
+
+})*/
+awesomeTimeline.add({
+    targets: '.ml9 .letter',
+    scale: [0, 1],
+    duration: 1500,
+    elasticity: 600,
+   // easing:"easeOutBounce",
+    delay: function(el, i) {
+      return 45 * (i+1)
+    }
+  }).add({
+    targets: '.ml9',
+    opacity: 0,
+    duration: 1000,
+    easing: "easeOutExpo",
+    delay: 1000,
+    begin: function(anim) {
+      console.log(anim.completed);
+    }
+  });
+
+  awesomeTimeline.pause();
+
+
+ $('#again').on('click', function(){
+       awesomeTimeline.restart();
+       console.log('click')
+       console.log(awesomeTimeline)
+    });
+
+ 
+ 
+</script>
+
+</body>
+</html>
