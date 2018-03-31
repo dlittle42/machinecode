@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Multi Shader fade</title>
+    <meta charset="utf-8">
+    <style>
+	    body {
+		  overflow: hidden;
+		  margin: 0;
+		}
+
+	</style>
+	<script src="https://threejs.org/build/three.min.js"></script>
+	<script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+  </head>
+  
+  <body>
+<input id="range" type="range" min="0" max="1" step="0.001" value="0" style="position:absolute;width:90%;margin:0;">
+
+<script>
+
+  var illoArr = [];
+  var mouse = new THREE.Vector2(), INTERSECTED;
+  var raycaster = new THREE.Raycaster();
+  var paused = false;
+  var down = false;
+
+  var fadeVal =0;
+
+	var controls;
+var scene = new THREE.Scene();
+scene.background = new THREE.Color( 0x00ffff )
+var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+camera.position.set(0, 0, 40);
+var renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+document.body.appendChild(renderer.domElement);
+
+controls = new THREE.OrbitControls( camera, renderer.domElement );
+
+var uniforms = {
+  textures: {
+    value: []
+  },
+  transition: { 
+    value: 0
+  }
+};
+var textureLoader = new THREE.TextureLoader();
+textureLoader.setCrossOrigin("");
+var pics = [
+	"images/monkeyface01.png",
+  "images/monkeyface01_line.png",
+  "images/monkeyface01_color.png",
+  "images/monkeyface02.png",
+  "images/monkeyface02_line.png",
+  "images/monkeyface02_color.png",
+ // "https://threejs.org/examples/textures/decal/decal-normal.jpg"
+];
+pics.forEach((p, idx)=>{
+	textureLoader.load(p, function(tex){
+  	uniforms.textures.value[idx] = tex;
+    tex.needsUpdate = true;
+  })
+});
+
+
+
+
+
+var planeGeom = new THREE.PlaneBufferGeometry(10, 10);
+var vertShader = `
+	varying vec2 vUv;
+	void main()
+  {
+    vUv = uv;
+  	vec4 mvPosition = modelViewMatrix * vec4(position, 1.0 );
+    gl_Position = projectionMatrix * mvPosition;
+  }
+`;
+var fragShader = `
+
+
+  
+
+	uniform sampler2D textures[` + pics.length + `];
+  uniform float transition;
+  varying vec2 vUv;
+  
+  vec4 getTexture(int index){
+  	for(int i = 0; i < ` + pics.length + `; i++){
+    	 if (i == index){	return texture2D(textures[i],vUv); }
+    }
+  }
+  void main()
+  {
+    if (transition == 1.){
+    	gl_FragColor = texture2D(textures[` + (pics.length - 1) + `], vUv); // show last
+    }
+    else {
+      float chunk = 1. / ` + (pics.length - 1) + `.; // amount of transitions = amount of pics - 1
+    	float t = floor(transition / chunk);
+      int idx0 = int(t);
+      int idx1 = int(t) + 1; 
+      gl_FragColor = mix(
+        getTexture(idx0),
+        getTexture(idx1),
+				(transition - (float(t) * chunk)) * ` + (pics.length - 1) + `.
+      );
+    }
+  }
+`;
+var planeMat = new THREE.ShaderMaterial({
+  uniforms: uniforms,
+  vertexShader: vertShader,
+  fragmentShader: fragShader,
+  transparent:true,
+});
+
+var plane = new THREE.Mesh(planeGeom, planeMat);
+scene.add(plane);
+
+console.log(plane)
+illoArr.push(plane);
+
+/*
+var pics2 = [
+  "images/monkeyface02.png",
+  "images/monkeyface02_line.png",
+  "images/monkeyface02_color.png",
+ // "https://threejs.org/examples/textures/decal/decal-normal.jpg"
+];
+pics2.forEach((p, idx)=>{
+  textureLoader.load(p, function(tex){
+    uniforms.textures.value[idx] = tex;
+    tex.needsUpdate = true;
+  })
+});
+*/
+var plane2 = new THREE.Mesh(planeGeom, planeMat);
+scene.add(plane2);
+plane2.position.x = 20;
+
+illoArr.push(plane2);
+
+function goRaycast(){
+        raycaster.setFromCamera( mouse, camera );
+
+        var intersects = raycaster.intersectObjects( illoArr );
+
+        if ( intersects.length > 0 ) {
+
+          if ( INTERSECTED != intersects[ 0 ].object ) {
+
+           // if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+
+            INTERSECTED = intersects[ 0 ].object;
+        //    INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+        //    INTERSECTED.material.emissive.setHex( 0xff0000 );
+          //  fadeVal=.5;
+          //  runFade(1)
+
+          }
+
+        } else {
+
+        //  if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+
+          INTERSECTED = null;
+          //fadeVal=0;
+       //   runFade(0)
+       //   hud.style.opacity=0;
+
+        }
+      }
+
+function onDown(event){
+    console.log(INTERSECTED)
+    down = true;
+    fadeVal=.5;
+  //  sx = event.clientX;
+  //  sy = event.clientY;
+ // if (INTERSECTED) extrudeMore(INTERSECTED,INTERSECTED.value )
+}
+
+
+function runFade(targ){
+
+  if (fadeVal < 1){
+      fadeVal += targ/100;
+     // console.log(fadeVal)
+  }
+/*
+  if (fadeVal >= 0 && fadeVal <= 1) {
+    fadeVal += targ/100;
+    console.log(fadeVal)
+  }else{
+    fadeVal = 0;
+  }
+*/
+}
+
+function onMove( event ) {
+
+
+
+    event.preventDefault();
+
+    
+
+    if (event.touches){
+    //  console.log('got touches')
+      mouse.x = ( event.touches[0].clientX / window.innerWidth ) * 2 - 1;
+      mouse.y = - ( event.touches[0].clientY / window.innerHeight ) * 2 + 1;
+    }else{
+      //console.log('is mouse')
+      mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+      mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+     // hud.style.left  = (event.clientX + 5) + 'px';
+       //   hud.style.top = (event.clientY - 40) + 'px';
+    }
+
+
+  }
+
+
+function onUp(event){
+    down = false;
+    fadeVal=0;
+}
+
+
+
+document.addEventListener( 'touchstart', onDown, false );
+document.addEventListener( 'mousedown', onDown, false );
+//document.addEventListener( 'touchmove', onMove, false );
+//document.addEventListener( 'mousemove', onMove, false );
+document.addEventListener( 'touchend', onUp, false );
+document.addEventListener( 'mouseup', onUp, false );
+
+render();
+
+function render() {
+  requestAnimationFrame(render);
+  controls.update();
+  goRaycast();
+ // uniforms.transition.value = fadeVal;
+ // plane.material.uniforms.transition.value = range.value;
+  plane2.material.uniforms.transition.value = range.value + 1;
+  renderer.render(scene, camera);
+}
+</script>
+</body>
+</html>

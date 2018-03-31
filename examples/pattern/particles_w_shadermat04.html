@@ -1,0 +1,484 @@
+
+<html>
+<head>
+	<title>Particles shaderMaterial with multiple textures</title>
+	<script src="../../bower_components/three.js/build/three.js"></script>
+	<script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
+	<script type="text/javascript" src="js/GPUParticleSystem.js"></script>
+
+	<style type="text/css">
+	body {
+		margin: 0;
+		padding: 0;
+		overflow:hidden;
+		background-color:#000;
+	}
+
+
+	div#WebGL-output {
+		position:absolute;
+		width:100%;
+		height:100%;
+	}
+	</style>
+</head>
+<body>
+	<div id="Stats-output"></div>
+	<div id="WebGL-output"></div>
+
+	
+<!-- 
+
+	based on...
+	https://stackoverflow.com/questions/25335967/texture-atlas-offset-repeat-works-for-meshes-but-is-ignored-for-point-system-par/25372202#25372202
+
+	http://jsfiddle.net/myy7x4zd/10/
+
+	plus these for scaling on z-index like pointsmaterial
+
+	https://codepen.io/artzub/pen/dOrMGj
+
+	https://stackoverflow.com/questions/41246878/how-to-get-the-same-result-as-with-using-pointsmaterial-but-with-using-shadermat
+
+->
+
+<script src="http://threejs.org/build/three.min.js"></script>
+<!-- <script src="../../bower_components/three.js/build/three.js"></script> -->
+<script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+<script src="http://threejs.org/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
+
+
+<script type="x-shader/x-vertex" id="vertexshader">
+
+attribute vec2 offset;
+
+varying vec2 vOffset;
+uniform float size;
+uniform float scale;
+
+void main() {
+
+    vOffset = offset;
+    vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+
+    #ifdef USE_SIZEATTENUATION
+		gl_PointSize = size * ( scale / - mvPosition.z );
+	#else
+		gl_PointSize = size;
+	#endif
+
+	//gl_PointSize = size;//50.0;
+
+
+	gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+
+}
+
+</script>
+
+<script type="x-shader/x-fragment" id="fragmentshader">
+
+uniform sampler2D texture;
+uniform vec2 repeat;
+
+varying vec2 vOffset;
+
+void main() {
+
+    vec2 uv = vec2( gl_PointCoord.x, 1.0 - gl_PointCoord.y );
+
+    vec4 tex = texture2D( texture, uv * repeat + vOffset );
+    
+    if ( tex.a < 0.5 ) discard;
+
+    gl_FragColor = tex;
+
+}
+
+</script>
+
+<script>
+var renderer, scene, camera, controls, clock, stats;
+var pointCloud, uniforms, attributes;
+
+var gui = new dat.GUI();
+var options  = {
+            
+                        cameraZ : 500,
+            
+                        sombrero_frequency : 10.0,
+            
+                        speedX            : 0.8,
+
+                        speedY            : 0.8,
+            
+                        segments         : 324,
+
+                        image          : 'monkeyface01a_line.png',
+            
+                        wireframe_color     : '#75239E',//'#e25cfe',0x75239E
+            
+                      //  perlin_passes    : 1,
+            
+                        wireframe        : true,
+            
+                      //  floor_visible    : true
+            
+                    };
+
+var fov, adjacent, left;
+var total = 200;
+
+
+init();
+animate();
+
+function init() {
+
+    stats = initStats();
+
+    clock = new THREE.Clock();
+    clock.start();
+
+    // renderer
+    renderer = new THREE.WebGLRenderer();
+    renderer.setClearColor( 0x000000, 1 );
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    document.body.appendChild( renderer.domElement );
+    
+    // scene
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color( 0x75239E )
+
+    //camera
+    camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
+    camera.position.z = 400;
+
+    fov = camera.fov / 180 * Math.PI / 2;
+
+    // controls
+  //  controls = new THREE.OrbitControls( camera, renderer.domElement );
+  //  controls = new THREE.OrbitControls(camera, document, renderer.domElement);
+
+
+    initGUI();
+/*
+    // vertices
+   // var geometry = new THREE.SphereGeometry( 100, 16, 12 );
+    var geometry = new THREE.BoxGeometry( 300,300, 300, 10, 10, 10);
+    geometry.mergeVertices(); // to remove duplicate vertices at the poles
+    var vertices = geometry.vertices;
+    console.log(vertices[0])
+*/
+
+    geometry = new THREE.Geometry();
+            
+        //  sprite = new THREE.TextureLoader().load('./images/'+options.image);
+    //make particles
+    var total = 400;
+    for(var zval=-total; zval<total; zval++) {
+        var vertex = new THREE.Vector3();
+        vertex.x = 2000 * Math.random() - 1000;
+        vertex.y = 2000 * Math.random() - 1000;
+        vertex.z = zval;
+
+        geometry.vertices.push( vertex );
+
+     //   geometry.colors.push(new THREE.Color(0xffffff));
+    }
+    geometry.mergeVertices(); // to remove duplicate vertices at the poles
+    var vertices = geometry.vertices;
+
+    // geometry
+    geometry = new THREE.BufferGeometry();
+ 
+    // attributes
+    numVertices = vertices.length;
+    var positions = new Float32Array( numVertices * 3 ); // 3 coordinates per point
+    var offsets = new Float32Array( numVertices * 2 ); // 2 coordinates per point
+
+    geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+    geometry.addAttribute( 'offset', new THREE.BufferAttribute( offsets, 2 ) );
+
+    // populate positions
+    geometry.attributes.position.copyVector3sArray( vertices );
+
+    console.log(geometry.attributes.position)
+
+    // populate offsets
+    var offset = new THREE.Vector2();
+
+    for ( var i = 0, index = 0, l = numVertices; i < l; i ++, index += 2 ) {
+
+        offset.set( THREE.Math.randInt( 1, 3 ), THREE.Math.randInt( 2, 3 ) ).multiplyScalar( 0.25 ); // sprite sheet: 4 rows x 4 cols
+
+        offsets[ index ] = offset.x;
+        offsets[ index + 1 ] = offset.y;
+
+    }
+
+	// image
+    image = document.createElement( 'img' );
+    image.addEventListener( 'load', function ( event ) { texture.needsUpdate = true; } );
+
+    // texture
+    var texture = new THREE.Texture( image );
+
+    // uniforms
+    uniforms = {
+
+        texture:    { value: texture },
+        repeat:     { value: new THREE.Vector2( 0.25, 0.25 ) },
+        scale: { value: 400 },
+        size: { value: 100 },
+
+
+
+    };
+
+    // material
+    var material = new THREE.ShaderMaterial( {
+
+        uniforms:       uniforms,
+        vertexShader:   document.getElementById( 'vertexshader' ).textContent,
+        fragmentShader: document.getElementById( 'fragmentshader' ).textContent,
+        transparent:    true,
+        defines: {
+	        USE_MAP: "",
+	        /*+++*/ 
+	        USE_SIZEATTENUATION: ""
+	        /*+++*/
+	    },
+
+    } );
+
+    // point cloud
+    pointCloud = new THREE.Points( geometry, material );
+
+    scene.add( pointCloud );
+
+   //  updateParticles();
+
+}
+
+function updateParticles() {
+         //   var time = clock.getElapsedTime();
+
+
+            var positions = pointCloud.geometry.attributes.position.array;
+          //  console.log(positions)
+
+            var x = y = z = index = 0;
+
+         //   console.log(positions.length)
+     //    console.log(positions[0])
+        
+
+            for ( var i = 0, l = positions.length; i < l; i ++ ) {
+
+             //   console.log(positions[i])
+                //every third one: x,y,z
+              //  var xvert = positions[ index ];
+               
+              //  positions[ index] +=3;
+                if(positions[ index ]>1000) {
+                    positions[ index ]=-1000;
+                }else if (positions[ index ]<-1000){
+                    positions[ index ]=1000;
+                }else{
+                    positions[ index] +=options.speedX;
+                }
+                index++;
+              //  positions[ index ] += 0;
+                if(positions[ index ]>1000) {
+                    positions[ index ]=-1000;
+                }else if (positions[ index ]<-1000){
+                    positions[ index ]=1000;
+                }else{
+                    positions[ index] +=options.speedY;
+                }
+
+                index++;
+                positions[ index ] += 0;
+                 index++;
+
+/*
+                if(particles.geometry.vertices[i].x>1000) {
+                    particles.geometry.vertices[i].x=-1000;
+                }else if (particles.geometry.vertices[i].x<-1000){
+                    particles.geometry.vertices[i].x=1000;
+                }
+                if(particles.geometry.vertices[i].y>1000) {
+                    particles.geometry.vertices[i].y=-1000;
+                }else if (particles.geometry.vertices[i].y<-1000){
+                    particles.geometry.vertices[i].y=1000;
+                }
+*/
+          //      console.log(i)
+
+            //  x+=3;
+         //     y+=0.3;
+
+              //  x += ( Math.random() - 0.5 ) * 10;
+              //  y += ( Math.random() - 0.5 ) * 10;
+              //  z += ( Math.random() - 0.5 ) * 10;
+               
+                
+            }
+
+            pointCloud.geometry.attributes.position.needsUpdate = true; // required after the first render
+
+
+        }
+
+        function getEdges(){
+            adjacent = camera.position.distanceTo( scene.position );
+            // Use trig to get the leftmost point (tangent = o / a)
+            left = Math.tan( fov ) * adjacent  * camera.aspect;
+        }
+
+        function initGUI() {
+
+                    //this.gui = new dat.GUI();
+
+                    gui.values = {};
+
+                    gui.values.speedX            = gui.add(options,'speedX',-10,10).step(0.1);
+                    gui.values.speedY            = gui.add(options,'speedY',-10,10).step(0.1);
+
+                    gui.values.segments         = gui.add(options,'segments',20,800).step(1);
+                    gui.values.image          = gui.add(options, 'image', [ 
+                        'monkeyface01_color.png', 
+                        'monkeyface02_color.png', 
+                        'monkeyface01a_line.png',
+                        'monkeyface01b_line.png',
+                    ] );
+
+
+                    gui.values.cameraZ     = gui.add(options,'cameraZ',0,1000).step(10);
+
+                    gui.values.sombrero_frequency     = gui.add(options,'sombrero_frequency',0,100).step(0.1);
+
+                    gui.values.wireframe_color     = gui.addColor(options,'wireframe_color');
+
+
+                    gui.values.wireframe = gui.add(options, 'wireframe');
+
+                  //  gui.values.floor_visible = gui.add(options, 'floor_visible');
+
+
+
+
+                    gui.values.wireframe.onChange(value => {
+
+                       // plane_material.wireframe = value;
+
+                    }
+                    );
+
+                    gui.values.speedX.onChange(value => {
+
+                        //speedX = value;
+                      //  uniforms.speed.value = value;
+
+                    }
+                    );
+
+                    gui.values.image.onChange(value => {
+                        console.log(value);
+                      //  removeParticles();
+                     //   spawnParticles();
+                        //speedX = value;
+                      //  uniforms.speed.value = value;
+
+                    }
+                    );
+
+                    gui.values.cameraZ.onChange(value => {
+                        console.log('cameraZ='+ value)
+
+                      //  uniforms.sombrero_amplitude.value = value;
+                      camera.position.z = value;
+                      getEdges();
+
+                    }
+                    );
+
+                    gui.values.sombrero_frequency.onChange(value => {
+
+                      //  uniforms.sombrero_frequency.value = value;
+
+                    }
+                    );
+
+
+
+                    gui.values.wireframe_color.onChange(value => {
+                    //    console.log(mesh.position.z);
+                     //   mesh.material.color.set(new THREE.Color(value));
+                     //   colorTo(mesh, value, .5);
+                       // uniforms.line_color.value = new THREE.Color(value);
+                    }
+                    );
+
+                    gui.values.segments.onFinishChange(value => {
+
+                       // scene.remove(plane_mesh);
+
+                       // buildPlane(value);
+
+                      //  scene.add(plane_mesh);
+                    }
+                    );
+                     gui.values.wireframe.onFinishChange(value => {
+                     // removeParticles();
+                       // scene.remove(plane_mesh);
+
+                       // buildPlane(value);
+
+                      //  scene.add(plane_mesh);
+                    }
+                    );
+                }
+
+
+        function initStats() {
+            var statcontroller = new Stats();
+            statcontroller.setMode(0);
+
+            statcontroller.domElement.style.position="absolute";
+            statcontroller.domElement.style.left="0";
+            statcontroller.domElement.style.top="0";
+
+            document.getElementById("Stats-output").appendChild(statcontroller.domElement);
+
+            return statcontroller;
+        }
+
+function animate() {
+
+    requestAnimationFrame( animate );
+    stats.update();
+    updateParticles();
+   // pointCloud.rotation.y += 0.001;
+   // controls.update();
+
+    render();
+
+}
+
+function render() {
+
+    renderer.render( scene, camera );
+
+}
+
+image.src = 'images/monkeysprites.png';
+
+</script>
+
+
+</body>
+</html>

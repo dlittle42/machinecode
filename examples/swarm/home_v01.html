@@ -1,0 +1,1200 @@
+
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        
+        <title>ha</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link rel="icon" type="image/png" href="">
+        
+		<link rel="stylesheet" type="text/css" href="css/font.css" />
+		<link rel="stylesheet" type="text/css" href="css/button.css" />
+		<link rel="stylesheet" type="text/css" href="css/customInput.css" />
+		<script src="js/snap.svg-min.js"></script>
+
+<script src="../../bower_components/jquery/dist/jquery.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/2.0.2/anime.min.js"></script>
+		<script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
+		<script src="../../bower_components/three.js/build/three.js"></script>
+		<script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+
+
+<script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+<script src="../../bower_components/three.js/examples/js/libs/dat.gui.min.js"></script>
+
+<script src="../../bower_components/three.js/examples/js/loaders/OBJLoader.js"></script>
+<script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+<!--
+<script src="../../bower_components/three.js/examples/js/shaders/CopyShader.js"></script>
+<script src="../../bower_components/three.js/examples/js/shaders/DotScreenShader.js"></script>
+<script src="../../bower_components/three.js/examples/js/shaders/RGBShiftShader.js"></script>
+<script src="../../bower_components/three.js/examples/js/shaders/ColorifyShader.js"></script>
+<script src="../../bower_components/three.js/examples/js/shaders/EdgeShader.js"></script>
+<script src="../../bower_components/three.js/examples/js/shaders/EdgeShader2.js"></script>
+<script src="../../bower_components/three.js/examples/js/shaders/ConvolutionShader.js"></script>
+<script src="../../bower_components/three.js/examples/js/shaders/BleachBypassShader.js"></script>
+<script src="../../bower_components/three.js/examples/js/shaders/KaleidoShader.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/RenderPass.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/MaskPass.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/BloomPass.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/SavePass.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/DotScreenPass.js"></script>
+
+-->
+<!--
+<script src="../../bower_components/three.js/examples/js/ShaderExtras.js"></script>
+<script src="/assets/lib/boid.self.js?body=1"></script>
+<script src="/assets/home.self.js?body=1"></script>
+<script src="/assets/application.self.js?body=1"></script>
+-->
+
+			<link rel='stylesheet' type='text/css' href='https://fonts.googleapis.com/css?family=Neucha'>
+			<link rel='stylesheet' type='text/css' href='css/main.css'>
+			<!--
+			<link rel="stylesheet" type="text/css" href="https://cloud.typography.com/6946632/7415152/css/fonts.css">
+		-->
+			<script type="text/javascript" src="http://fast.fonts.net/jsapi/0225f909-390c-4044-aaa1-d98ab6c57bba.js"></script>
+
+
+			<style>
+			#thanks{
+				width: 700px;
+				height: 100%;
+				
+				margin: 200px auto;
+				position: absolute;
+			    top: 0;
+			    left: 25%;
+			    z-index: 101;
+			}
+
+			.ml9 {
+			  position: relative;
+			  font-weight: 200;
+			  font-size: 4em;
+			}
+
+
+			#thanks h1{
+				font-family: 'marshy';
+				font-size: 72px;
+				-webkit-text-stroke: 1px black;
+			    color: white;
+			    text-shadow: 3px 3px 0 #000, 
+			    -1px -1px 0 #000, 
+			    1px -1px 0 #000, 
+			    -1px 1px 0 #000, 
+			    1px 1px 0 #000;
+			    user-select: none;
+			}
+
+			.ml9 .text-wrapper {
+			  position: relative;
+			  display: inline-block;
+			  padding-top: 0.2em;
+			  padding-right: 0.5em;
+			  padding-left: 0.5em;
+			  padding-bottom: 0.1em;
+			  overflow: hidden;
+			}
+
+			.ml9 .letter {
+			  transform-origin: 50% 100%;
+			  display: inline-block;
+			  line-height: 1em;
+			}
+
+			.thanks_msg{
+			   opacity: 0;
+			   padding: 0 40px;
+			}
+
+			#again{
+				    width: 40px;
+				    height: 40px;
+				    border-radius: 20px;
+				    background-color: #928edc;
+				    border: 2px solid #6660b3;
+				    position: absolute;
+				    top: 0;
+				    right: 0;
+				    color: white;
+				    opacity:0;
+				    cursor: pointer;
+			}
+		</style>
+			
+    </head>
+    <body>
+        
+    	<div id="container"></div>
+
+    	
+
+
+    	<div id="marketing">
+    		<h1>When you HA, you can make someone laugh or feel happy.</h1>
+
+    		<div id="wrapper">
+			<div id="irregularShape">
+				
+				<div id="message">
+		    		<p>Join us! We're creating an exciting new outlet for children, families and classrooms! Together, we'll spread happy media and creative kindness through interactive videos, games and activities. Sign up for our mailing list and get updates as we get closer to launch. We need you, because it's not just laughter, it's happily after!&trade;</p>
+
+		    		<div id="myInput"></div> 
+				    <input id="hiddenInput" type="text" placeholder="Placeholder Text">
+		    	</div>
+
+			</div>
+		</div>
+
+		
+
+
+    		<button id="main-btn" class="button button--line button--effect-2">
+				<span class="morph-shape" data-morph-active="M282.5,62.5c0,27.891-8.648,51.994-36.5,50.5c-24.049-1.29-44.75-8-96-8c-56.75,0-71.952,6.71-96,8c-27.851,1.494-36.5-22.609-36.5-50.5l0,0C17.5,34.609,26.215,9.572,54,12c23.973,2.095,39.75,7,96,7c51.502,0,72.01-5.125,96-7C273.807,9.827,282.5,34.609,282.5,62.5L282.5,62.5z">
+					<svg width="100%" height="100%" viewBox="0 0 300 125" preserveAspectRatio="none">
+						<path d="M286.5,62.5c0,27.891-12.609,50.5-40.5,50.5c-44.25,0-44.75,0-96,0c-56.75,0-56.5,0-96,0c-27.891,0-40.5-22.609-40.5-50.5l0,0C13.5,34.609,26.109,12,54,12c39.5,0,39.75,0,96,0c51.502,0,51.5,0,96,0C273.891,12,286.5,34.609,286.5,62.5L286.5,62.5z"/>
+					</svg>
+				</span>
+				<span class="button__text">I WANNA HA!</span>
+			</button>
+
+    	</div>
+
+    	<div id="thanks">
+			<h1 class="ml9">
+			  <span class="text-wrapper">
+			    <span class="letters">AWESOME!</span>
+			  </span>
+			</h1>
+			<p class="thanks_msg">We can't wait to bring you all kinds of HA-DEAS to inspire you and your family or classrooms to spread happy media and creative kindness to make others laugh and feel happy!</p>
+			<button id="again">X</button>
+		</div>
+
+
+
+    	<script src="js/classie.js"></script>
+    	<script src="js/customInput.js"></script>
+
+		<script>
+			(function() {
+
+				function extend( a, b ) {
+					for( var key in b ) { 
+						if( b.hasOwnProperty( key ) ) {
+							a[key] = b[key];
+						}
+					}
+					return a;
+				}
+				
+				function SVGButton( el, options ) {
+					this.el = el;
+					this.options = extend( {}, this.options );
+					extend( this.options, options );
+					this.init();
+				}
+
+				SVGButton.prototype.options = {
+					speed : { reset : 800, active : 150 },
+					easing : { reset : mina.elastic, active : mina.easein }
+				};
+
+				SVGButton.prototype.init = function() {
+					this.shapeEl = this.el.querySelector( 'span.morph-shape' );
+
+					var s = Snap( this.shapeEl.querySelector( 'svg' ) );
+					this.pathEl = s.select( 'path' );
+					this.paths = {
+						reset : this.pathEl.attr( 'd' ),
+						active : this.shapeEl.getAttribute( 'data-morph-active' )
+					};
+
+					this.initEvents();
+				};
+
+				SVGButton.prototype.initEvents = function() {
+					this.el.addEventListener( 'mousedown', this.down.bind(this) );
+					this.el.addEventListener( 'touchstart', this.down.bind(this) );
+
+					this.el.addEventListener( 'mouseup', this.up.bind(this) );
+					this.el.addEventListener( 'touchend', this.up.bind(this) );
+
+					this.el.addEventListener( 'mouseout', this.up.bind(this) );
+				};
+
+				SVGButton.prototype.down = function() {
+					offScreen();
+					this.pathEl.stop().animate( { 'path' : this.paths.active }, this.options.speed.active, this.options.easing.active );
+				};
+
+				SVGButton.prototype.up = function() {
+					this.pathEl.stop().animate( { 'path' : this.paths.reset }, this.options.speed.reset, this.options.easing.reset );
+				};
+
+				[].slice.call( document.querySelectorAll( 'button.button--effect-1' ) ).forEach( function( el ) {
+					new SVGButton( el );
+				} );
+
+				[].slice.call( document.querySelectorAll( 'button.button--effect-2' ) ).forEach( function( el ) {
+					new SVGButton( el, {
+						speed : { reset : 650, active : 650 },
+						easing : { reset : mina.elastic, active : mina.elastic }
+					} );
+				} );
+
+			})();			
+		</script>
+
+
+
+
+<script>
+			var camera, scene, renderer, composer;
+			var cameraOrtho, sceneOrtho;
+			var spriteTL, spriteTR, spriteBL, spriteBR, spriteC;
+			var materialArr = [];
+			var mapC, mapB, mapD, mapE, mapF, mapG;
+			var mixing = true;
+			var clickNum = 0;
+			var group;
+			var mouseX=0, mouseY=0, windowHalfX, windowHalfY;
+
+			var textureLoader, textureLoader2;
+			var mouseActive = true;
+
+			var clock = new THREE.Clock();
+
+
+          var imgArr = [
+            "ahoy.jpg",
+            "stars.jpg",
+            "objects.png",
+            "clouds.jpg",
+            "bubbles.png",
+            "flowers.jpg",
+            "hodgepodge.png",
+            "geometry.png",
+            "purple-stripes.png",
+            "magnus-2051.png",
+            "patternfills.gif",
+            "asteroids.jpg",
+            "ripples.jpg",
+            "cuadros.png",
+            "swirl_pattern.png",
+            "topography.png",
+            "wormz.png",
+          ]
+
+          var logo = 'ha-logo.png';
+
+          var drawingsArr = [
+            "yellow-girl-face.png",
+            "monkeyface-fill.png",
+            "run-monkey-fill.png",
+            "balloon-fill.png",
+            "rocket-only-bw.png",
+            "blue-monkey-face.png",
+            "yellow-girl-face.png",
+            "monkeyface-fill.png",
+            "run-monkey-fill.png",
+            "balloon-fill.png",
+            "rocket-only-bw.png",
+            "blue-monkey-face.png",
+            "yellow-girl-face.png",
+            "monkeyface-fill.png",
+            "run-monkey-fill.png",
+            "balloon-fill.png",
+            "rocket-only-bw.png",
+            "blue-monkey-face.png",
+            "yellow-girl-face.png",
+            "monkeyface-fill.png",
+            "run-monkey-fill.png",
+            "balloon-fill.png",
+            "rocket-only-bw.png",
+            "blue-monkey-face.png",
+		]
+
+          var patternArr=[];
+          var imgArrIdx=0;
+
+          var illoArr=[];
+          var drawingsArrIdx=0;
+
+          var drawingsLoaded = false;
+          var patternsLoaded = false;
+
+          var xVel = 0;
+          var yVel = .05;
+          var planeObject;
+
+          var manager;
+
+          var amount = 24;
+		  var radius = 500;
+
+			init();
+			
+			animate();
+			function init() {
+				var width = window.innerWidth;
+				var height = window.innerHeight;
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+				
+
+
+				camera = new THREE.PerspectiveCamera( 60, width / height, 1, 2100 );
+				camera.position.z = 1500;
+				cameraOrtho = new THREE.OrthographicCamera( - width / 2, width / 2, height / 2, - height / 2, 1, 10 );
+				cameraOrtho.position.z = 10;
+				cameraOrtho.position.x = 300;
+				scene = new THREE.Scene();
+			//	scene.fog = new THREE.FogExp2( 0xCCCFFF, 0.007 );
+			//	scene.fog = new THREE.Fog( 0xffffff, -1500, 5000 );
+				sceneOrtho = new THREE.Scene();
+
+
+				// create sprites
+				
+				var textureLoader = new THREE.TextureLoader();
+				var mapA = textureLoader.load( "images/ha-logo.png", createHUDSprites );
+
+				group = new THREE.Group();
+				scene.add( group );
+
+
+				setImageLoader();
+				loadDrawings();
+				
+
+
+				var ambient = new THREE.AmbientLight( 0x444444 );
+				scene.add( ambient );
+				
+				var directionalLight = new THREE.DirectionalLight( 0xfe0404 );
+				directionalLight.position.set( 0, 0, 1000 ).normalize();
+				scene.add( directionalLight );
+
+/*
+				var grid = new THREE.GridHelper(1000, 10);
+				scene.add(grid);
+*/
+				// renderer
+				//renderer = new THREE.WebGLRenderer();
+				renderer = new THREE.WebGLRenderer({ alpha: true });
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setClearColor( 0xfe0404, 0 );
+				renderer.autoClear = false; // To allow render overlay on top of sprited sphere
+				document.body.appendChild( renderer.domElement );
+
+
+			//	controls = new THREE.OrbitControls(camera, renderer.domElement);
+				//
+				window.addEventListener( 'resize', onWindowResize, false );
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+				//document.addEventListener( 'keydown', onDocumentKeyDown, false );
+			}
+/*
+			var onProgress = function ( xhr ) {
+						if ( xhr.lengthComputable ) {
+								var percentComplete = xhr.loaded / xhr.total * 100;
+								console.log( Math.round(percentComplete, 2) + '% downloaded' );
+						}
+				};
+
+				var onError = function ( xhr ) {
+				};
+*/
+			function setImageLoader(){
+
+					// texture
+
+				manager = new THREE.LoadingManager();
+				manager.onProgress = function ( item, loaded, total ) {
+
+						console.log( item, loaded, total );
+
+				};
+
+				manager.onLoad = function (){
+		          
+
+		          if(!drawingsLoaded){
+		          	if (drawingsArrIdx < drawingsArr.length) {
+			            loadDrawings();
+			          }else{
+			            //createGridWall();
+			            drawingsLoaded = true;
+			            loadPatterns();
+			            console.log('drawings Loaded')
+			          }
+
+
+		          }else if (!patternsLoaded){
+		          	 if (imgArrIdx < imgArr.length) {
+			            loadPatterns();
+			          }else{
+			            //createGridWall();
+			            patternsLoaded = true;
+			            createPatternPlane();
+			            console.log('patterns Loaded')
+			            console.log(patternArr)
+			          }
+
+
+		          }
+		        }
+
+		        manager.onError = function (){
+		          console.log('loading error');
+		        }
+
+
+
+		        textureLoader = new THREE.TextureLoader(manager);
+		        // we've gotta set this to use cross-origin images
+		        textureLoader.crossOrigin = true;
+			}
+
+			function loadDrawings(){
+				textureLoader.load("images/"+drawingsArr[drawingsArrIdx], function(texture) {
+		          // this code makes the texture repeat
+		        //  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+		        //  texture.repeat.set( 10, 10 );
+		          // set the texture as the map for the material
+		        //  materialOne = texture;//new THREE.MeshLambertMaterial( {map: texture, side:THREE.DoubleSide } );
+		         //  texture.wrapS = THREE.RepeatWrapping;
+		         //   texture.wrapT = THREE.RepeatWrapping;
+		         //   texture.repeat.set( 8, 6 );
+		            //texture.rotation = .25;
+		          //  texture.matrixAutoUpdate = false;
+
+		          //  texture.needsUpdate = true;
+
+		          var mat = new THREE.SpriteMaterial( { map: texture, color: 0xffffff, fog: true } );
+					var x = Math.random() - 0.5;
+					var y = Math.random() - 0.5;
+					var z = Math.random() - 0.5;
+	
+					//material.rotation = x;//-a;//*30;
+					var sprite = new THREE.Sprite( mat );
+					sprite.position.set( x, y, z/2);
+					sprite.position.normalize();
+					sprite.position.multiplyScalar( radius );
+					console.log(sprite)
+					group.add( sprite );
+		
+
+
+		
+		          drawingsArrIdx++;
+		  
+		        
+
+
+		        
+		         })
+
+			}
+
+			function loadPatterns(){
+        
+		        textureLoader.load("images/"+imgArr[imgArrIdx], function(texture) {
+		          // this code makes the texture repeat
+		        //  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+		        //  texture.repeat.set( 10, 10 );
+		          // set the texture as the map for the material
+		        //  materialOne = texture;//new THREE.MeshLambertMaterial( {map: texture, side:THREE.DoubleSide } );
+		           texture.wrapS = THREE.RepeatWrapping;
+		            texture.wrapT = THREE.RepeatWrapping;
+		            texture.repeat.set( 8, 6 );
+		            //texture.rotation = .25;
+		          //  texture.matrixAutoUpdate = false;
+
+		            texture.needsUpdate = true;
+
+		          patternArr.push(texture);
+		          imgArrIdx++;
+		  
+		        
+
+
+		        
+		         })
+
+
+
+
+		      }
+
+		      function createPatternPlane(){
+		      	var texture = patternArr[0];
+	
+
+		        console.log(texture)
+		        //mesh = new THREE.Mesh(geometry, material);
+		        var plane = new THREE.PlaneBufferGeometry( window.innerWidth*6, window.innerHeight *6);
+		         planeObject = new THREE.Mesh( plane, new THREE.MeshBasicMaterial( {
+		            //map: materialArr[(j)%imgArr.length], 
+		            map: texture, 
+		            side:THREE.DoubleSide 
+		        } ));
+
+		        //var plane = new THREE.PlaneBufferGeometry( window.innerWidth, window.innerHeight );
+		        //var planeObject = new THREE.Mesh(plane,blueMaterial);
+		        planeObject.position.z = -400;
+		        planeObject.name = 'patterns';
+		        scene.add(planeObject);//We add it to the bufferScene instead of the normal scene!
+		       
+		      }
+
+			function createHUDSprites ( texture ) {
+				var material = new THREE.SpriteMaterial( { map: texture } );
+				var width = material.map.image.width;
+				var height = material.map.image.height;
+				
+				spriteTL = new THREE.Sprite( material );
+				spriteTL.scale.set( width, height, 1 );
+				sceneOrtho.add( spriteTL );
+				/*
+				spriteTR = new THREE.Sprite( material );
+				spriteTR.scale.set( width, height, 1 );
+				sceneOrtho.add( spriteTR );
+				spriteBL = new THREE.Sprite( material );
+				spriteBL.scale.set( width, height, 1 );
+				sceneOrtho.add( spriteBL );
+				spriteBR = new THREE.Sprite( material );
+				spriteBR.scale.set( width, height, 1 );
+				sceneOrtho.add( spriteBR );
+				*/
+				spriteC = new THREE.Sprite( material );
+				//spriteC.scale.set( width, height, 1 );
+				spriteC.scale.set( 1, 1, 1 );
+				sceneOrtho.add( spriteC );
+
+				TweenMax.to(spriteC.scale, 1, {
+		            //x: "+=2",
+		            x: width,
+		            y: height,
+		          //  z: 1,
+		            delay: 1.5,
+		          //  repeat: 1,
+		          	ease: Elastic.easeOut.config(1, 0.5),
+		          	onComplete: function(){
+		          		scaleGroup();
+		          	}
+		 
+		        });
+
+				updateHUDSprites();
+			}
+
+			function scaleGroup(){
+				scene.add( group );
+				TweenMax.to(group.scale, 2, {
+		            //x: "+=2",
+		            x: 1,
+		            y: 1,
+		            z: 1,
+		        //    delay: 1.5,
+		          //  repeat: 1,
+		          	ease:"Power3.easeOut",
+		          	onComplete: function(){
+		          		scene.add( group );
+		          	}
+		 
+		        });
+			}
+
+			function updateHUDSprites () {
+				var width = window.innerWidth / 2;
+				var height = window.innerHeight / 2;
+				var material = spriteTL.material;
+				var imageWidth = material.map.image.width / 2;
+				var imageHeight = material.map.image.height / 2;
+				/*
+				spriteTL.position.set( - width + imageWidth,   height - imageHeight, 1 ); // top left
+				spriteTR.position.set(   width - imageWidth,   height - imageHeight, 1 ); // top right
+				spriteBL.position.set( - width + imageWidth, - height + imageHeight, 1 ); // bottom left
+				spriteBR.position.set(   width - imageWidth, - height + imageHeight, 1 ); // bottom right
+				*/
+				spriteC.position.set( 0, 0, 1 ); // center
+			}
+			function onWindowResize() {
+				var width = window.innerWidth;
+				var height = window.innerHeight;
+				camera.aspect = width / height;
+				camera.updateProjectionMatrix();
+				cameraOrtho.left = - width / 2;
+				cameraOrtho.right = width / 2;
+				cameraOrtho.top = height / 2;
+				cameraOrtho.bottom = - height / 2;
+				cameraOrtho.updateProjectionMatrix();
+				updateHUDSprites();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+
+			function onDocumentMouseMove( event ) {
+				//mouseX = event.clientX - windowHalfX;
+				//mouseY = event.clientY - windowHalfY;
+
+				mouseX = ( event.clientX - windowHalfX ) / 2;
+				mouseY = ( event.clientY - windowHalfY ) / 2;
+			}
+
+			function changeTexture(event){
+		       /*   var nTexture = THREE.ImageUtils.loadTexture( "images/asteroids.jpg" );
+		          nTexture.wrapS = THREE.RepeatWrapping;
+		        nTexture.wrapT = THREE.RepeatWrapping;
+		        nTexture.repeat.set( 4, 4 );
+		        */
+		         var rand = Math.floor(Math.random()*patternArr.length);
+		       //  alert(rand)
+		         yVel = ((Math.random()*5)-10)/1000;
+		         xVel = ((Math.random()*5)-6)/1000;
+		       //  alert(patternArr[rand])
+
+		          planeObject.material.map = patternArr[rand];
+		          planeObject.material.needsUpdate = true;
+		    }
+
+
+		
+
+	    function offScreen(){
+	    	//alert('go off')
+	    	//mouseX+=5000;
+	    	$('#marketing').addClass('offscreen');
+	    	awesomeTimeline.restart();
+	    	mouseActive = false;
+	    	console.log(Particles)
+	    //	Particles.testCall();
+	   		TweenMax.to(group.position, .5, {
+	            //x: "+=2",
+	            x: -2000,
+	          //  delay: .4,
+	          //  repeat: 1,
+	          	ease:"Power3.easeOut",
+	 
+	        });
+
+	        TweenMax.to(spriteC.position, .5, {
+	            //x: "+=2",
+	            x: -2000,
+	          //  delay: .4,
+	          //  repeat: 1,
+	          	ease:"Power3.easeOut",
+	 
+	        });
+
+	        TweenMax.to(planeObject.position, .5, {
+	            //x: "+=2",
+	            x: -2000,
+	          //  delay: .4,
+	          //  repeat: 1,
+	          	ease:"Power3.easeOut",
+	 
+	        });
+
+	        colorTo('patterns', color['white']);
+	       
+	    }
+
+	    function onScreen(){
+	    	//alert('go off')
+	    	//mouseX+=5000;
+	    	$('#marketing').removeClass('offscreen');
+	    	//awesomeTimeline.restart();
+	    	mouseActive = true;
+	    	console.log(Particles)
+	    //	Particles.testCall();
+	   		TweenMax.to(group.position, .5, {
+	            //x: "+=2",
+	            x: 0,
+	          //  delay: .4,
+	          //  repeat: 1,
+	          	ease:"Power3.easeOut",
+	 
+	        });
+	        TweenMax.to(spriteC.position, .5, {
+	            //x: "+=2",
+	            x: 0,
+	          //  delay: .4,
+	          //  repeat: 1,
+	          	ease:"Power3.easeOut",
+	 
+	        });
+	       
+	    }
+
+	    function colorTo(target, value) {
+
+
+
+		  var target = scene.getObjectByName(target);
+		  console.log(target)
+		  target.material.color.setHex( 0xffffff );
+		/*  var initial = new THREE.Color(target.material.color.getHex());
+		  var value = new THREE.Color(value.color.getHex());
+		  TweenMax.to(initial, 1, {
+		    r: value.r,
+		    g: value.g,
+		    b: value.b,
+		    
+		    onUpdate: function () {
+		      target.material.color = initial;
+		    }
+		  });
+		  */
+		}
+
+
+			function animate() {
+				requestAnimationFrame( animate );
+				render();
+			}
+			function render() {
+
+				if (planeObject){
+					planeObject.material.map.offset.y += yVel;
+         			planeObject.material.map.offset.x += xVel;
+         		}
+
+         		 if (mouseActive){
+					// CAMERA AND LIGHT
+					camera.position.x +=  (mouseX - camera.position.x + window.innerWidth/4) * 0.036;
+					camera.position.y += ( - ( mouseY ) - camera.position.y ) * 0.036;
+
+					cameraOrtho.position.x +=  (mouseX/2 - cameraOrtho.position.x + window.innerWidth/4 ) * 0.02;
+					cameraOrtho.position.y += ( - ( mouseY/2 ) - cameraOrtho.position.y ) * 0.02;
+
+				}
+
+				var time = Date.now() / 1000;
+
+				if (mixing ==true){
+					for ( var i = 0, l = group.children.length; i < l; i ++ ) {
+						
+
+
+						var sprite = group.children[ i ];
+					//	console.log("type?="+getObjectType(sprite));
+						if (getObjectType(sprite)=="Sprite"){
+							var material = sprite.material;
+							var scale = Math.sin( time + sprite.position.x * 0.01 ) * 0.5 + 1.5;
+							var imageWidth = 1;
+							var imageHeight = 1;
+							if ( material.map && material.map.image && material.map.image.width ) {
+								imageWidth = material.map.image.width;
+								imageHeight = material.map.image.height;
+							}
+							
+							sprite.scale.set( scale * imageWidth, scale * imageHeight, 1.0 );
+							if ( material.map == mapB ) {
+								sprite.material.rotation += 0.1 * ( i / l );
+							//	material.opacity = Math.sin( time + sprite.position.x * 0.01 ) * 0.4 + 0.6;
+							}
+							
+							//material.opacity = Math.sin( time + sprite.position.x * 0.01 ) * 0.4 + 0.6;
+						}else{
+							//sprite.materials[0].opacity = Math.sin( time + sprite.position.x * 0.01 ) * 0.4 + 0.6;
+							sprite.traverse( function ( child )
+						    {
+						       // if ( child instanceof THREE.Mesh )
+						          //  child.material.color.opacity = Math.sin( time + sprite.position.x * 0.01 ) * 0.4 + 0.6;
+						        	//child.material = boxMaterial;//material;
+
+						    });
+							sprite.rotation.y += 0.01 * ( i / l );
+						}
+						
+					}
+
+					group.rotation.x = time * 0.1;
+					group.rotation.y = time * 0.25;
+					group.rotation.z = time * 0.5;
+				}
+			//	console.log(camera.position.x);
+				renderer.clear();
+				//composer.render(scene, camera);
+				renderer.render( scene, camera );
+				renderer.clearDepth();
+				renderer.render( sceneOrtho, cameraOrtho );
+			}
+
+
+			function getObjectType( object ) {
+
+			    var types = {
+
+			        'Scene': THREE.Scene,
+			        'PerspectiveCamera': THREE.PerspectiveCamera,
+			        'AmbientLight': THREE.AmbientLight,
+			        'DirectionalLight': THREE.DirectionalLight,
+			        'HemisphereLight': THREE.HemisphereLight,
+			        'PointLight': THREE.PointLight,
+			        'SpotLight': THREE.SpotLight,
+			        'Mesh': THREE.Mesh,
+			        'Sprite': THREE.Sprite,
+			        'Object3D': THREE.Object3D
+
+			    };
+
+			    for ( var type in types ) {
+
+			        if ( object instanceof types[ type ] ) return type;
+
+			    }
+
+			};
+
+
+
+
+
+
+			document.addEventListener('mousedown', changeTexture, false);
+
+			function onDocumentMouseDown(event) {
+				console.log('mousedown');
+
+			}
+
+
+			////////  PARTICLE STARS
+
+var Particles,
+    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  Particles = (function(scn, cam, ) {
+    function Particles(scn, cam) {
+    	//alert(rend)
+      this.scene = scn;
+      this.camera = cam;
+      this.render = bind(this.render, this);
+      this.rotateRadians = bind(this.rotateRadians, this);
+      this.random = bind(this.random, this);
+      this.mouseMove = bind(this.mouseMove, this);
+      this.mouseDown = bind(this.mouseDown, this);
+      this.resize = bind(this.resize, this);
+      this.animate = bind(this.animate, this);
+      this.setStage = bind(this.setStage, this);
+      this.setLighting = bind(this.setLighting, this);
+      this.getTexture = bind(this.getTexture, this);
+      this.addStars = bind(this.addStars, this);
+      this.setActors = bind(this.setActors, this);
+      this.getPastelColor = bind(this.getPastelColor, this);
+      this.canvasMouse = {
+        x: 0,
+        y: 0,
+        z: 0,
+        px: 0,
+        py: 0,
+        py: 0,
+        vx: 0,
+        vy: 0,
+        pressed: false
+      };
+      this.colors = ['#da6b00', '#8555d4', '#4ad3b5', '#ffffff'];
+      this.particleCount = 100;
+      this.initialRadius = 0.1;
+      this.movementSpeed = 2;
+      this.directions = [];
+      this.starSystems = [];
+      this.systemCount = 1;
+      this.ready = false;
+      this.setStage();
+      
+   /*   setInterval((function(_this) {
+        return function() {
+          _this.systemCount++;
+          return _this.addStars(_this.getPastelColor(), 0, 0);
+        };
+      })(this), 5000);
+      */
+
+
+    //  this.texture  = new THREE.TextureLoader('images/star.png');
+
+    //  this.scene.add()
+
+    this.texture = new THREE.TextureLoader().load( 'images/star.png' );
+
+
+var spriteMaterial = new THREE.SpriteMaterial( { map: this.texture, color: 0xffffff } );
+
+var sprite = new THREE.Sprite( spriteMaterial );
+
+        this.scene.add(sprite)
+
+     //   this.setLighting();
+     // this.setActors();
+ //     this.texture = this.loader.load( "images/star.png" );
+ 
+      this.animate();
+    //  this.render();
+    }
+
+    Particles.prototype.getPastelColor = function() {
+      this.col = new THREE.Color("hsl(" + (this.random(0, 360)) + ", " + (Math.floor(25 + 70 * Math.random())) + "%, " + (Math.floor(85 + 10 * Math.random())) + "%)");
+      return "#" + (this.col.getHexString());
+    };
+
+    Particles.prototype.setActors = function() {
+      return this.addStars(this.getPastelColor(), 0, 0);
+    };
+
+    Particles.prototype.addStars = function(color, x, y) {
+      var angle, i, k, radiusSQ, ref, vertex;
+      this.dirs = [];
+      this.geometry = new THREE.Geometry();
+
+      
+
+
+        this.materials = new THREE.PointsMaterial({
+    // color: color,
+        size: 8,
+        transparent: true,
+       // blending: THREE.AdditiveBlending,
+       // map: this.getTexture(color),
+        map: this.texture,
+        depthTest: false
+
+
+      });
+      for (i = k = 0, ref = this.particleCount; 0 <= ref ? k < ref : k > ref; i = 0 <= ref ? ++k : --k) {
+        angle = Math.random() * 20 * Math.PI;
+        radiusSQ = Math.random() * this.initialRadius * this.initialRadius;
+        vertex = new THREE.Vector3();
+        vertex.x = this.camera.position.x;//x;
+        vertex.y = this.camera.position.y + 10;//y;
+        vertex.z = 1400;
+        this.dirs.push({
+          x: (Math.random() * this.movementSpeed) - (this.movementSpeed / 2),
+          y: (Math.random() * this.movementSpeed) - (this.movementSpeed / 2),
+          z: (Math.random() * this.movementSpeed) - (this.movementSpeed / 2)
+        });
+        this.geometry.vertices.push(vertex);
+      }
+      this.starSystem = new THREE.Points(this.geometry, this.materials);
+      this.starSystem.sortParticles = true;
+      this.directions.push(this.dirs);
+      this.starSystems.push(this.starSystem);
+      this.ready =true;
+      return this.scene.add(this.starSystem);
+    };
+
+    Particles.prototype.getTexture = function(color) {
+      var canvas, context, gradient, texture;
+      canvas = document.createElement('canvas');
+      canvas.width = 32;
+      canvas.height = 32;
+      context = canvas.getContext('2d');
+      gradient = context.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width / 2);
+      gradient.addColorStop(0, 'rgba(255,255,255,1)');
+      gradient.addColorStop(0.2, color);
+      gradient.addColorStop(0.4, color);
+      gradient.addColorStop(1, 'rgba(50,50,50,1)');
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      texture = new THREE.Texture(canvas);
+      texture.needsUpdate = true;
+      return texture;
+    };
+
+    Particles.prototype.setLighting = function() {
+      this.ambientLight = new THREE.AmbientLight("#ffffff", 0.5);
+      return this.scene.add(this.ambientLight);
+    };
+
+    Particles.prototype.setStage = function() {
+    /*  this.renderer = new THREE.WebGLRenderer({
+        canvas: document.getElementById("canvas"),
+        antialias: true,
+        alpha: true
+      });
+      this.renderer.setPixelRatio(window.devicePixelRatio);
+      this.renderer.autoClear = false;
+      this.renderer.setSize(window.innerWidth, window.innerHeight);
+      */
+    //  this.scene = new THREE.Scene();
+    /*  this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+      this.camera.position.z = 50;
+      this.stats = new Stats();
+      this.stats.setMode(0);
+      this.stats.domElement.style.position = 'absolute';
+      this.stats.domElement.style.left = '0px';
+      this.stats.domElement.style.top = '0px';
+      document.getElementById("stats").appendChild(this.stats.domElement);
+      window.addEventListener('resize', this.resize, false);
+      */
+    //  window.addEventListener('mousemove', this.mouseMove, false);
+      return window.addEventListener("mousedown", this.mouseDown);
+    };
+
+    Particles.prototype.animate = function() {
+      var i, j, k, l, particle, ref, ref1;
+      if (this.ready){
+      for (j = k = 0, ref = this.systemCount - 1; 0 <= ref ? k <= ref : k >= ref; j = 0 <= ref ? ++k : --k) {
+        for (i = l = 0, ref1 = this.particleCount; 0 <= ref1 ? l < ref1 : l > ref1; i = 0 <= ref1 ? ++l : --l) {
+          particle = this.starSystems[j].geometry.vertices[i];
+          particle.x += this.directions[j][i].x;
+          particle.y += this.directions[j][i].y;
+          particle.z += this.directions[j][i].z;
+        }
+        this.starSystems[j].geometry.verticesNeedUpdate = true;
+      }
+    }
+     // this.stats.update();
+    //  this.render();
+      return requestAnimationFrame(this.animate);
+    };
+
+    Particles.prototype.resize = function() {
+      this.camera.aspect = window.innerWidth / window.innerHeight;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(window.innerWidth, window.innerHeight);
+      return this.render();
+    };
+
+    Particles.prototype.mouseDown = function() {
+    	if (mouseActive==false){
+	      if (this.ready){
+		      this.systemCount++;
+
+		      return this.addStars(this.getPastelColor(), this.canvasMouse.x, this.canvasMouse.y);
+		    } else{
+		      this.setActors();
+		      console.log('setActors')
+		    }
+		}
+    };
+
+    Particles.prototype.mouseMove = function() {
+      this.canvasMouse.px = this.canvasMouse.x;
+      this.canvasMouse.py = this.canvasMouse.y;
+      this.canvasX = (event.clientX / window.innerWidth) * 2 - 1;
+      this.canvasY = -(event.clientY / window.innerHeight) * 2 + 1;
+      this.vector = new THREE.Vector3(this.canvasX || 0, this.canvasY || 0, 0);
+      this.vector.unproject(this.camera);
+      this.dir = this.vector.sub(this.camera.position).normalize();
+      this.distance = -this.camera.position.z / this.dir.z;
+      return this.canvasMouse = this.camera.position.clone().add(this.dir.multiplyScalar(this.distance));
+    };
+
+    Particles.prototype.random = function(min, max) {
+      return Math.floor(Math.random() * max) + min;
+    };
+
+    Particles.prototype.rotateRadians = function(deg) {
+      return deg * (Math.PI / 180);
+    };
+
+    Particles.prototype.render = function() {
+      return this.renderer.render(this.scene, this.camera);
+    };
+
+    Particles.testCall = function(){
+    	alert('testCall')
+    }
+
+    return Particles;
+
+  })();
+
+  new Particles(scene, camera);
+
+
+
+////////////////////////
+
+		// Wrap every letter in a span
+			$('.ml9 .letters').each(function(){
+			 // $(this).html($(this).text().replace(/([^\x00-\x80]|\w)/g, "<span class='letter'>$&</span>"));
+			 // $(this).html($(this).text().replace( /([a-zA-Z0-9_\!\-]\w)/g, "<span class='letter'>$&</span>"));
+			  $(this).html($(this).text().replace( /([^\A-Z]|\!|\w)/g, "<span class='letter'>$&</span>"));
+			 
+			});
+
+			var awesomeTimeline = anime.timeline({ loop: false });
+
+			/*anime.timeline({
+			  loop: false,
+			    complete: function(anim) {
+			      console.log('letter='+anim.completed);
+			    }
+
+			})*/
+			awesomeTimeline.add({
+			    targets: '.ml9 .letter',
+			    scale: [0, 1],
+			    duration: 1500,
+			    elasticity: 600,
+			   // easing:"easeOutBounce",
+			    delay: function(el, i) {
+			      return 45 * (i+1)
+			    }
+			  }).add({
+			    targets: '.thanks_msg',
+			    opacity: [0,1],
+			    duration: 500,
+			    easing: "easeOutExpo",
+			  //  delay: 400,
+			    begin: function(anim) {
+			      console.log(anim.completed);
+			    }
+			  }).add({
+			    targets: '#again',
+			    opacity: [0,1],
+			    scale: [0, 1],
+			    duration: 500,
+			    elasticity: 600,
+			    //easing: "easeOutExpo",
+			  
+			  });
+
+			  awesomeTimeline.pause();
+
+
+			 $('#again').on('click', function(){
+			       
+			       awesomeTimeline.play();
+			       awesomeTimeline.reverse();
+			      // awesomeTimeline.pause();
+			       console.log('click')
+			       console.log(awesomeTimeline)
+			       onScreen();
+			    });
+
+
+
+//////////////////////
+		</script>
+
+
+
+		<!--
+        <script>
+            var _gaq=[['_setAccount','UA-XXXXX-X'],['_trackPageview']];
+            (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+            g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
+            s.parentNode.insertBefore(g,s)}(document,'script'));
+        </script>
+    -->
+    </body>
+</html>

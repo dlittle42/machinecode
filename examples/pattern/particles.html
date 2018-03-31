@@ -1,0 +1,293 @@
+
+<html>
+<head>
+	<title>Hello world</title>
+	<script src="../../bower_components/three.js/build/three.js"></script>
+	<script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
+	<script type="text/javascript" src="js/GPUParticleSystem.js"></script>
+
+	<style type="text/css">
+	body {
+		margin: 0;
+		padding: 0;
+		overflow:hidden;
+		background-color:#ffffff;
+	}
+	div#WebGL-output {
+		position:absolute;
+		width:100%;
+		height:100%;
+	}
+	</style>
+</head>
+<body>
+	<div id="Stats-output"></div>
+	<div id="WebGL-output"></div>
+
+	<script type="text/javascript">
+		var clock, scene, camera, renderer, controls, stats, geometry, particles;
+		var mouse = {x:0, y:0};
+
+		var speedX = 5;
+		var speedY = 3;
+		 var gui = new dat.GUI();
+
+		var particles = [];
+
+	  var options  = {
+            
+                       // elevation : 1,
+            
+                       // noise_range  : 2.14,
+            
+                        cameraZ : 500,
+            
+                        sombrero_frequency : 10.0,
+            
+                        speedX            : 0.8,
+
+                        speedY            : 0.8,
+            
+                        segments         : 324,
+
+                        message          : 'pizza',
+            
+                        wireframe_color     : '#00e6ff',//'#e25cfe',
+            
+                      //  perlin_passes    : 1,
+            
+                        wireframe        : true,
+            
+                      //  floor_visible    : true
+            
+                    };
+
+         var fov, adjacent, left;
+         var total = 200;
+
+		function init() {
+			stats = initStats();
+
+			clock = new THREE.Clock();
+			clock.start();
+
+			camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 1, 5000);
+			camera.position.z = 1000;
+			scene = new THREE.Scene();
+		//	scene.fog = new THREE.FogExp2(0x00ffff, 0.001);
+			scene.add(camera);
+			scene.background = new THREE.Color( 0xf0f0f0 );
+
+
+
+			geometry = new THREE.Geometry();
+			sprite = new THREE.TextureLoader().load('./images/monkeyface01_color.png');
+			//make particles
+			for(var zval=-total; zval<total; zval++) {
+				var vertex = new THREE.Vector3();
+				vertex.x = 2000 * Math.random() - 1000;
+				vertex.y = 2000 * Math.random() - 1000;
+				vertex.z = zval;
+
+				geometry.vertices.push( vertex );
+				geometry.colors.push(new THREE.Color(0xffffff));
+			}
+
+
+
+			material = new THREE.PointsMaterial({size: 80, sizeAttenuation: true, map: sprite, alphaTest: 0.5, transparent: true, vertexColors: THREE.VertexColors} );
+
+			particles = new THREE.Points(geometry, material);
+
+			// particles.
+			scene.add(particles);
+			console.log(geometry);
+
+
+			fov = camera.fov / 180 * Math.PI / 2;
+			// Get the adjacent to calculate the opposite
+			// This assumes you are looking at the scene
+			getEdges();
+
+			initGUI();
+
+			//render
+			renderer = new THREE.WebGLRenderer();
+
+			//finish
+			document.getElementById("WebGL-output").appendChild(renderer.domElement);
+			onResize();
+			renderScene();
+		}
+		
+		function renderScene() {
+			updateParticles();
+			stats.update();
+			requestAnimationFrame(renderScene);
+			renderer.render(scene, camera);
+		}
+
+		function updateParticles() {
+			var time = clock.getElapsedTime();
+
+		//	camera.position.x += (  mouse.x - camera.position.x*0.6) * 0.1;
+		//	camera.position.y += (- mouse.y - camera.position.y*0.6) * 0.1;
+
+		//	camera.lookAt(scene.position);
+	
+
+			for(var i=0; i<particles.geometry.vertices.length; i++) {
+				particles.geometry.vertices[i].x+=options.speedX;
+				particles.geometry.vertices[i].y+=options.speedY;
+				if(particles.geometry.vertices[i].x>1000) {
+					particles.geometry.vertices[i].x=-1000;
+				}else if (particles.geometry.vertices[i].x<-1000){
+					particles.geometry.vertices[i].x=1000;
+				}
+				if(particles.geometry.vertices[i].y>1000) {
+					particles.geometry.vertices[i].y=-1000;
+				}else if (particles.geometry.vertices[i].y<-1000){
+					particles.geometry.vertices[i].y=1000;
+				}
+			}
+			particles.geometry.verticesNeedUpdate=true;
+			// h = time * 0.1 % 360;
+			// material.color.setHSL(h, 0.5, 0.5);
+		}
+
+
+		function getEdges(){
+            adjacent = camera.position.distanceTo( scene.position );
+            // Use trig to get the leftmost point (tangent = o / a)
+            left = Math.tan( fov ) * adjacent  * camera.aspect;
+        }
+
+
+		window.addEventListener('resize', onResize, false);
+		function onResize() {
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+			renderer.setSize(window.innerWidth, window.innerHeight);
+		}
+		window.addEventListener('mousemove', onMouseMove, false);
+		function onMouseMove( event ) {
+			mouse.x = event.clientX - window.innerWidth / 2;
+			mouse.y = event.clientY - window.innerHeight / 2;
+		}
+
+		 function initGUI() {
+
+                    //this.gui = new dat.GUI();
+
+                    gui.values = {};
+
+                    gui.values.speedX            = gui.add(options,'speedX',-10,10).step(0.1);
+                    gui.values.speedY            = gui.add(options,'speedY',-10,10).step(0.1);
+
+                    gui.values.segments         = gui.add(options,'segments',20,800).step(1);
+                    gui.values.message          = gui.add(options, 'message', [ 'pizza', 'chrome', 'hooray' ] );
+
+
+                 //   gui.values.perlin_passes     = gui.add(options,'perlin_passes',1,3).step(1);
+
+                 //   gui.values.elevation = gui.add(options,'elevation',-10,10).step(0.01);
+
+                 //   gui.values.noise_range  = gui.add(options,'noise_range',-10,10).step(0.01);
+
+                    gui.values.cameraZ     = gui.add(options,'cameraZ',0,1000).step(10);
+
+                    gui.values.sombrero_frequency     = gui.add(options,'sombrero_frequency',0,100).step(0.1);
+
+                    gui.values.wireframe_color     = gui.addColor(options,'wireframe_color');
+
+              
+
+                    gui.values.wireframe = gui.add(options, 'wireframe');
+
+                  //  gui.values.floor_visible = gui.add(options, 'floor_visible');
+
+
+
+
+                    gui.values.wireframe.onChange(value => {
+
+                       // plane_material.wireframe = value;
+
+                    }
+                    );
+
+                    gui.values.speedX.onChange(value => {
+
+                    	//speedX = value;
+                      //  uniforms.speed.value = value;
+
+                    }
+                    );
+
+                    gui.values.speedY.onChange(value => {
+
+                    	//speedX = value;
+                      //  uniforms.speed.value = value;
+
+                    }
+                    );
+
+                    gui.values.cameraZ.onChange(value => {
+                        console.log('cameraZ='+ value)
+
+                      //  uniforms.sombrero_amplitude.value = value;
+                      camera.position.z = value;
+                      getEdges();
+
+                    }
+                    );
+
+                    gui.values.sombrero_frequency.onChange(value => {
+
+                      //  uniforms.sombrero_frequency.value = value;
+
+                    }
+                    );
+
+
+
+                    gui.values.wireframe_color.onChange(value => {
+                    //    console.log(mesh.position.z);
+                     //   mesh.material.color.set(new THREE.Color(value));
+                     //   colorTo(mesh, value, .5);
+                       // uniforms.line_color.value = new THREE.Color(value);
+                    }
+                    );
+
+                    gui.values.segments.onFinishChange(value => {
+
+                       // scene.remove(plane_mesh);
+
+                       // buildPlane(value);
+
+                      //  scene.add(plane_mesh);
+                    }
+                    );
+                }
+
+
+		function initStats() {
+			var statcontroller = new Stats();
+			statcontroller.setMode(0);
+
+			statcontroller.domElement.style.position="absolute";
+			statcontroller.domElement.style.left="0";
+			statcontroller.domElement.style.top="0";
+
+			document.getElementById("Stats-output").appendChild(statcontroller.domElement);
+
+			return statcontroller;
+		}
+		
+		init();
+
+	</script>
+
+</body>
+</html>
