@@ -31,37 +31,11 @@
 
 <script src="../../bower_components/three.js/examples/js/loaders/OBJLoader.js"></script>
 <script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
-<!--
-<script src="../../bower_components/three.js/examples/js/shaders/CopyShader.js"></script>
-<script src="../../bower_components/three.js/examples/js/shaders/DotScreenShader.js"></script>
-<script src="../../bower_components/three.js/examples/js/shaders/RGBShiftShader.js"></script>
-<script src="../../bower_components/three.js/examples/js/shaders/ColorifyShader.js"></script>
-<script src="../../bower_components/three.js/examples/js/shaders/EdgeShader.js"></script>
-<script src="../../bower_components/three.js/examples/js/shaders/EdgeShader2.js"></script>
-<script src="../../bower_components/three.js/examples/js/shaders/ConvolutionShader.js"></script>
-<script src="../../bower_components/three.js/examples/js/shaders/BleachBypassShader.js"></script>
-<script src="../../bower_components/three.js/examples/js/shaders/KaleidoShader.js"></script>
-<script src="../../bower_components/three.js/examples/js/postprocessing/EffectComposer.js"></script>
-<script src="../../bower_components/three.js/examples/js/postprocessing/RenderPass.js"></script>
-<script src="../../bower_components/three.js/examples/js/postprocessing/MaskPass.js"></script>
-<script src="../../bower_components/three.js/examples/js/postprocessing/ShaderPass.js"></script>
-<script src="../../bower_components/three.js/examples/js/postprocessing/BloomPass.js"></script>
-<script src="../../bower_components/three.js/examples/js/postprocessing/SavePass.js"></script>
-<script src="../../bower_components/three.js/examples/js/postprocessing/DotScreenPass.js"></script>
 
--->
-<!--
-<script src="../../bower_components/three.js/examples/js/ShaderExtras.js"></script>
-<script src="/assets/lib/boid.self.js?body=1"></script>
-<script src="/assets/home.self.js?body=1"></script>
-<script src="/assets/application.self.js?body=1"></script>
--->
 
 			<link rel='stylesheet' type='text/css' href='https://fonts.googleapis.com/css?family=Neucha'>
 			<link rel='stylesheet' type='text/css' href='css/main.css'>
-			<!--
-			<link rel="stylesheet" type="text/css" href="https://cloud.typography.com/6946632/7415152/css/fonts.css">
-		-->
+
 			<script type="text/javascript" src="http://fast.fonts.net/jsapi/0225f909-390c-4044-aaa1-d98ab6c57bba.js"></script>
 
 
@@ -261,6 +235,7 @@
 
 <script>
 			var camera, scene, renderer, composer;
+			var bkgdScene;
 			var cameraOrtho, sceneOrtho;
 			var spriteTL, spriteTR, spriteBL, spriteBR, spriteC;
 			var materialArr = [];
@@ -277,52 +252,52 @@
 
 
           var imgArr = [
-            "ahoy.jpg",
+          	"autumn-floral-pattern.jpg",
+          //	"floral.jpeg",
+          	"Floral_Pattern.png",
+          	"stars-dots.jpg",
+            //"ahoy.jpg",
             "stars.jpg",
             "objects.png",
             "clouds.jpg",
             "bubbles.png",
-            "flowers.jpg",
+          //  "flowers.jpg",
             "hodgepodge.png",
             "geometry.png",
             "purple-stripes.png",
-            "magnus-2051.png",
+          //  "magnus-2051.png",
             "patternfills.gif",
-            "asteroids.jpg",
+            //"asteroids.jpg",
             "ripples.jpg",
-            "cuadros.png",
+           // "cuadros.png",
             "swirl_pattern.png",
-            "topography.png",
-            "wormz.png",
+           // "topography.png",
+           // "wormz.png",
           ]
 
           var logo = 'ha-logo.png';
 
           var drawingsArr = [
-            "yellow-girl-face.png",
-            "monkeyface-fill.png",
-            "run-monkey-fill.png",
-            "balloon-fill.png",
-            "rocket-only-bw.png",
-            "blue-monkey-face.png",
-            "yellow-girl-face.png",
-            "monkeyface-fill.png",
-            "run-monkey-fill.png",
-            "balloon-fill.png",
-            "rocket-only-bw.png",
-            "blue-monkey-face.png",
-            "yellow-girl-face.png",
-            "monkeyface-fill.png",
-            "run-monkey-fill.png",
-            "balloon-fill.png",
-            "rocket-only-bw.png",
-            "blue-monkey-face.png",
-            "yellow-girl-face.png",
-            "monkeyface-fill.png",
-            "run-monkey-fill.png",
-            "balloon-fill.png",
-            "rocket-only-bw.png",
-            "blue-monkey-face.png",
+         //   "bw-baller.png",
+            "bw-balloon01.png",
+            "bw-balloon02.png",
+            "bw-bellylaugh.png",
+            "bw-blowbubble.png",
+         //   "bw-dot.png",
+            "bw-head01.png",
+            "bw-head02.png",
+            "bw-head03.png",
+            "bw-head04.png",
+            "bw-head05.png",
+            "bw-head06.png",
+            "bw-head07.png",
+            "bw-head08.png",
+            "bw-pair.png",
+            "bw-rocket.png",
+            "bw-runner.png",
+         //   "bw-sibb.png",
+            "bw-thinker.png",
+            
 		]
 
           var patternArr=[];
@@ -334,14 +309,16 @@
           var drawingsLoaded = false;
           var patternsLoaded = false;
 
-          var xVel = 0;
-          var yVel = .05;
+          var xVel = .005;
+          var yVel = .01;
           var planeObject;
 
           var manager;
 
-          var amount = 24;
-		  var radius = 500;
+
+         // var amount = 24;
+		  var radius = 600;
+		  var center = window.innerWidth/4;
 
 			init();
 			
@@ -358,8 +335,9 @@
 				camera.position.z = 1500;
 				cameraOrtho = new THREE.OrthographicCamera( - width / 2, width / 2, height / 2, - height / 2, 1, 10 );
 				cameraOrtho.position.z = 10;
-				cameraOrtho.position.x = 300;
+			//	cameraOrtho.position.x = 300;
 				scene = new THREE.Scene();
+				bkgdScene = new THREE.Scene();
 			//	scene.fog = new THREE.FogExp2( 0xCCCFFF, 0.007 );
 			//	scene.fog = new THREE.Fog( 0xffffff, -1500, 5000 );
 				sceneOrtho = new THREE.Scene();
@@ -484,7 +462,7 @@
 
 		          //  texture.needsUpdate = true;
 
-		          var mat = new THREE.SpriteMaterial( { map: texture, color: 0xffffff, fog: true } );
+		          var mat = new THREE.SpriteMaterial( { map: texture, color: 0xffffff, fog: false } );
 					var x = Math.random() - 0.5;
 					var y = Math.random() - 0.5;
 					var z = Math.random() - 0.5;
@@ -546,16 +524,16 @@
 
 		        console.log(texture)
 		        //mesh = new THREE.Mesh(geometry, material);
-		        var plane = new THREE.PlaneBufferGeometry( window.innerWidth*6, window.innerHeight *6);
+		        var plane = new THREE.PlaneBufferGeometry( window.innerWidth*10, window.innerHeight *10);
 		         planeObject = new THREE.Mesh( plane, new THREE.MeshBasicMaterial( {
 		            //map: materialArr[(j)%imgArr.length], 
 		            map: texture, 
-		            side:THREE.DoubleSide 
+		            //side:THREE.DoubleSide 
 		        } ));
 
 		        //var plane = new THREE.PlaneBufferGeometry( window.innerWidth, window.innerHeight );
 		        //var planeObject = new THREE.Mesh(plane,blueMaterial);
-		        planeObject.position.z = -400;
+		        planeObject.position.z = -600;
 		        planeObject.name = 'patterns';
 		        scene.add(planeObject);//We add it to the bufferScene instead of the normal scene!
 		       
@@ -584,6 +562,7 @@
 				//spriteC.scale.set( width, height, 1 );
 				spriteC.scale.set( 1, 1, 1 );
 				sceneOrtho.add( spriteC );
+				spriteC.position.set( 0, 0, 1 );
 
 				TweenMax.to(spriteC.scale, 1, {
 		            //x: "+=2",
@@ -599,7 +578,7 @@
 		 
 		        });
 
-				updateHUDSprites();
+				//updateHUDSprites();
 			}
 
 			function scaleGroup(){
@@ -776,11 +755,15 @@
 
          		 if (mouseActive){
 					// CAMERA AND LIGHT
-					camera.position.x +=  (mouseX - camera.position.x + window.innerWidth/4) * 0.036;
-					camera.position.y += ( - ( mouseY ) - camera.position.y ) * 0.036;
+				//	camera.position.x +=  (mouseX - camera.position.x + window.innerWidth/4) * 0.036;
+				//	camera.position.y += ( - ( mouseY ) - camera.position.y ) * 0.036;
 
-					cameraOrtho.position.x +=  (mouseX/2 - cameraOrtho.position.x + window.innerWidth/4 ) * 0.02;
-					cameraOrtho.position.y += ( - ( mouseY/2 ) - cameraOrtho.position.y ) * 0.02;
+				//	cameraOrtho.position.x +=  (mouseX/2 - cameraOrtho.position.x + window.innerWidth/4 ) * 0.02;
+				//	cameraOrtho.position.y += ( - ( mouseY/2 ) - cameraOrtho.position.y ) * 0.02;
+
+					//cameraOrtho.position.x +=  (mouseX - cameraOrtho.position.x + window.innerWidth/3 ) * 0.02;
+				//	cameraOrtho.position.x =  (- window.innerWidth/3 ) * 0.02;
+				//	cameraOrtho.position.y += ( - ( mouseY ) - cameraOrtho.position.y ) * 0.02;
 
 				}
 
@@ -795,19 +778,24 @@
 					//	console.log("type?="+getObjectType(sprite));
 						if (getObjectType(sprite)=="Sprite"){
 							var material = sprite.material;
-							var scale = Math.sin( time + sprite.position.x * 0.01 ) * 0.5 + 1.5;
+							var scale = Math.sin( time + sprite.position.x * 0.01 ) * .6 + 1.5;
 							var imageWidth = 1;
 							var imageHeight = 1;
 							if ( material.map && material.map.image && material.map.image.width ) {
 								imageWidth = material.map.image.width;
 								imageHeight = material.map.image.height;
 							}
+							//console.log('w:'+ imageWidth)
 							
 							sprite.scale.set( scale * imageWidth, scale * imageHeight, 1.0 );
-							if ( material.map == mapB ) {
+						//	if ( material.map == mapB ) {
+							if (imageWidth<200){
 								sprite.material.rotation += 0.1 * ( i / l );
-							//	material.opacity = Math.sin( time + sprite.position.x * 0.01 ) * 0.4 + 0.6;
+							}else{
+								sprite.material.rotation = 1 * ( scale) - Math.PI/2;
 							}
+							//	material.opacity = Math.sin( time + sprite.position.x * 0.01 ) * 0.4 + 0.6;
+						//	}
 							
 							//material.opacity = Math.sin( time + sprite.position.x * 0.01 ) * 0.4 + 0.6;
 						}else{
@@ -825,15 +813,17 @@
 					}
 
 					group.rotation.x = time * 0.1;
-					group.rotation.y = time * 0.25;
+					group.rotation.y = time * 1;//0.1;//0.25;
 					group.rotation.z = time * 0.5;
 				}
 			//	console.log(camera.position.x);
 				renderer.clear();
 				//composer.render(scene, camera);
+				//renderer.render( bkgdScene, camera);
 				renderer.render( scene, camera );
 				renderer.clearDepth();
 				renderer.render( sceneOrtho, cameraOrtho );
+
 			}
 
 

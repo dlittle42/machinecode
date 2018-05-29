@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>three bmfont sdf text test</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>html { overflow: hidden; }
+      body {
+        font-family: Monospace;
+        background-color: #333333;
+        margin: 0px;
+        overflow: hidden;
+      }
+      .dg.ac { z-index: 1000 !important; }
+    </style>
+  </head>
+  <body>
+
+    <script src="third-party/three.js"></script>
+    <script src="third-party/OrbitControls.js"></script>
+    <script src="third-party/dat.gui.min.js"></script>
+    <script src="third-party/stats.min.js"></script>
+
+    <script src="three-bmfont-text-bundle.js"></script>
+    <script src="sdf-shader.js"></script>
+    <script src="text-bitmap.js"></script>
+
+    <script>
+
+      // http://browserify.org/
+      // browserify three-bmfont-text.js -o three-bmfont-text-bundle.js
+
+      // https://www.npmjs.com/package/three-bmfont-text
+
+      //
+
+      var bmtext, stats;
+
+      var scene = new THREE.Scene();
+
+      var container = document.createElement( 'div' );
+      document.body.appendChild( container );
+
+      var renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setClearColor( 0x333333, 1 );
+      renderer.setSize( window.innerWidth, window.innerHeight );
+      container.appendChild( renderer.domElement );
+      
+      var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, .01, 100000 );
+      camera.position.set( 0.13, 0, -0.26 );
+
+      var orbitControls = new THREE.OrbitControls( camera, renderer.domElement );
+
+
+      var gridHelper = new THREE.GridHelper( 5, 10, 0xDDDDDD );
+      gridHelper.position.y = -1;
+      scene.add( gridHelper );
+
+      var mouse = new THREE.Vector2();
+      mouse.moved = false;
+      var raycaster = new THREE.Raycaster();
+      var hitBoxes = [];
+      var INTERSECTED;
+
+      var folder = 'fonts/';
+      
+      //
+
+      var r = new XMLHttpRequest();
+      r.open('GET', folder + 'marshy.json');
+
+      r.onreadystatechange = function() {
+        if (r.readyState === 4 && r.status === 200) {
+          setup(JSON.parse(r.responseText));
+        }
+      };
+
+      r.send();
+
+      //
+
+      function setup(font) {
+
+        bmtext = new TextBitmap({
+          imagePath: folder + 'marshy.png',
+          text: 'Grumpy wizards make toxic brew for the evil Queen and Jack.',
+          width: 1000,
+          align: 'center',
+          font: font,
+          lineHeight: font.common.lineHeight - 20,
+          letterSpacing: 1,
+          scale: 0.0004,
+          rotate: false,
+          color: "#ccc",
+          showHitBox: true // for debugging
+        });
+
+        // wireframe on three-bitmap-text geometry is incorrect
+        // var wireframe = new THREE.WireframeGeometry( bmtext.mesh.geometry );
+        // var line = new THREE.LineSegments( wireframe );
+        // line.material.color.setHex(0x000000);
+        // bmtext.mesh.add( line );
+
+        bmtext.group.position.set( 0, 0, -0.5 );
+        orbitControls.target.copy( bmtext.group.position );
+
+        scene.add( bmtext.group );
+        hitBoxes.push( bmtext.hitBox );
+
+        bmtext.group.add( new THREE.AxisHelper(20) );
+
+        var gui = new dat.GUI();
+        gui.add( bmtext, 'text' );
+        gui.add( bmtext.config, 'align', ['left', 'center', 'right'] ).onChange(function(){ bmtext.geometry.update( bmtext.config ); });
+        gui.add( bmtext.config, 'width', 200, 1500 ).onChange(function(){ bmtext.update(); });
+        gui.add( bmtext.config, 'letterSpacing', -10, 100 ).step(1).onChange(function(){ bmtext.update(); });
+        gui.add( bmtext.config, 'lineHeight', 0, 500 ).step(1).onChange(function(){ bmtext.update(); });
+        gui.add( bmtext.config, 'scale', 0.0001, 0.0009 ).onChange(function(s){ bmtext.group.scale.set(s,s,s); });
+        gui.add( bmtext.material.uniforms.smoothing, 'value', 0, 0.4 ).name('smoothing');
+        gui.add( bmtext.material.uniforms.threshold, 'value', 0, 2 ).name('threshold');
+        gui.add( bmtext.config, 'rotate' ).onChange(function(val){ if ( !val ) bmtext.group.rotation.set(0,0,0); });
+        gui.add( bmtext.config, 'showHitBox' ).onChange(function(val) { bmtext.hitBox.material.opacity = val ? 1 : 0; });
+        gui.addColor( bmtext.config, 'color' ).onChange(function(val){ bmtext.material.uniforms.color.value.setStyle(val); });
+
+        stats = new Stats();
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.top = '0px';
+        document.body.appendChild( stats.domElement );
+
+        renderer.domElement.addEventListener( 'mousemove', mousemove, false );
+        renderer.domElement.addEventListener( 'mousedown', mousedown, false );
+        renderer.domElement.addEventListener( 'mouseup', mouseup, false );
+
+        window.addEventListener('resize', resize, false);
+        resize();
+
+        document.body.appendChild( renderer.domElement );
+        loop();
+
+      }
+
+      function resize() {
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+
+        
+      }
+
+      function mousemove(event){
+        event.preventDefault();
+        if ( !mouse.moved ) mouse.moved = true;
+        // normalized device coordinates
+        mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+        mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+      }
+
+      function hover() {
+        raycaster.setFromCamera( mouse, camera );
+
+        var intersects = raycaster.intersectObjects( hitBoxes );
+
+        if ( intersects.length > 0 ) {
+
+          if ( INTERSECTED != intersects[ 0 ].object ) {
+
+            if ( INTERSECTED ) {
+              INTERSECTED.mesh.material.uniforms.color.value.setHex( INTERSECTED.currentHex );
+              document.body.style.cursor = 'auto';
+            }
+
+            INTERSECTED = intersects[ 0 ].object;
+            INTERSECTED.currentHex = INTERSECTED.mesh.material.uniforms.color.value.getHex();
+           INTERSECTED.mesh.material.uniforms.color.value.setHex( 0xff0000 );
+          //  INTERSECTED.mesh.material.uniforms.color.value.offsetHSL(0,0,0.25); // lighten
+            document.body.style.cursor = 'pointer';
+
+          }
+
+        } else {
+
+          if ( INTERSECTED ) {
+            INTERSECTED.mesh.material.uniforms.color.value.setHex( INTERSECTED.currentHex );
+            document.body.style.cursor = 'auto';
+          }
+
+          INTERSECTED = null;
+
+        }
+      }
+
+      function mousedown(event) {
+        event.preventDefault();
+        if ( INTERSECTED ) {
+          INTERSECTED.mesh.material.uniforms.color.value.offsetHSL(0,0,-0.35); // darken
+          orbitControls.enabled = false;
+        }
+      }
+
+      function mouseup(event) {
+        event.preventDefault();
+        if ( INTERSECTED ) {
+          INTERSECTED.mesh.material.uniforms.color.value.setHex( INTERSECTED.currentHex );
+          INTERSECTED.mesh.material.uniforms.color.value.offsetHSL(0,0,0.25);
+        }
+        orbitControls.enabled = true;
+      }
+
+      function loop() {
+
+
+        requestAnimationFrame( loop );
+
+        stats.update();
+
+        if ( bmtext.config.rotate ) {
+          bmtext.group.rotation.x += 0.01;
+          bmtext.group.rotation.y += 0.01;
+        }
+
+        orbitControls.update();
+
+        if ( mouse.moved ) {
+          hover();
+        }
+
+
+        renderer.render(scene, camera);
+      }
+
+    </script>
+
+  </body>
+</html>

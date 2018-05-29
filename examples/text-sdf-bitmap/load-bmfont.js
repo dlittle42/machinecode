@@ -1,12 +1,14 @@
 // run:
 // node load-bmfont.js
 // to convert .fnt to .json
+// instructions here: https://developers.google.com/web/showcase/2017/within
 
 var fs = require('fs');
 var load = require('load-bmfont');
 
 var folder = 'fonts/';
-var fileName = 'Lato-regular';
+//var fileName = 'Lato-regular';
+var fileName = 'marshy';
 
 load(folder + fileName + '.fnt', function(err, font) {
 

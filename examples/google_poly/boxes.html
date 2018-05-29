@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - draggable cubes</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #f0f0f0;
+				margin: 0px;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+
+
+
+		<script src="../../bower_components/jquery/dist/jquery.min.js"></script>
+    	<script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
+	    <script src="../../bower_components/three.js/build/three.js"></script>
+	    <script src="../../node_modules/three.meshline/src/THREE.MeshLine.js"></script>
+	    <script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+	    <!--
+	    <script src="../../bower_components/three.js/examples/js/controls/DragControls.js"></script>
+	    -->
+	    <script src="js/DragControls.js"></script>
+	    <script src="../../bower_components/three.js/examples/js/controls/TrackballControls.js"></script>
+	    <script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+	    <script src="../../node_modules/three.meshline/src/THREE.MeshLine.js"></script>
+	    <script src="../../bower_components/dat.gui/dat.gui.js"></script>
+
+	    <script src="../../bower_components/three.js/examples/js/shaders/CopyShader.js"></script>
+	    <script src="../../bower_components/three.js/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/RenderPass.js"></script>
+<script src="../../bower_components/three.js/examples/js/postprocessing/ShaderPass.js"></script>
+
+
+	 <!--   <script src="js/Maf.js"></script> -->
+
+	    <script type="x-shader/x-vertex" id="vs-downsample">
+
+	varying vec2 vUv;
+
+	void main() {
+
+		vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+		gl_Position = projectionMatrix * mvPosition;
+		vUv = uv;
+
+	}
+
+</script>
+
+<script type="x-shader/x-vertex" id="fs-downsample">
+
+	varying vec2 vUv;
+	uniform sampler2D tDiffuse;
+	uniform vec2 delta;
+
+	float random(vec3 scale,float seed){return fract(sin(dot(gl_FragCoord.xyz+seed,scale))*43758.5453+seed);}
+
+	void main() {
+
+		vec4 color=vec4(0.0);
+		float total=0.0;
+		float offset=random(vec3(12.9898,78.233,151.7182),0.0);
+		for(float t=-30.0;t<=30.0;t++){
+			float percent=(t+offset-0.5)/30.0;
+			float weight=1.0-abs(percent);
+			vec4 sample=texture2D(tDiffuse,vUv+delta*percent);
+			sample.rgb*=sample.a;
+			color+=sample*weight;
+			total+=weight;
+		}
+
+		gl_FragColor=color/total;
+		gl_FragColor.rgb/=gl_FragColor.a+0.00001;
+
+	}
+
+</script>
+
+<script type="x-shader/x-vertex" id="vs-post">
+
+	varying vec3 vNormal;
+	varying vec3 vPosition;
+	varying vec3 vLight;
+	vec4 lightPosition = vec4( 0., 0., -10., 1. );
+
+	void main() {
+
+		vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+		gl_Position = projectionMatrix * mvPosition;
+		vNormal = normalMatrix * normal;
+		vPosition = mvPosition.xyz;
+		vLight = ( viewMatrix * lightPosition ).xyz;
+
+	}
+
+</script>
+
+<script type="x-shader/x-vertex" id="fs-post">
+
+	varying vec3 vNormal;
+	varying vec3 vPosition;
+	varying vec3 vLight;
+
+	uniform int renderDepth;
+
+	void main() {
+
+		vec3 ambient = vec3( .1 );
+		vec3 n = normalize( vNormal );
+		vec3 s = normalize( vLight - vPosition );
+
+		vec3 color = vec3( .75 );
+		vec3 diffuse = color * max( 0.0, dot( n, s ) ) * vec3( 1. );
+
+		vec3 r = - reflect( vLight, n );
+		r = normalize( r );
+		vec3 v = - vPosition.xyz;
+		v = normalize( v );
+		float shininess = 10.;
+
+		float rm = 1. - max( 0., dot( n, v ) );
+		vec3 rim = vec3( pow( rm, 2. ) );
+
+		vec3 specular;
+		if( shininess != 0.0 ) {
+			specular = vec3( 1. ) * vec3( 1. ) * pow( max( 0.0, dot( r, v ) ), shininess );
+		} else {
+			specular = vec3( 0. );
+		}
+		specular = vec3( 0.);
+		rim = vec3( 0. );
+
+		if( renderDepth == 0 ) {
+			gl_FragColor = vec4( rim + ambient + diffuse + specular, 1. );
+		} else {
+			float z = clamp( 0., 1., gl_FragCoord.w * 10. );
+			gl_FragColor = vec4( .5 * ( 1. + n.x ), .5 * ( 1. + n.y ), z, 1. );
+		}
+
+	}
+
+</script>
+
+<script type="x-shader/x-vertex" id="vs-render">
+
+	varying vec2 vUv;
+
+	void main() {
+
+		vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+		gl_Position = projectionMatrix * mvPosition;
+		vUv = uv;
+
+	}
+
+</script>
+
+<script type="x-shader/x-vertex" id="fs-render">
+
+	uniform sampler2D tDiffuse;
+	uniform sampler2D tColor;
+	uniform sampler2D tNoise;
+	uniform sampler2D tPaper;
+	uniform sampler2D tBlur;
+	uniform vec2 resolution;
+
+	varying vec2 vUv;
+
+	void main() {
+
+		float x = 1.0 / resolution.x;
+		float y = 1.0 / resolution.y;
+		vec4 horizEdge = vec4( 0.0 );
+		horizEdge -= texture2D( tDiffuse, vec2( vUv.x - x, vUv.y - y ) ) * 1.0;
+		horizEdge -= texture2D( tDiffuse, vec2( vUv.x - x, vUv.y     ) ) * 2.0;
+		horizEdge -= texture2D( tDiffuse, vec2( vUv.x - x, vUv.y + y ) ) * 1.0;
+		horizEdge += texture2D( tDiffuse, vec2( vUv.x + x, vUv.y - y ) ) * 1.0;
+		horizEdge += texture2D( tDiffuse, vec2( vUv.x + x, vUv.y     ) ) * 2.0;
+		horizEdge += texture2D( tDiffuse, vec2( vUv.x + x, vUv.y + y ) ) * 1.0;
+		vec4 vertEdge = vec4( 0.0 );
+		vertEdge -= texture2D( tDiffuse, vec2( vUv.x - x, vUv.y - y ) ) * 1.0;
+		vertEdge -= texture2D( tDiffuse, vec2( vUv.x    , vUv.y - y ) ) * 2.0;
+		vertEdge -= texture2D( tDiffuse, vec2( vUv.x + x, vUv.y - y ) ) * 1.0;
+		vertEdge += texture2D( tDiffuse, vec2( vUv.x - x, vUv.y + y ) ) * 1.0;
+		vertEdge += texture2D( tDiffuse, vec2( vUv.x    , vUv.y + y ) ) * 2.0;
+		vertEdge += texture2D( tDiffuse, vec2( vUv.x + x, vUv.y + y ) ) * 1.0;
+		vec3 edge = sqrt((horizEdge.rgb * horizEdge.rgb) + (vertEdge.rgb * vertEdge.rgb));
+		float e = length( edge );
+
+		float z = texture2D( tDiffuse, vUv ).b;
+
+		vec3 b = texture2D( tColor, vUv ).rgb;
+		vec3 a = texture2D( tBlur, vUv ).rgb;
+		vec3 c = vec3( 1. ) - ( vec3( 1. ) - a ) * ( vec3( 1. ) - b );
+
+		vec2 nUV = vec2( mod( vUv.x * resolution.x / 256., 1. ), mod( vUv.y * resolution.y / 256., 1. ) );
+		float s = mix( 1., texture2D( tNoise, nUV ).r, 1. - c.r );
+		s -= .15 * e * z;
+
+		vec2 pUV = vec2( mod( vUv.x * resolution.x / 1200., 1. ), mod( vUv.y * resolution.y / 1200., 1. ) );
+		vec3 color = texture2D( tPaper, pUV ).rgb * s;
+
+		gl_FragColor = vec4( color, 1. );
+
+	}
+
+</script>
+
+		<script>
+
+			var container, stats;
+			var camera, controls, scene, renderer, axisHelper;
+			var objects = [];
+			var lines =[];
+			var clock = new THREE.Clock();
+
+			var colors = [
+				0xed6a5a,
+				0xf4f1bb,
+				0x9bc1bc,
+				0x5ca4a9,
+				0xe6ebe0,
+				0xf0b67f,
+				0xfe5f55,
+				0xd6d1b1,
+				0xc7efcf,
+				0xeef5db,
+				0x50514f,
+				0xf25f5c,
+				0xffe066,
+				0x247ba0,
+				0x70c1b3
+			];
+
+			init();
+			animate();
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.z = 1000;
+
+				controls = new THREE.TrackballControls( camera );
+				controls.rotateSpeed = 1.0;
+				controls.zoomSpeed = 1.2;
+				controls.panSpeed = 0.8;
+				controls.noZoom = false;
+				controls.noPan = false;
+				controls.staticMoving = true;
+				controls.dynamicDampingFactor = 0.3;
+
+				scene = new THREE.Scene();
+
+				scene.add( new THREE.AmbientLight( 0x505050 ) );
+
+				var light = new THREE.SpotLight( 0xffffff, 1.5 );
+				light.position.set( 0, 500, 2000 );
+				light.castShadow = true;
+
+				light.shadow = new THREE.LightShadow( new THREE.PerspectiveCamera( 50, 1, 200, 10000 ) );
+				light.shadow.bias = - 0.00022;
+
+				light.shadow.mapSize.width = 2048;
+				light.shadow.mapSize.height = 2048;
+
+				scene.add( light );
+
+				axisHelper = new THREE.AxisHelper( 500 );
+				//objects.push(axisHelper)
+  				scene.add( axisHelper );
+
+				var geometry = new THREE.BoxGeometry( 40, 40, 40 );
+
+				for ( var i = 0; i < 20; i ++ ) {
+
+					var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
+
+					object.position.x = Math.random() * 1000 - 500;
+					object.position.y = Math.random() * 600 - 300;
+					object.position.z = Math.random() * 800 - 400;
+
+					/*
+					object.rotation.x = Math.random() * 2 * Math.PI;
+					object.rotation.y = Math.random() * 2 * Math.PI;
+					object.rotation.z = Math.random() * 2 * Math.PI;
+					*/
+
+					object.scale.x = Math.random() * 2 + 1;
+					object.scale.y = Math.random() * 2 + 1;
+					object.scale.z = Math.random() * 2 + 1;
+
+					object.castShadow = true;
+					object.receiveShadow = true;
+
+					if(objects.length>1){
+						//createLineMesh(objects[objects.length-1], object);
+						createLine(objects[objects.length-1], object);
+					}
+			
+					scene.add( object );
+
+					objects.push( object );
+
+				}
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setClearColor( 0xf0f0f0 );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.sortObjects = false;
+
+				renderer.shadowMap.enabled = true;
+				renderer.shadowMap.type = THREE.PCFShadowMap;
+
+				container.appendChild( renderer.domElement );
+
+				var dragControls = new THREE.DragControls( objects, camera, renderer.domElement );
+				dragControls.addEventListener( 'dragstart', function ( event ) { controls.enabled = false; } );
+				dragControls.addEventListener( 'dragend', function ( event ) { controls.enabled = true; } );
+
+			
+
+				stats = new Stats();
+				container.appendChild( stats.dom );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+
+			function createLineMesh(from, to){
+				var lineGeom = new THREE.Geometry();
+			  	lineGeom.vertices.push(from.position);
+			  	lineGeom.vertices.push(to.position);
+			  	
+			 
+
+				var line = new MeshLine();
+				line.setGeometry( lineGeom, function( p ) { return 10; } );
+				//var material = new MeshLineMaterial();
+				console.log(line)
+				//line.geometry.verticesNeedUpdate = true;
+
+				var material = new MeshLineMaterial( {
+
+					color: new THREE.Color( colors[ ~~Maf.randomInRange( 0, colors.length ) ] ),
+					opacity: 1,//params.strokes ? .5 : 1,
+					dashArray: new THREE.Vector2( 10, 5 ),
+					near: camera.near,
+					far: camera.far,
+					depthWrite: false,
+					transparent: true,
+					side: THREE.DoubleSide
+				});
+
+			    var mesh = new THREE.Mesh( line.geometry, material ); // this syntax could definitely be improved!
+
+
+			    scene.add( mesh );
+
+			    lines.push(mesh)
+			}
+
+			function createLine(from, to){
+
+
+				  var lineGeom = new THREE.Geometry();
+				  lineGeom.vertices.push(from.position);
+				  lineGeom.vertices.push(to.position);
+				  var lineMat = new THREE.LineBasicMaterial({
+				    color: "red"
+				  });
+				  line = new THREE.Line(lineGeom, lineMat);
+				  scene.add( line );
+
+			    	lines.push(line);
+			}
+
+			
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+				stats.update();
+
+			}
+
+			function render(time) {
+
+				var delta = clock.getDelta();
+				var t = clock.getElapsedTime();
+
+				lines.forEach( function( l, i ) {
+
+					//if( params.animateWidth ) l.material.uniforms.lineWidth.value = params.lineWidth * ( 1 + .5 * Math.sin( 5 * t + i ) );
+					//if( params.autoRotate ) l.rotation.y += .125 * delta;
+					//stamp * 2) * 5;
+
+ 					//l.geometry.verticesNeedUpdate = true;
+ 					l.geometry.verticesNeedUpdate = true;
+ 					//l.geometry.attributes.position.needsUpdate = true;
+					//l.material.uniforms.visibility.value=.5;//(time/3000) % 1.0;
+			    //  l.material.uniforms.visibility.value= true ? (time/3000) % 1.0 : 1.0;
+				} );
+
+				controls.update();
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>
