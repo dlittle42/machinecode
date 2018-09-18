@@ -1,0 +1,598 @@
+<html lang="en">
+	<head>
+		<title>spin the wheel- tick</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link href="https://fonts.googleapis.com/css?family=Barlow|Kanit:800" rel="stylesheet">
+		<style>
+
+			html {
+			  box-sizing: border-box;
+			}
+			*, *:before, *:after {
+			  box-sizing: inherit;
+			}
+
+			body {
+				color: #ffffff;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+				position: fixed;
+
+				background-color: #bfd1e5;
+				margin: 0px;
+				overflow: hidden;
+			}
+
+			#info {
+				color:#fff;
+				background-color: black;
+				position: absolute;
+				top: 0px; width: 100%;
+				padding: 5px;
+				text-align: right;
+
+			}
+			#inst {
+				color:#333;
+				position: absolute;
+				top: 20px; 
+				width: 100%;
+				padding: 5px;
+
+			}
+
+			#diff{
+
+				color: red;
+				background-color: black;
+				width: auto;
+				height: 40px;
+				position: absolute;
+				left: 10px;
+				top: 10px;
+				padding: 0 4px;
+				font-size: 18px;
+				font-weight: bold;
+				line-height: 40px;
+				opacity: 0;
+				transition: all .3s ease-out;
+				user-select: none;
+
+			}
+
+			h1{
+				font-family: 'Kanit', sans-serif;
+			    letter-spacing: 5px;
+			    font-size: 70px;
+			    margin-bottom: 0;
+			}
+
+			p{
+				
+				
+				font-family: 'Barlow', sans-serif;
+			    font-size: 28px;
+			    margin-top: 0;
+			    letter-spacing: 2px;
+			}
+
+
+
+			a {
+				color: #a06851;
+			}
+
+
+
+		</style>
+	</head>
+	<body>
+
+	<div id="container">
+		<div id="info"></div>
+		<div id="inst">Click to invert effect</div>
+		<div id="diff">0</div>
+
+	</div>
+
+	<script src="../../bower_components/three.js/build/three.js"></script>
+	<script src="../../bower_components/three.js/examples/js/utils/GeometryUtils.js"></script>
+	<script src="../../bower_components/three.js/examples/js/controls/OrbitControls.js"></script>
+	<script src="../../bower_components/three.js/examples/js/controls/TrackballControls.js"></script>
+
+
+<!--	<script src="rotateCam.js"></script> -->
+	<script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+	<script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+
+	<script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.js"></script>
+<!--	<script type="text/javascript" src="js/gallery2.js"></script> -->
+	<script type="text/javascript" src="js/georing.js"></script>
+
+
+		<script>
+
+		// Detects webgl
+		if ( ! Detector.webgl ) {
+			Detector.addGetWebGLMessage();
+			document.getElementById( 'container' ).innerHTML = "";
+		}
+
+		// - Global variables -
+
+		// Graphics variables
+		var container, stats;
+		var camera, controls, scene, renderer;
+
+		var clock = new THREE.Clock();
+
+		var randomMaterial = new THREE.MeshPhongMaterial( { color: createRandomColor(), wireframe:false } );
+
+
+
+
+		var info, hud;
+		var ring1, ring2, ring3;
+/*		var panelArray = [];
+		var activePanel = 0;
+		var isDragging = false;
+		var letterGroup = new THREE.Object3D();
+		var freeDrag = 0;
+		var initDragTime = 0;
+		var endDragTime = 0;
+		var dragDuration = 0;
+*/
+		var letterGroup = new THREE.Object3D();
+		var letterGroup2 = new THREE.Object3D();
+
+	
+
+        var materials = [
+                    new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.FlatShading } ), // front
+                    new THREE.MeshPhongMaterial( { color: 0xffffff, shading: THREE.SmoothShading } ) // side
+                ];
+
+        var light;
+
+
+		var showControls = false;//true;
+		
+	//	var targetRot=0;
+		var tick;
+		var delay = 0, count = 0;
+
+
+		var objArr = [];
+	    var raycaster = new THREE.Raycaster();
+	    var activePanel=null;
+	    var activeObj=null;
+	   // var vector = new THREE.Vector3( 0, 0, -1 );
+	    //var scaledVector=new THREE.Vector3( 0, 0, -1 );
+	    var activeColor ="#ff0000"
+	    var intersection = {
+	      intersects: false,
+	      point: new THREE.Vector3(),
+	      normal: new THREE.Vector3()
+	    };
+	    var mouse = new THREE.Vector2();
+
+
+		// - Main code -
+
+		init();
+
+		animate();
+
+
+		// - Functions -
+
+		function init(){
+			//loadTick();
+			initGraphics();
+		//	initShaders();
+			//initInput();
+
+			window.addEventListener( 'mousemove', onTouchMove );
+    		window.addEventListener( 'touchmove', onTouchMove );
+
+     		document.addEventListener( 'mousedown', onClick );
+		}
+
+		function onTouchMove( event ){
+
+	        var x, y;
+
+	        if ( event.changedTouches ) {
+
+	          x = event.changedTouches[ 0 ].pageX;
+	          y = event.changedTouches[ 0 ].pageY;
+
+	        } else {
+
+	          x = event.clientX;
+	          y = event.clientY;
+
+	        }
+
+	        mouse.x = ( x / window.innerWidth ) * 2 - 1;
+	        mouse.y = - ( y / window.innerHeight ) * 2 + 1;
+
+	        checkIntersection();
+	        //if ( ! moved && intersection.intersects ) shoot();
+
+	      }
+
+		function onClick(event) {
+
+		  console.log('click')
+
+		   event.preventDefault();
+		    console.log('click - color: '+activeColor)
+
+		    if (intersection.intersects){
+
+		      activeObj.material.color.set( activeColor );
+/*
+		      var _this = this;
+
+		      loader.load(arr[textureToShow], function(tex) {
+		        // Once the texture has loaded
+		        // Asign it to the material
+		        _activeObj.material.map = tex;
+		        // Update the next texture to show
+		        _textureToShow++;
+		        // Have we got to the end of the textures array
+		        if(_textureToShow > _arr.length-1) {
+		         _textureToShow = 0;
+		        }
+		       }); 
+		       */
+		    }
+		
+		/*
+		     TweenMax.to(this.activeObj.position, 1,{
+		               // z:depth,
+		                //x:0,
+		                y: Math.random()*50,
+		              //  z:depth,
+		               // delay: delay,
+		                ease:"Power3.easeOut",
+		                onUpdate:function(){
+		                   // no_geom.verticesNeedUpdate = true;
+		                    
+		              //  console.log('tweened');
+		            }});
+
+		    */
+		}
+
+
+		function checkIntersection(){
+
+       // if ( ! mesh ) return;
+
+        raycaster.setFromCamera( mouse, camera );
+
+        var intersects = raycaster.intersectObjects( objArr, true );
+        //var intersects = raycaster.intersectObjects( objArr);
+        //console.log(objArr)
+      //  console.log(intersects)
+
+        if ( intersects.length > 0 ) {
+
+      //    console.log(intersects[ 0 ].object)
+
+          activeObj = intersects[ 0 ].object;
+
+          
+
+    
+/*
+          var p = intersects[ 0 ].point;
+          mouseHelper.position.copy( p );
+          intersection.point.copy( p );
+
+          var n = intersects[ 0 ].face.normal.clone();
+          n.transformDirection( mesh.matrixWorld );
+          n.multiplyScalar( 10 );
+          n.add( intersects[ 0 ].point );
+
+          intersection.normal.copy( intersects[ 0 ].face.normal );
+          mouseHelper.lookAt( n );
+
+          var positions = line.geometry.attributes.position;
+          positions.setXYZ( 0, p.x, p.y, p.z );
+          positions.setXYZ( 1, n.x, n.y, n.z );
+          positions.needsUpdate = true;
+*/
+          intersection.intersects = true;
+
+        } else {
+
+          intersection.intersects = false;
+
+        }
+
+      }
+
+
+		function initGraphics() {
+
+			container = document.getElementById( 'container' );
+
+			camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
+
+			scene = new THREE.Scene();
+		
+
+			camera.position.x = 0;
+			camera.position.y = 20;
+			camera.position.z =  30;
+			camera.lookAt(scene.position)
+			//.lookAt(aObj.position)
+			//camera.rotation.x = r* Math.cos(stepAngle);
+			camera.rotation.y = 0;
+			//camera.rotation.z = r* Math.sin(stepAngle);
+
+
+			if(showControls) controls = new THREE.OrbitControls( camera );
+		//	controls.target.y = 3;
+	//		controls = new THREE.TrackballControls( camera );
+		//	controls.target.set( 0, 0, 0 )
+	//	controls.enabled = false;
+
+			renderer = new THREE.WebGLRenderer({antialias:true, precision: "mediump"});
+			renderer.autoClear = false;
+			renderer.setClearColor( 0xffffff );
+			renderer.setPixelRatio( window.devicePixelRatio );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			renderer.shadowMap.enabled = true;
+
+			textureLoader = new THREE.TextureLoader();
+
+			var ambientLight = new THREE.AmbientLight( 0x707070 );
+			scene.add( ambientLight );
+
+			light = new THREE.DirectionalLight( 0xffffff, 1 );
+			light.position.set( 0, 0, 0 );
+			light.castShadow = true;
+			var d = 14;
+			light.shadow.camera.left = -d;
+			light.shadow.camera.right = d;
+			light.shadow.camera.top = d;
+			light.shadow.camera.bottom = -d;
+
+			light.shadow.camera.near = 2;
+			light.shadow.camera.far = 50;
+
+			light.shadow.mapSize.x = 1024;
+			light.shadow.mapSize.y = 1024;
+
+			scene.add( light );
+
+			scene.add( new THREE.AxisHelper( 30 ) );
+
+			container.appendChild( renderer.domElement );
+
+			stats = new Stats();
+			stats.domElement.style.position = 'absolute';
+			stats.domElement.style.top = '0px';
+			container.appendChild( stats.domElement );
+
+
+			info = document.getElementById("info");
+			hud = document.getElementById("diff");
+
+			
+
+			//for letters
+		//	loadFont();
+
+			var planeGeometry = new THREE.BoxGeometry(10, 2, 10);
+
+			  var planeMaterial = new THREE.MeshPhongMaterial({
+			    color: createRandomColor(),
+			  //  colorWrite: true,  // works for r73 (not r70)
+			//    depthWrite: false,
+			    side: THREE.DoubleSide
+			  });
+			  ring1 = new THREE.Mesh(planeGeometry, new THREE.MeshPhongMaterial({
+			    color: createRandomColor(),
+			    side: THREE.DoubleSide
+			  }));
+			  ring1.position.z=0;
+
+			  scene.add(ring1);
+
+			  ring2 = new THREE.Mesh(planeGeometry, new THREE.MeshPhongMaterial({
+			    color: createRandomColor(),
+			    side: THREE.DoubleSide
+			  }));
+
+			   scene.add(ring2);
+
+			   ring2.position.y = 10;
+
+			   ring3 = new THREE.Mesh(planeGeometry, new THREE.MeshPhongMaterial({
+			    color: createRandomColor(),
+			    side: THREE.DoubleSide
+			  }));
+
+			   scene.add(ring3);
+
+			   ring3.position.y = -10;
+
+			   objArr.push(ring1);
+			   objArr.push(ring2);
+			   objArr.push(ring3);
+
+
+			
+			 
+			//
+			//createRing();
+
+			window.addEventListener( 'resize', onWindowResize, false );
+
+		}
+
+
+
+		function createRandomColor() {
+			return Math.floor( Math.random() * ( 1 << 24 ) );
+		}
+
+		
+
+		function debugDrag(diff, dur){
+			return 'diff: '+diff.toFixed(2)
+
+					+' <br> dur: '+dur.toFixed(2)
+					+' <br> target: '+targetRot
+					+' <br> active: '+activePanel;
+		}
+/*
+		function initAnimation( rot ){
+
+		//	alert(rot)
+
+			rot=rot*stepAngle;
+		
+			console.log('initAnimation=' + rot)
+			//var rot = stepAngle;//Math.PI/3;
+			var time = dragDuration/1000;
+			
+			TweenMax.to(letterGroup.rotation, 1+ time,{
+               // z:depth,
+                x:0,
+                //y:'+='+ rot,//(rot - postDragRotation),
+                y:rot,
+                z:0,
+               // delay: delay,
+                ease:"Power3.easeOut",
+                onStart:function(){
+                	console.log('start = '+ letterGroup.rotation.y)
+                	console.log('start deg = '+ toDegrees(letterGroup.rotation.y).toFixed(2));
+                	playTick(Math.abs(activePanel - rot));
+                },
+                onUpdate:function(){
+					
+                },
+                onComplete:function(){
+                   // no_geom.verticesNeedUpdate = true;
+                  //  console.log(letterGroup.rotation.y)
+                  console.log('end = '+ letterGroup.rotation.y)
+                  console.log('end deg = '+ toDegrees(letterGroup.rotation.y).toFixed(2));
+                //  hud.textContent =activePanel;//panelArray[activePanel].name;
+                  var rotations = Math.round(letterGroup.rotation.y/stepAngle);
+                  console.warn(rotations)
+                  var idx = (rotations)%numObj;
+                  console.error(idx)
+                  if (idx <0){
+                  	idx = numObj + idx;
+                  }
+                  activePanel = Math.abs(idx);
+                  hud.textContent = activePanel;//panelArray[idx].name;
+                  info.innerHTML = debugDrag(rot, dragDuration)
+
+              //  console.log('tweened');
+            }});
+         
+		}
+*/
+		function scaleMask(depth){
+			TweenMax.to(plane.position, .5,{
+               // z:depth,
+                x:0,
+                y: 0,
+                z:depth,
+               // delay: delay,
+                ease:"Power3.easeOut",
+                onUpdate:function(){
+                   // no_geom.verticesNeedUpdate = true;
+                    
+              //  console.log('tweened');
+            }});
+		}
+
+		function scaleCamera(depth){
+
+			var time = dragDuration/1000;
+			TweenMax.to(camera.position, 1+time,{
+               // z:depth,
+                x:0,
+                y: 0,
+                z:depth,
+              //  z:'+='+ depth,
+               // delay: delay,
+                ease:"Power3.easeOut",
+                onUpdate:function(){
+                   // no_geom.verticesNeedUpdate = true;
+                    
+              //  console.log('tweened');
+            }});
+		}
+/*
+
+		function initInput() {
+
+			window.addEventListener( 'touchstart', initDrag, false);
+			window.addEventListener( 'mousedown', initDrag, false);
+
+			window.addEventListener( 'touchmove', onDragMove, false);
+			window.addEventListener( 'mousemove', onDragMove, false);
+
+			window.addEventListener( 'touchend', endDrag, false);
+			window.addEventListener( 'mouseup', endDrag, false);
+
+			window.addEventListener( 'keydown', onKeyPress, false);
+		
+
+			document.getElementById('inst').onclick = swapEffect;
+			
+
+		}
+*/
+		function onWindowResize() {
+
+
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+
+			renderer.setSize( window.innerWidth, window.innerHeight );
+
+		}
+
+
+	
+		function animate() {
+
+			requestAnimationFrame( animate );
+
+			render();
+			stats.update();
+
+		}
+
+		function render() {
+
+			//var deltaTime = clock.getDelta();
+			var time = performance.now() * 0.001;
+
+			if(showControls) controls.update( time );
+
+			renderer.clear();
+			renderer.render(scene, camera);
+
+
+		}
+
+	
+
+		</script>
+
+	</body>
+</html>

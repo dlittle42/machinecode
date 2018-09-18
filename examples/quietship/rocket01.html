@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - loaders - OBJ loader</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #000;
+				color: #fff;
+				margin: 0px;
+				overflow: hidden;
+			}
+			#info {
+				color: #fff;
+				position: absolute;
+				top: 10px;
+				width: 100%;
+				text-align: center;
+				z-index: 100;
+				display:block;
+			}
+			#info a, .button { color: #f00; font-weight: bold; text-decoration: underline; cursor: pointer }
+		</style>
+	</head>
+
+	<body>
+		
+
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/master/build/three.min.js"></script>
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/loaders/OBJLoader.js"></script>
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/effects/OutlineEffect.js"></script>
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/controls/MapControls.js"></script>
+
+		<script>
+
+			var container;
+
+			var camera, scene, renderer;
+			var effect;
+			var objects =[];
+
+			var mouseX = 0, mouseY = 0;
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+
+
+			init();
+			animate();
+
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
+				camera.position.z = 500;
+
+				// scene
+
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0xffffff );
+
+				var ambientLight = new THREE.AmbientLight( 0xcccccc, 0.4 );
+				scene.add( ambientLight );
+
+				var pointLight = new THREE.PointLight( 0xffffff, 0.8 );
+				camera.add( pointLight );
+				scene.add( camera );
+
+
+
+
+				// texture
+
+				var manager = new THREE.LoadingManager();
+				manager.onProgress = function ( item, loaded, total ) {
+
+					console.log( item, loaded, total );
+
+				};
+
+				var textureLoader = new THREE.TextureLoader( manager );
+				var texture = textureLoader.load( 'https://threejs.org/examples/textures/UV_Grid_Sm.jpg' );
+
+				// model
+
+				var onProgress = function ( xhr ) {
+					if ( xhr.lengthComputable ) {
+						var percentComplete = xhr.loaded / xhr.total * 100;
+						console.log( Math.round(percentComplete, 2) + '% downloaded' );
+					}
+				};
+
+				var onError = function ( xhr ) {
+				};
+
+				var loader = new THREE.OBJLoader( manager );
+				loader.load( 'assets/CUPIC_ROCKETSHIP.obj', function ( object ) {
+
+					object.traverse( function ( child ) {
+
+						if ( child instanceof THREE.Mesh ) {
+
+							child.material.map = texture;
+
+						}
+
+					} );
+
+					//object.position.y = - 95;
+				//	scene.add( object );
+/*
+					var rocket2 = object.clone()
+					scene.add(rocket2)
+					rocket2.position.x = 100;
+
+					var rocket3 = object.clone()
+					scene.add(rocket3)
+					rocket3.position.y = 100;
+*/
+
+					var objWidth = 50;
+					var maxRow = 10;
+					var maxCol = 10;
+					var hspacing = 200;
+					var vspacing = 200;
+					var xoffset = ((objWidth + hspacing)* maxRow)/4;
+
+					for (var i = 0; i < maxRow; i++) {
+					     for (var j = 0; j < maxCol; j++) {
+
+					      	var rocket = object.clone()
+
+							var xpos = ((hspacing * j) - hspacing/2) - xoffset;
+							var ypos = (vspacing  * i)  - ((vspacing/2)*maxRow);
+							//var zpos = Math.random() * 400 - 200;
+
+							rocket.position.x = xpos;
+							rocket.position.y = ypos;
+							rocket.position.z = 0;
+
+
+							rocket.rotation.x = Math.random() * 2 * Math.PI;
+							rocket.rotation.y = Math.random() * 2 * Math.PI;
+							rocket.rotation.z = Math.random() * 2 * Math.PI;
+
+							rocket.origin = [xpos, ypos];
+							scene.add( rocket );
+							//objects.push( object );
+					     }
+					 }
+
+/*
+					for ( var i = 0; i < 20; i ++ ) {
+
+						var rocket = object.clone()
+
+						rocket.position.x = Math.random() * 1000 - 500;
+						rocket.position.y = Math.random() * 600 - 300;
+					//	rocket.position.z = Math.random() * 800 - 400;
+
+						rocket.rotation.x = Math.random() * 2 * Math.PI;
+						rocket.rotation.y = Math.random() * 2 * Math.PI;
+						rocket.rotation.z = Math.random() * 2 * Math.PI;
+
+					//	rocket.scale.x = Math.random() * 2 + 1;
+					//	rocket.scale.y = Math.random() * 2 + 1;
+					//	rocket.scale.z = Math.random() * 2 + 1;
+
+						rocket.castShadow = true;
+						rocket.receiveShadow = true;
+
+					//	rocket.position.normalize();
+					//	rocket.position.multiplyScalar( 1000 );
+
+						scene.add( rocket );
+
+						//objects.push( rocket );
+
+					}
+				*/
+
+				}, onProgress, onError );
+
+				//
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+
+
+				//controls
+				controls = new THREE.MapControls( camera, renderer.domElement );
+
+				//controls.addEventListener( 'change', render ); // call this only in static scenes (i.e., if there is no animation loop)
+
+				controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
+				controls.dampingFactor = 0.25;
+
+				controls.screenSpacePanning = false;
+
+				controls.minDistance = 250;
+				controls.maxDistance = 1500;
+
+				controls.maxPolarAngle = Math.PI / 2;
+
+
+			//	effect = new THREE.OutlineEffect( renderer );
+
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function onWindowResize() {
+
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function onDocumentMouseMove( event ) {
+
+				mouseX = ( event.clientX - windowHalfX ) / 2;
+				mouseY = ( event.clientY - windowHalfY ) / 2;
+
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+				render();
+
+			}
+
+			function render() {
+
+			//	camera.position.x += ( mouseX - camera.position.x ) * .05;
+			//	camera.position.y += ( - mouseY - camera.position.y ) * .05;
+
+			//	camera.lookAt( scene.position );
+
+				controls.update();
+
+				renderer.render( scene, camera );
+				//effect.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>

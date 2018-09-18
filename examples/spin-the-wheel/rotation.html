@@ -1,0 +1,497 @@
+<html lang="en">
+	<head>
+		<title>spin the wheel- tick</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link href="https://fonts.googleapis.com/css?family=Barlow|Kanit:800" rel="stylesheet">
+		<style>
+
+			html {
+			  box-sizing: border-box;
+			}
+			*, *:before, *:after {
+			  box-sizing: inherit;
+			}
+
+			body {
+				color: #ffffff;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+				position: fixed;
+
+				background-color: #bfd1e5;
+				margin: 0px;
+				overflow: hidden;
+			}
+
+			#info {
+				color:#fff;
+				background-color: black;
+				position: absolute;
+				top: 0px; width: 100%;
+				padding: 5px;
+				text-align: right;
+
+			}
+			#inst {
+				color:#333;
+				position: absolute;
+				top: 20px; 
+				width: 100%;
+				padding: 5px;
+
+			}
+
+			#diff{
+
+				color: red;
+				background-color: black;
+				width: auto;
+				height: 40px;
+				position: absolute;
+				left: 10px;
+				top: 10px;
+				padding: 0 4px;
+				font-size: 18px;
+				font-weight: bold;
+				line-height: 40px;
+				opacity: 0;
+				transition: all .3s ease-out;
+				user-select: none;
+
+			}
+
+			h1{
+				font-family: 'Kanit', sans-serif;
+			    letter-spacing: 5px;
+			    font-size: 70px;
+			    margin-bottom: 0;
+			}
+
+			p{
+				
+				
+				font-family: 'Barlow', sans-serif;
+			    font-size: 28px;
+			    margin-top: 0;
+			    letter-spacing: 2px;
+			}
+
+
+
+			a {
+				color: #a06851;
+			}
+
+
+
+		</style>
+	</head>
+	<body>
+
+	<div id="container">
+		<div id="info"></div>
+		<div id="diff">0</div>
+
+	</div>
+
+	<script src="../../bower_components/three.js/build/three.js"></script>
+
+
+
+<!--	<script src="rotateCam.js"></script> -->
+	<script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+	<script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+
+	<script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.js"></script>
+
+
+
+		<script>
+
+		// Detects webgl
+		if ( ! Detector.webgl ) {
+			Detector.addGetWebGLMessage();
+			document.getElementById( 'container' ).innerHTML = "";
+		}
+
+		// - Global variables -
+
+		// Graphics variables
+		var container, stats;
+
+
+	var camera, scene, renderer;
+
+	var cube, plane;
+
+	var mouseDown = false;
+	var rotateStartPoint = new THREE.Vector3(0, 0, 1);
+	var rotateEndPoint = new THREE.Vector3(0, 0, 1);
+
+
+	var objArr = [];
+    var raycaster = new THREE.Raycaster();
+    var activePanel=null;
+    var activeObj=null;
+   // var vector = new THREE.Vector3( 0, 0, -1 );
+    //var scaledVector=new THREE.Vector3( 0, 0, -1 );
+    var activeColor ="#ff0000"
+    var intersection = {
+      intersects: false,
+      point: new THREE.Vector3(),
+      normal: new THREE.Vector3()
+    };
+    var mouse = new THREE.Vector2();
+
+	var curQuaternion;
+	var windowHalfX = window.innerWidth / 2;
+	var windowHalfY = window.innerHeight / 2;
+	var rotationSpeed = 2;
+	var lastMoveTimestamp,
+		moveReleaseTimeDelta = 50;
+
+	var startPoint = {
+		x: 0,
+		y: 0
+	};
+
+	var deltaX = 0,
+		deltaY = 0;
+
+	setup();
+
+	function setup()
+	{
+		container = document.createElement('div');
+		document.body.appendChild(container);
+
+
+		camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 1000);
+		camera.position.y = 150;
+		camera.position.z = 500;
+
+		scene = new THREE.Scene();
+
+		// Cube
+
+		var boxGeometry = new THREE.BoxGeometry(200, 200, 200);
+
+		for (var i = 0; i < boxGeometry.faces.length; i += 2)
+		{
+
+			var color = {
+				h: (1 / (boxGeometry.faces.length)) * i,
+				s: 0.5,
+				l: 0.5
+			};
+
+			boxGeometry.faces[i].color.setHSL(color.h, color.s, color.l);
+			boxGeometry.faces[i + 1].color.setHSL(color.h, color.s, color.l);
+
+		}
+
+		var cubeMaterial = new THREE.MeshBasicMaterial(
+		{
+			vertexColors: THREE.FaceColors,
+			overdraw: 0.5
+		});
+
+		cube = new THREE.Mesh(boxGeometry, cubeMaterial);
+		cube.position.y = 200;
+		scene.add(cube);
+
+		objArr.push(cube);
+
+		var cube2 = new THREE.Mesh(boxGeometry, cubeMaterial);
+		cube2.position.y = 200;
+		cube2.position.x = 250;
+		scene.add(cube2);
+
+		objArr.push(cube2);
+
+		// Plane
+
+		var planeGeometry = new THREE.PlaneGeometry(200, 200);
+		planeGeometry.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+
+		var planeMaterial = new THREE.MeshBasicMaterial(
+		{
+			color: 0xe0e0e0,
+			overdraw: 0.5
+		});
+
+		plane = new THREE.Mesh(planeGeometry, planeMaterial);
+		scene.add(plane);
+
+		//renderer = new THREE.CanvasRenderer();
+		renderer = new THREE.WebGLRenderer({antialias:true, precision: "mediump"});
+		renderer.setClearColor(0xf0f0f0);
+		renderer.setSize(window.innerWidth, window.innerHeight);
+
+		container.appendChild(renderer.domElement);
+
+		stats = new Stats();
+		stats.domElement.style.position = 'absolute';
+		stats.domElement.style.top = '0px';
+		container.appendChild( stats.domElement );
+
+		document.addEventListener('mousedown', onDocumentMouseDown);
+		document.addEventListener('touchstart', onDocumentMouseDown);
+
+		document.addEventListener('mousemove', onDocumentMouseMove);
+		document.addEventListener('touchmove', onDocumentMouseMove);
+
+		document.addEventListener('mouseup', onDocumentMouseUp);
+		document.addEventListener('touchend', onDocumentMouseUp);
+
+		window.addEventListener('resize', onWindowResize, false);
+
+		animate();
+	};
+
+	function onWindowResize()
+	{
+		windowHalfX = window.innerWidth / 2;
+		windowHalfY = window.innerHeight / 2;
+
+		camera.aspect = window.innerWidth / window.innerHeight;
+		camera.updateProjectionMatrix();
+
+		renderer.setSize(window.innerWidth, window.innerHeight);
+	}
+
+	function onDocumentMouseDown(event)
+	{
+		event.preventDefault();
+
+
+		//document.addEventListener('mousemove', onDocumentMouseMove, false);
+	//	document.addEventListener('mouseup', onDocumentMouseUp, false);
+
+		mouseDown = true;
+
+		if ( event.changedTouches ) {
+			//alert('event.changedTouches')
+			startPoint = {
+          		x:event.changedTouches[ 0 ].pageX,
+          		y:event.changedTouches[ 0 ].pageY
+          	}
+
+        } else {
+
+	        startPoint = {
+	          x: event.clientX,
+	          y: event.clientY
+	      	}
+
+        }
+
+		
+
+		rotateStartPoint = rotateEndPoint = projectOnTrackball(0, 0);
+		onClick();
+	}
+
+	function onDocumentMouseMove(event)
+	{
+
+
+		if ( event.changedTouches ) {
+
+          	deltaX = event.changedTouches[ 0 ].pageX - startPoint.x;
+			deltaY = event.changedTouches[ 0 ].pageY - startPoint.y;
+
+			handleRotation();
+
+			startPoint.x = event.changedTouches[ 0 ].pageX;
+			startPoint.y = event.changedTouches[ 0 ].pageY;
+
+        } else {
+
+	        deltaX = event.x - startPoint.x;
+			deltaY = event.y - startPoint.y;
+
+			handleRotation();
+
+			startPoint.x = event.x;
+			startPoint.y = event.y;
+
+        }
+
+        checkIntersection();
+
+		
+
+		lastMoveTimestamp = new Date();
+	}
+
+	function onDocumentMouseUp(event)
+	{
+		if (new Date().getTime() - lastMoveTimestamp.getTime() > moveReleaseTimeDelta)
+		{
+			deltaX = event.x - startPoint.x;
+			deltaY = event.y - startPoint.y;
+		}
+
+		mouseDown = false;
+
+	//	document.removeEventListener('mousemove', onDocumentMouseMove, false);
+	//	document.removeEventListener('mouseup', onDocumentMouseUp, false);
+
+	//	document.removeEventListener('touchstart', onDocumentMouseMove, false);
+		//document.removeEventListener('touochend', onDocumentMouseUp, false);
+	}
+	function onClick() {
+
+		  console.log('click')
+
+		   event.preventDefault();
+		    console.log('click - color: '+activeColor)
+
+		    if (intersection.intersects){
+
+		      activeObj.material.color.set( activeColor );
+		    } 
+		
+		
+		}
+
+
+	function checkIntersection(){
+
+       // if ( ! mesh ) return;
+
+        raycaster.setFromCamera( mouse, camera );
+
+        var intersects = raycaster.intersectObjects( objArr, true );
+        //var intersects = raycaster.intersectObjects( objArr);
+        //console.log(objArr)
+      //  console.log(intersects)
+
+        if ( intersects.length > 0 ) {
+          console.log('intersect')
+          console.log(intersects[ 0 ].object)
+
+          activeObj = intersects[ 0 ].object;
+          intersection.intersects = true;
+
+        } else {
+
+          intersection.intersects = false;
+         // intersects[ 0 ].object.material.color.set( "#ffffff" );
+
+        }
+
+      }
+
+	function projectOnTrackball(touchX, touchY)
+	{
+		var mouseOnBall = new THREE.Vector3();
+
+		mouseOnBall.set(
+			clamp(touchX / windowHalfX, -1, 1), clamp(-touchY / windowHalfY, -1, 1),
+			0.0
+		);
+
+		var length = mouseOnBall.length();
+
+		if (length > 1.0)
+		{
+			mouseOnBall.normalize();
+		}
+		else
+		{
+			mouseOnBall.z = Math.sqrt(1.0 - length * length);
+		}
+
+		return mouseOnBall;
+	}
+
+	function rotateMatrix(rotateStart, rotateEnd)
+	{
+		var axis = new THREE.Vector3(),
+			quaternion = new THREE.Quaternion();
+
+		var angle = Math.acos(rotateStart.dot(rotateEnd) / rotateStart.length() / rotateEnd.length());
+
+		if (angle)
+		{
+			axis.crossVectors(rotateStart, rotateEnd).normalize();
+			angle *= rotationSpeed;
+			quaternion.setFromAxisAngle(axis, angle);
+		}
+		return quaternion;
+	}
+
+	function clamp(value, min, max)
+	{
+		return Math.min(Math.max(value, min), max);
+	}
+
+	function animate()
+	{
+		requestAnimationFrame(animate);
+		render();
+		stats.update();
+	}
+
+	function render()
+	{
+
+		/*
+		if (!mouseDown)
+		{
+			var drag = 0.95;
+			var minDelta = 0.05;
+
+			if (deltaX < -minDelta || deltaX > minDelta)
+			{
+				deltaX *= drag;
+			}
+			else
+			{
+				deltaX = 0;
+			}
+
+			if (deltaY < -minDelta || deltaY > minDelta)
+			{
+				deltaY *= drag;
+			}
+			else
+			{
+				deltaY = 0;
+			}
+
+			handleRotation();
+		}
+		*/
+
+		renderer.render(scene, camera);
+	}
+
+	function handleRotation()
+	{
+
+		if ( ! activeObj ) return;
+		rotateEndPoint = projectOnTrackball(deltaX, deltaY);
+
+		var rotateQuaternion = rotateMatrix(rotateStartPoint, rotateEndPoint);
+		curQuaternion = activeObj.quaternion;
+		curQuaternion.multiplyQuaternions(rotateQuaternion, curQuaternion);
+		curQuaternion.normalize();
+		//cube.setRotationFromQuaternion(curQuaternion);
+
+		activeObj.setRotationFromQuaternion(curQuaternion);
+
+		rotateEndPoint = rotateStartPoint;
+	};
+
+	
+
+		</script>
+
+	</body>
+</html>

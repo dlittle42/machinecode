@@ -1,0 +1,442 @@
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - draggable cubes</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #fff;
+				margin: 0px;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+
+
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/master/build/three.min.js"></script>
+	<!--	<script src="https://cdn.rawgit.com/mrdoob/three.js/master/build/three.min.js"></script> -->
+		<script src='https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/libs/dat.gui.min.js'></script>
+
+    	<script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+
+    	<script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
+
+    	<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/controls/OrbitControls.js"></script>
+    	<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/effects/OutlineEffect.js"></script>
+    	<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/controls/DragControls.js"></script>
+
+    	<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/geometries/DecalGeometry.js"></script>
+
+
+		<script>
+
+			var container, stats;
+			var camera, controls, scene, renderer, stats;
+			var mesh,mesh2, decal, effect;
+			var raycaster;
+			var line;
+
+			var state = "goDraw";
+
+			var intersection = {
+				intersects: false,
+				point: new THREE.Vector3(),
+				normal: new THREE.Vector3()
+			};
+			var mouse = new THREE.Vector2();
+
+			var objects = [];
+			var activeObjArr = [];
+
+
+			var textureLoader = new THREE.TextureLoader();
+		var decalDiffuse = textureLoader.load( 'assets/pencil3.png' );
+		var decalNormal = textureLoader.load( 'https://threejs.org/examples/textures/decal/decal-normal.jpg' );
+
+		var decalMaterial = new THREE.MeshPhongMaterial( {
+			specular: 0x444444,
+			map: decalDiffuse,
+			//normalMap: decalNormal,
+			//normalScale: new THREE.Vector2( 1, 1 ),
+			//shininess: 30,
+			transparent: true,
+			depthTest: true,
+			depthWrite: false,
+			polygonOffset: true,
+			polygonOffsetFactor: - 4,
+			wireframe: false
+		} );
+
+		var decals = [];
+		var mouseHelper;
+		var position = new THREE.Vector3();
+		var orientation = new THREE.Euler();
+		var size = new THREE.Vector3( 10, 10, 10 );
+		var up = new THREE.Vector3( 0, 1, 0 );
+
+		var moved = false;
+		var coloredPencil = 0x1861b3;
+
+		var params = {
+			minScale: 5,
+			maxScale: 10,
+			rotate: true,
+			clear: function() {
+
+				removeDecals();
+
+			},
+			mode: function() {
+				console.log('was > '+ state)
+				if (state=="goDraw"){
+					state="goDrag";
+				}else{
+					state="goDraw";
+				}
+				console.log('now > '+ state)
+			
+			},
+			color: "#1861b3"
+		};
+
+
+
+		var changeColor = function () {
+		      var colorObj = new THREE.Color( params.color );
+		      var hex = colorObj.getHexString();
+		      var css = colorObj.getStyle();
+		      var display = "#"+ hex + " or " + css;
+		      coloredPencil = Number('0x'+hex);
+		      console.log(display);
+		  };
+
+			init();
+		//	animate();
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 5000 );
+				camera.position.z = 1000;
+
+				controls = new THREE.OrbitControls( camera );
+
+
+
+/*
+				controls = new THREE.TrackballControls( camera );
+				controls.rotateSpeed = 1.0;
+				controls.zoomSpeed = 1.2;
+				controls.panSpeed = 0.8;
+				controls.noZoom = false;
+				controls.noPan = false;
+				controls.staticMoving = true;
+				controls.dynamicDampingFactor = 0.3;
+*/
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0xf0f0f0 );
+			//	scene.fog = new THREE.FogExp2( 0xefd1b5, 0.0009 );
+
+				scene.add( new THREE.AmbientLight( 0x505050 ) );
+
+				var axisHelper = new THREE.AxisHelper( 200 );
+				scene.add(axisHelper);
+
+
+				var light = new THREE.DirectionalLight( 0xffddcc, 1 );
+			light.position.set( 1, 0.75, 0.5 );
+			scene.add( light );
+
+			var light = new THREE.DirectionalLight( 0xccccff, 1 );
+			light.position.set( -1, 0.75, -0.5 );
+			scene.add( light );
+
+			var geometry = new THREE.BufferGeometry();
+			geometry.setFromPoints( [ new THREE.Vector3(), new THREE.Vector3() ] );
+
+			line = new THREE.Line( geometry, new THREE.LineBasicMaterial( { linewidth: 4 } ) );
+			scene.add( line );
+/*
+				var light = new THREE.SpotLight( 0xffffff, 1.5 );
+				light.position.set( 0, 500, 2000 );
+				light.angle = Math.PI / 9;
+
+				light.castShadow = true;
+				light.shadow.camera.near = 1000;
+				light.shadow.camera.far = 4000;
+				light.shadow.mapSize.width = 1024;
+				light.shadow.mapSize.height = 1024;
+
+				scene.add( light );
+*/
+				var geometry = new THREE.BoxBufferGeometry( 40, 40, 40 );
+
+				for ( var i = 0; i < 200; i ++ ) {
+
+
+					var mat = new THREE.MeshToonMaterial( { color: 0xffffff } );
+					//var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
+
+					var object = new THREE.Mesh( geometry, mat);
+
+					var geo = new THREE.EdgesGeometry( geometry ); // or WireframeGeometry( geometry )
+
+					var ln = new THREE.LineBasicMaterial( { color: 0x000000, linewidth: 6 } );
+
+					var wire = new THREE.LineSegments( geo, ln );
+
+					object.add(wire)
+
+					object.position.x = Math.random() * 1000 - 500;
+					object.position.y = Math.random() * 600 - 300;
+					object.position.z = Math.random() * 800 - 400;
+
+					object.rotation.x = Math.random() * 2 * Math.PI;
+					object.rotation.y = Math.random() * 2 * Math.PI;
+					object.rotation.z = Math.random() * 2 * Math.PI;
+
+					object.scale.x = Math.random() * 2 + 1;
+					object.scale.y = Math.random() * 2 + 1;
+					object.scale.z = Math.random() * 2 + 1;
+
+					object.castShadow = true;
+					object.receiveShadow = true;
+
+					object.position.normalize();
+					object.position.multiplyScalar( 1000 );
+
+					scene.add( object );
+
+					objects.push( object );
+
+				}
+
+
+
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				renderer.shadowMap.enabled = true;
+				renderer.shadowMap.type = THREE.PCFShadowMap;
+
+				container.appendChild( renderer.domElement );
+/*
+				var dragControls = new THREE.DragControls( objects, camera, renderer.domElement );
+				dragControls.addEventListener( 'dragstart', function ( event ) { controls.enabled = false; } );
+				dragControls.addEventListener( 'dragend', function ( event ) { 
+					controls.enabled = true; 
+
+
+
+
+				} );
+*/
+		
+
+				stats = new Stats();
+				container.appendChild( stats.dom );
+
+				raycaster = new THREE.Raycaster();
+
+				mouseHelper = new THREE.Mesh( new THREE.BoxBufferGeometry( 1, 1, 10 ), new THREE.MeshNormalMaterial() );
+				mouseHelper.visible = false;
+				scene.add( mouseHelper );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+
+				controls.addEventListener( 'change', function() {
+
+				moved = true;
+
+			} );
+
+			window.addEventListener( 'mousedown', function () {
+
+				moved = false;
+
+			}, false );
+
+			window.addEventListener( 'mouseup', function() {
+				TweenMax.to(activeObj.position ,1,{
+						x:0,
+						y:0,
+						z:0,
+						ease:Elastic.easeOut.config(1.05, 0.5),
+						onUpdate:function(){
+                      //  console.log('tweened');
+                    }});
+			//	checkIntersection();
+			//	if ( ! moved && intersection.intersects ) shoot();
+
+
+
+			} );
+
+			window.addEventListener( 'mousemove', onTouchMove );
+			window.addEventListener( 'touchmove', onTouchMove );
+
+			function onTouchMove( event ) {
+
+				var x, y;
+
+				if ( event.changedTouches ) {
+
+					x = event.changedTouches[ 0 ].pageX;
+					y = event.changedTouches[ 0 ].pageY;
+
+				} else {
+
+					x = event.clientX;
+					y = event.clientY;
+
+				}
+
+				mouse.x = ( x / window.innerWidth ) * 2 - 1;
+				mouse.y = - ( y / window.innerHeight ) * 2 + 1;
+
+				checkIntersection();
+				//if ( ! moved && intersection.intersects ) shoot();
+
+			}
+
+			function checkIntersection() {
+
+				if ( objects.length == 0 ) return;
+
+				raycaster.setFromCamera( mouse, camera );
+
+				//var intersects = raycaster.intersectObjects( [ mesh ] );
+				var intersects = raycaster.intersectObjects( objects);
+
+				if ( intersects.length > 0 ) {
+
+					console.log(intersects[ 0 ].object)
+
+					activeObj = intersects[ 0 ].object;
+
+					var p = intersects[ 0 ].point;
+					mouseHelper.position.copy( p );
+					intersection.point.copy( p );
+
+					var n = intersects[ 0 ].face.normal.clone();
+					n.transformDirection( activeObj.matrixWorld );
+					n.multiplyScalar( 10 );
+					n.add( intersects[ 0 ].point );
+
+					intersection.normal.copy( intersects[ 0 ].face.normal );
+					mouseHelper.lookAt( n );
+
+					var positions = line.geometry.attributes.position;
+					positions.setXYZ( 0, p.x, p.y, p.z );
+					positions.setXYZ( 1, n.x, n.y, n.z );
+					positions.needsUpdate = true;
+
+					intersection.intersects = true;
+
+				} else {
+
+					intersection.intersects = false;
+
+				}
+
+			}
+
+			var gui = new dat.GUI();
+
+			gui.add( params, 'minScale', 5, 25 );
+			gui.add( params, 'maxScale', 5, 25 );
+			gui.add( params, 'rotate' );
+			gui.add( params, 'mode' );
+			gui.addColor(params,'color').onChange(changeColor);
+			gui.add( params, 'clear' );
+
+			
+			gui.open();
+
+			onWindowResize();
+			animate();
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function shoot() {
+
+				position.copy( intersection.point );
+				orientation.copy( mouseHelper.rotation );
+
+				if ( params.rotate ) orientation.z = Math.random() * 2 * Math.PI;
+
+				var scale = params.minScale + Math.random() * ( params.maxScale - params.minScale );
+				size.set( scale, scale, scale );
+
+				var material = decalMaterial.clone();
+				material.color.setHex( coloredPencil );
+
+				var m = new THREE.Mesh( new THREE.DecalGeometry( activeObj, position, orientation, size ), material );
+
+				decals.push( m );
+				scene.add( m );
+
+			}
+
+			function removeDecals() {
+
+				decals.forEach( function( d ) {
+
+					scene.remove( d );
+
+				} );
+
+				decals = [];
+
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+				stats.update();
+
+			}
+
+			function render() {
+
+				controls.update();
+
+				if (state=="goDraw"){
+					//checkIntersection();
+					if ( ! moved && intersection.intersects ) shoot();
+				}
+
+				renderer.render( scene, camera );
+
+				stats.update();
+
+			}
+
+		</script>
+
+	</body>
+</html>
