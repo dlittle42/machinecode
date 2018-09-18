@@ -1,12 +1,17 @@
-RollBox = function ( parent, ledger, moniker ) {
+var Spinner = function(parent, ledger) {
 
 	this.curQuaternion;
 	this.rotationSpeed = 2;
 	this.lastMoveTimestamp;
 	this.moveReleaseTimeDelta = 50;
-	this.typeObj = 'rollbox';
+	this.typeObj = 'spinner';
 	this.disableY = true;
 	this.disableX = false;
+	//this.spinGroup = new THREE.Object3D();//new THREE.Group();
+	//this.spinGroup = new THREE.Group();
+	this.subArr = [];
+
+	this.axesHelper = new THREE.AxisHelper( 300 );
 	
 
 	this.startPoint = {
@@ -24,6 +29,10 @@ RollBox = function ( parent, ledger, moniker ) {
 
 	var windowHalfX = window.innerWidth / 2;
 	var windowHalfY = window.innerHeight / 2;
+
+	THREE.Object3D.call( this );
+
+
 
 
 
@@ -53,22 +62,43 @@ RollBox = function ( parent, ledger, moniker ) {
 
 		this.cube = new THREE.Mesh(boxGeometry, cubeMaterial);
 		//this.cube.position.y = 200;
-		this.cube.name = moniker;
-		parent.add(this.cube);
+		
+		this.add(this.cube);
+		ledger.push(this.cube)
 
 		var newSphereGeom= new THREE.SphereGeometry(20,20,20);
 		var sphere= new THREE.Mesh(newSphereGeom, new THREE.MeshBasicMaterial({ color: 0x2266dd }));
-		sphere.scale.x = sphere.scale.y = 1;
-		this.cube.add( sphere );
+	//	sphere.scale.x = sphere.scale.y = 1;
+		this.add( sphere );
+		this.subArr.push(sphere)
+		ledger.push(sphere)
 		
-		sphere.position.x = -250;
+		sphere.position.x = 240;
+
+		this.add(axesHelper)
 		//objArr.push(sphere)
 		//objObjArr.push(sphere)
 
 		//ledger.push(this);
 	}
+/*
+	var newSphereGeom= new THREE.SphereGeometry(size,20,20);
+	var sphere= new THREE.Mesh(newSphereGeom, new THREE.MeshBasicMaterial({ color: color }));
+	//	sphere.scale.x = sphere.scale.y = 1;
+	this.add( sphere );
 
-	this.projectOnTrackball = function(touchX, touchY)
+	var sphere2= new THREE.Mesh(newSphereGeom, new THREE.MeshBasicMaterial({ color: color }));
+	//	sphere.scale.x = sphere.scale.y = 1;
+	this.add( sphere2 );
+	sphere2.position.x=20;
+*/
+
+	//this.geometry = new THREE.SphereGeometry(size, 32, 32),
+  //  this.material = new THREE.MeshLambertMaterial( { color: color } );
+
+  //  THREE.Mesh.call( this, this.geometry, this.material );
+
+  	this.projectOnTrackball = function(touchX, touchY)
 	{
 		var mouseOnBall = new THREE.Vector3();
 
@@ -142,27 +172,40 @@ RollBox = function ( parent, ledger, moniker ) {
 		this.rotateEndPoint = this.projectOnTrackball(this.deltaX, this.deltaY);
 
 		var rotateQuaternion = this.rotateMatrix(this.rotateStartPoint, this.rotateEndPoint);
-		this.curQuaternion = this.cube.quaternion;
+		this.curQuaternion = this.quaternion;
 		this.curQuaternion.multiplyQuaternions(rotateQuaternion, this.curQuaternion);
 		this.curQuaternion.normalize();
-		//cube.setRotationFromQuaternion(curQuaternion);
+		//spinGroup.setRotationFromQuaternion(curQuaternion);
 
-		this.cube.setRotationFromQuaternion(this.curQuaternion);
+		this.setRotationFromQuaternion(this.curQuaternion);
 
 		this.rotateEndPoint = this.rotateStartPoint;
 	}
 
-	this.setDeltaX = function(num){
-		this.deltaX = num;
-	}
 
-	this.setDeltaY = function(num){
-		this.deltaY = num;
-	}
 
 	this.init();
+    
+
 
 }
 
-RollBox.prototype = Object.create( THREE.EventDispatcher.prototype );
-RollBox.prototype.constructor = RollBox;
+
+Spinner.prototype = Object.create(THREE.Object3D.prototype);
+Spinner.prototype.constructor = Spinner;
+
+Spinner.prototype.setDeltaX = function(num) {
+    this.deltaX = num;
+}
+
+Spinner.prototype.setDeltaY = function(num) {
+    this.deltaY = num;
+}
+/*
+Spinner.prototype.getMesh = function() {
+
+    return this.mesh;
+
+}
+
+*/

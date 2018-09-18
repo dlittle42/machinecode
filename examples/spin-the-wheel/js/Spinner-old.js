@@ -1,12 +1,17 @@
-RollBox = function ( parent, ledger, moniker ) {
+Spinner = function ( parent, ledger, moniker ) {
 
 	this.curQuaternion;
 	this.rotationSpeed = 2;
 	this.lastMoveTimestamp;
 	this.moveReleaseTimeDelta = 50;
-	this.typeObj = 'rollbox';
+	this.typeObj = 'spinner';
 	this.disableY = true;
 	this.disableX = false;
+	//this.spinGroup = new THREE.Object3D();//new THREE.Group();
+	this.spinGroup = new THREE.Group();
+	this.subArr = [];
+
+	this.axesHelper = new THREE.AxisHelper( 300 );
 	
 
 	this.startPoint = {
@@ -17,6 +22,8 @@ RollBox = function ( parent, ledger, moniker ) {
 
 	this.deltaX = Math.random()*100,
 	this.deltaY = 0;
+	this.name = moniker;
+	this.self = this;
 	this.cube;
 
 	this.rotateStartPoint = new THREE.Vector3(0, 0, 1);
@@ -53,15 +60,20 @@ RollBox = function ( parent, ledger, moniker ) {
 
 		this.cube = new THREE.Mesh(boxGeometry, cubeMaterial);
 		//this.cube.position.y = 200;
-		this.cube.name = moniker;
-		parent.add(this.cube);
+		
+		this.spinGroup.add(this.cube);
+		ledger.push(this.cube)
 
 		var newSphereGeom= new THREE.SphereGeometry(20,20,20);
 		var sphere= new THREE.Mesh(newSphereGeom, new THREE.MeshBasicMaterial({ color: 0x2266dd }));
-		sphere.scale.x = sphere.scale.y = 1;
-		this.cube.add( sphere );
+	//	sphere.scale.x = sphere.scale.y = 1;
+		this.spinGroup.add( sphere );
+		this.subArr.push(sphere)
+		ledger.push(sphere)
 		
-		sphere.position.x = -250;
+		sphere.position.x = 240;
+
+		this.spinGroup.add(axesHelper)
 		//objArr.push(sphere)
 		//objObjArr.push(sphere)
 
@@ -142,12 +154,12 @@ RollBox = function ( parent, ledger, moniker ) {
 		this.rotateEndPoint = this.projectOnTrackball(this.deltaX, this.deltaY);
 
 		var rotateQuaternion = this.rotateMatrix(this.rotateStartPoint, this.rotateEndPoint);
-		this.curQuaternion = this.cube.quaternion;
+		this.curQuaternion = this.spinGroup.quaternion;
 		this.curQuaternion.multiplyQuaternions(rotateQuaternion, this.curQuaternion);
 		this.curQuaternion.normalize();
-		//cube.setRotationFromQuaternion(curQuaternion);
+		//spinGroup.setRotationFromQuaternion(curQuaternion);
 
-		this.cube.setRotationFromQuaternion(this.curQuaternion);
+		this.spinGroup.setRotationFromQuaternion(this.curQuaternion);
 
 		this.rotateEndPoint = this.rotateStartPoint;
 	}
@@ -160,9 +172,14 @@ RollBox = function ( parent, ledger, moniker ) {
 		this.deltaY = num;
 	}
 
+	this.activateSubObjects = function(){
+
+
+	}
+
 	this.init();
 
 }
-
-RollBox.prototype = Object.create( THREE.EventDispatcher.prototype );
-RollBox.prototype.constructor = RollBox;
+Spinner.prototype = Object.create(THREE.Mesh.prototype);
+//Spinner.prototype = Object.create( THREE.EventDispatcher.prototype );
+Spinner.prototype.constructor = Spinner;
