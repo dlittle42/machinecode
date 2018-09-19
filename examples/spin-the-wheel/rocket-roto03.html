@@ -107,7 +107,7 @@
 	<script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.js"></script>
 
-	<script type="text/javascript" src="js/Spinner.js"></script>
+	<script type="text/javascript" src="js/Spinner3.js"></script>
 
 
 
@@ -255,6 +255,23 @@ console.log( body );
 		stats.domElement.style.top = '0px';
 		container.appendChild( stats.domElement );
 
+		const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
+		ambientLight.color.setHSL(0.1, 1, 0.95);
+		scene.add(ambientLight);
+
+		const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.5);
+		hemisphereLight.color.setHSL(0.6, 1, 0.95);
+		hemisphereLight.groundColor.setHSL(0.095, 1, 0.75);
+		hemisphereLight.position.set(0, 0, 500);
+		scene.add(hemisphereLight);
+
+		const directionalLight = new THREE.DirectionalLight(0xffffff, 0.65);
+		directionalLight.color.setHSL(0.1, 1, 0.95);
+		directionalLight.position.set(-1, 1, 1);
+		directionalLight.position.multiplyScalar(500);
+		directionalLight.castShadow = true;
+		scene.add(directionalLight);
+
 
 		scene.add(axesHelper)
 
@@ -334,6 +351,37 @@ console.log( body );
 		}
 		checkIntersection()
 
+		if (activeObj.typeObj == 'cube'){
+			  if (!targSpinner.expanded){
+			   targSpinner.expand();
+			   activeObj.material.opacity = .5;
+			   console.log(activeObj)
+
+			   TweenMax.to(camera.position, .5, {
+		        //	x: 1.1,
+		        	y: targSpinner.position.y+100,
+		        	//z: 1.1,
+		        	ease:"Power3.easeOut"
+
+		        })
+
+			  }
+	          for (var n=0; n<objArr.length; n++){
+
+	          	if (objArr[n] != targSpinner ){
+	      			objArr[n].hideAll();
+	          	}
+	      	}
+	      }else if (activeObj.typeObj == 'sub'){
+	      	
+	      	console.log(activeObj)
+	      	console.log(activeObj.material.color)
+
+	      	var ncolor = new THREE.MeshBasicMaterial({
+                color: activeObj.material.color
+              })
+	      	colorTo(targSpinner.cube, ncolor );
+	      }
 	}
 
 	
@@ -390,7 +438,7 @@ console.log( body );
 		}
 
 		mouseDown = false;
-		targSpinner.expand();
+	//	targSpinner.expand();
 
 	}
 
@@ -425,28 +473,24 @@ console.log( body );
 
         if ( intersects.length > 0 ) {
          // alert('intersect')
-          console.log('-----intersect-----')
-          console.log(intersects[ 0 ].object)
+       //   console.log('-----intersect-----')
+       //   console.log(intersects[ 0 ].object)
 
          // var idx = objObjArr.findIndex(k => k==intersects[ 0 ].object.parent)
           activeObj = intersects[ 0 ].object;//objArr[idx];
-          targSpinner = intersects[ 0 ].object.parent
+          targSpinner = intersects[ 0 ].object.parent;
+          
 
           //camera.position.y = intersects[ 0 ].object.parent.position.y;
-/*
-          TweenMax.to(camera.position, 2, {
-        //	x: 1.1,
-        	y: intersects[ 0 ].object.parent.position.y,
-        	//z: 1.1,
-        	ease:"Power3.easeOut"
 
-        })
-        */
+          
+   
 
 
 
           // change scale or activeObj and revert others
           scaleEffect(activeObj)
+          
        //   colorEffect(activeObj)
    
        //   console.log(idx)
@@ -469,7 +513,7 @@ console.log( body );
 
         }
 
-        console.log(intersection.intersects)
+      //  console.log(intersection.intersects)
 
       }
 

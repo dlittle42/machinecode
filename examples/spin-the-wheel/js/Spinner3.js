@@ -13,6 +13,21 @@ var Spinner = function(parent, ledger) {
 	this.subArr = [];
 
 	this.axesHelper = new THREE.AxisHelper( 300 );
+
+	this.shapeArr = [
+      new THREE.SphereBufferGeometry( 20, 10, 2 ),
+      new THREE.IcosahedronBufferGeometry( 20, 1 ),
+      new THREE.OctahedronBufferGeometry( 20, 2 ),
+      new THREE.TetrahedronBufferGeometry( 20, 0 ),
+     // new THREE.PlaneBufferGeometry( 20, 20, 5, 5 ),
+      new THREE.TorusBufferGeometry( 20, 3, 16, 100 ),
+      new THREE.BoxBufferGeometry( 20, 20, 20, 4, 4, 4 ),
+    //  new THREE.CircleBufferGeometry( 20, 7, 0, Math.PI * 2 ),
+      new THREE.TorusKnotBufferGeometry( 20, 3, 100, 16 ),
+     // new THREE.RingBufferGeometry( 2, 20, 5, 5, 0, Math.PI * 2 ),
+      new THREE.DodecahedronGeometry(20, 0),
+      new THREE.CylinderBufferGeometry( 20, 20, 20, 40, 5 )
+    ]
 	
 
 	this.startPoint = {
@@ -41,6 +56,7 @@ var Spinner = function(parent, ledger) {
 		console.log('init')
 		var boxGeometry = new THREE.BoxGeometry(200, 200, 200);
 
+		/*
 		for (var i = 0; i < boxGeometry.faces.length; i += 2)
 		{
 
@@ -55,20 +71,22 @@ var Spinner = function(parent, ledger) {
 
 		}
 
-		var cubeMaterial = new THREE.MeshBasicMaterial(
+		var cubeMaterial = new THREE.MeshPhongMaterial(
 		{
 			vertexColors: THREE.FaceColors,
 			overdraw: 0.5
 		});
-
+		*/
+		var cubeMaterial = new THREE.MeshPhongMaterial({ color: this.createRandomColor() })
 		this.cube = new THREE.Mesh(boxGeometry, cubeMaterial);
+		this.cube.typeObj = 'cube'
 		//this.cube.position.y = 200;
 		
 		this.add(this.cube);
 		ledger.push(this.cube)
 /*
 		var newSphereGeom= new THREE.SphereGeometry(20,20,20);
-		var sphere= new THREE.Mesh(newSphereGeom, new THREE.MeshBasicMaterial({ color: 0x2266dd }));
+		var sphere= new THREE.Mesh(newSphereGeom, new THREE.MeshPhongMaterial({ color: 0x2266dd }));
 	//	sphere.scale.x = sphere.scale.y = 1;
 		this.add( sphere );
 		this.subArr.push(sphere)
@@ -98,10 +116,11 @@ var Spinner = function(parent, ledger) {
 				//var dTheta = 2 * Math.PI / 1000;
 
 				//var geometry = new THREE.PlaneGeometry( 10, 10, 5 );
-				var geometry = new THREE.SphereGeometry(20,20,20);
+		//		var geometry = new THREE.SphereGeometry(20,20,20);
+				var geometry = this.shapeArr[j%this.shapeArr.length]
 
-				var sphere= new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: this.createRandomColor() }));
-
+				var sphere= new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: this.createRandomColor() }));
+				sphere.typeObj = 'sub'
 				this.add(sphere);
 
 				ledger.push(sphere)
@@ -135,11 +154,11 @@ var Spinner = function(parent, ledger) {
 	}
 /*
 	var newSphereGeom= new THREE.SphereGeometry(size,20,20);
-	var sphere= new THREE.Mesh(newSphereGeom, new THREE.MeshBasicMaterial({ color: color }));
+	var sphere= new THREE.Mesh(newSphereGeom, new THREE.MeshPhongMaterial({ color: color }));
 	//	sphere.scale.x = sphere.scale.y = 1;
 	this.add( sphere );
 
-	var sphere2= new THREE.Mesh(newSphereGeom, new THREE.MeshBasicMaterial({ color: color }));
+	var sphere2= new THREE.Mesh(newSphereGeom, new THREE.MeshPhongMaterial({ color: color }));
 	//	sphere.scale.x = sphere.scale.y = 1;
 	this.add( sphere2 );
 	sphere2.position.x=20;
@@ -259,16 +278,8 @@ Spinner.prototype.expand = function() {
 	console.log(this.name)
 	if (this.expanded){
 		
-	    for ( var j = 0; j < this.subArr.length; j ++ ) {
-	    	TweenMax.to(this.subArr[j].position, 1, {
-	        	x: 0,
-	        	y: 0,
-	        	z: 0,
-	        	ease:"Power3.easeOut"
+	    this.hideAll();
 
-	        })
-	    }
-	    this.expanded = false;
 	}else{
 		for ( var j = 0; j < this.subArr.length; j ++ ) {
 	    	TweenMax.to(this.subArr[j].position, 1, {
@@ -283,6 +294,19 @@ Spinner.prototype.expand = function() {
 	     this.expanded = true;
 	}
     
+}
+
+Spinner.prototype.hideAll = function() {
+		for ( var j = 0; j < this.subArr.length; j ++ ) {
+	    	TweenMax.to(this.subArr[j].position, .5, {
+	        	x: 0,
+	        	y: 0,
+	        	z: 0,
+	        	ease:"Power3.easeOut"
+
+	        })
+	    }
+	    this.expanded = false;
 }
 /*
 Spinner.prototype.getMesh = function() {
