@@ -1,0 +1,24 @@
+# Blender MTL File: 'None'
+# Material Count: 2
+
+newmtl rocket_body.000
+Ns 94.117647
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd /Users/dlittle/Documents/projects/freelance/doyouha/myquietship/src/CUPIC_ROCKETSHIP_obj_1iCIHIeALZw_8almqTECwLp/rocketSurface_Color.png
+
+newmtl rocket_body.1
+Ns 94.117647
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd /Users/dlittle/Documents/projects/freelance/doyouha/myquietship/src/CUPIC_ROCKETSHIP_obj_1iCIHIeALZw_8almqTECwLp/rocketSurface_Color.png

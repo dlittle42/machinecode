@@ -99,6 +99,7 @@
 <!--	<script src="../../bower_components/three.js/build/three.js"></script> -->
 	<script src="https://cdn.rawgit.com/mrdoob/three.js/master/build/three.min.js"></script>
 	<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/controls/OrbitControls.js"></script>
+	<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/loaders/OBJLoader.js"></script>
 
 
 
@@ -109,7 +110,7 @@
 	<script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.js"></script>
 
-	<script type="text/javascript" src="js/Spinner3.js"></script>
+	<script type="text/javascript" src="js/Spinner4.js"></script>
 
 
 
@@ -138,6 +139,10 @@
 
 	var objArr = [];
 	var actionObjArr = [];
+	var coneArr=[];
+	var bodyArr=[];
+	var finsArr=[];
+	var  modelObjArr =[];
     var raycaster = new THREE.Raycaster();
     var activePanel=null;
     var activeObj=null;
@@ -185,6 +190,67 @@
               })
             }
 
+
+var loadingManager = null;
+var RESOURCES_LOADED = false;
+    //external geometires
+var models = {
+  cone1: {
+    obj: "models/cone01.obj",
+    mtl: "models/cone01.mtl",
+    mesh: null,
+    group: 'coneArr'
+  },
+  cone2: {
+    obj: "models/cone02.obj",
+    mtl: "models/cone02.mtl",
+    mesh: null,
+    group: 'coneArr'
+  },
+  cone3: {
+    obj: "models/cone03.obj",
+    mtl: "models/cone03.mtl",
+    mesh: null,
+    group: 'coneArr'
+  },
+  body1: {
+    obj: "models/body01.obj",
+    mtl: "models/body01.mtl",
+    mesh: null,
+    group: 'bodyArr'
+  },
+  body2: {
+    obj: "models/body02.obj",
+    mtl: "models/body02.mtl",
+    mesh: null,
+    group: 'bodyArr'
+  },
+  body3: {
+    obj: "models/body03.obj",
+    mtl: "models/body03.mtl",
+    mesh: null,
+    group: 'bodyArr'
+  },
+  fins1: {
+    obj: "models/fins01.obj",
+    mtl: "models/fins01.mtl",
+    mesh: null,
+    group: 'finsArr'
+  },
+  fins2: {
+    obj: "models/fins02.obj",
+    mtl: "models/fins02.mtl",
+    mesh: null,
+    group: 'finsArr'
+  },
+  fins3: {
+    obj: "models/fins03.obj",
+    mtl: "models/fins03.mtl",
+    mesh: null,
+    group: 'finsArr'
+  }
+}
+
 	setup();
 
 	function setup()
@@ -203,36 +269,6 @@
 
 		
 
-
-		spinner = new Spinner(scene, actionObjArr);
-		spinner.name='cube1';
-		scene.add(spinner)
-		objArr.push(spinner)
-		//objObjArr.push(spinner.cube)
-		spinner.position.y = 240;
-
-		spinner2 = new Spinner(scene, actionObjArr);
-		spinner2.name='cube2';
-		scene.add(spinner2)
-		objArr.push(spinner2)
-		//objObjArr.push(spinner2.cube)
-		
-
-		spinner3 = new Spinner(scene, actionObjArr);
-		spinner3.name='cube3';
-		scene.add(spinner3)
-		objArr.push(spinner3)
-		//objObjArr.push(spinner3.cube)
-		spinner3.position.y = -240;
-
-
-/*		
-		var body = new Spinner(20, 0x000000);
-		scene.add(body)
-//body.setShadow();
-console.log( body );
-*/
-		targSpinner = spinner2;
 /*
 		var newSphereGeom= new THREE.SphereGeometry(20,20,20);
 		var sphere= new THREE.Mesh(newSphereGeom, new THREE.MeshBasicMaterial({ color: 0x2266dd }));
@@ -251,6 +287,77 @@ console.log( body );
 		renderer.setSize(window.innerWidth, window.innerHeight);
 
 		container.appendChild(renderer.domElement);
+
+		var count = 0;
+
+		loadingManager = new THREE.LoadingManager();
+
+			loadingManager.onStart = function ( url, itemsLoaded, itemsTotal ) {
+				console.log('**** START ******')
+				console.log( 'Started loading file: ' + url + '.\nLoaded ' + itemsLoaded + ' of ' + itemsTotal + ' files.' );
+
+			};
+		  loadingManager.onProgress = function(item, loaded, total) {
+		  	//convoluted? have objLoader add object to modelObjArr, then find models obj value and associate object
+		  //	var model = models[Object.keys(models)[loaded-1]]
+		  //	eval(model.group).push(modelObjArr[loaded-1])
+
+		    console.log(item, loaded, total);
+		  //  count++;
+		  };
+		  loadingManager.onLoad = function() {
+		    console.log("loaded all resources");
+		    RESOURCES_LOADED = true;
+		    console.log('coneArr is ........')
+		    console.log(coneArr)
+		    console.log('bodyArr is ........')
+		    console.log(bodyArr)
+		    addSpinners();
+		  };
+
+
+		  var objLoader = new THREE.OBJLoader(loadingManager);
+
+		  for (var _key in models) {
+		    console.log('key1', _key);
+		    
+
+		    var groupArr = models[_key].group;
+		    console.log('::::::: group', groupArr);
+		    console.log(eval(groupArr))
+
+		    console.log('~~~~~ NOW LOAD ~~~~~~~~~~~')
+		    var _this = this;
+
+		    objLoader.load(
+		      // resource URL
+		      models[_key].obj,
+		      // called when resource is loaded
+		      function(object) {
+
+		      	//object.scale.set(10, 10, 10);
+		      //	object.key = _key;
+		      	// add to array to pass to spinner
+		      //	_this[groupArr].push(object)
+		      //	console.log(_this[groupArr])
+		       // scene.add(object);
+
+		        modelObjArr.push(object)
+		        console.log('object says.......')
+		        console.log(object);
+
+		        var mtl = object.materialLibraries[0];
+		        var section = mtl.slice(0,4)
+
+		        console.log(object.materialLibraries[0])
+		        console.log(mtl.slice(0,4))
+
+		        eval(section + "Arr").push(object)
+		     
+
+		      }
+		    );
+		}
 /*
 
 		var controls = new THREE.OrbitControls( camera, renderer.domElement );
@@ -302,6 +409,40 @@ console.log( body );
 		animate();
 	};
 
+	function addSpinners(){
+
+
+		spinner = new Spinner(scene, actionObjArr, coneArr);
+		spinner.name='cube1';
+		scene.add(spinner)
+		objArr.push(spinner)
+		//objObjArr.push(spinner.cube)
+		spinner.position.y = 240;
+
+		spinner2 = new Spinner(scene, actionObjArr, bodyArr);
+		spinner2.name='cube2';
+		scene.add(spinner2)
+		objArr.push(spinner2)
+		//objObjArr.push(spinner2.cube)
+		
+
+		spinner3 = new Spinner(scene, actionObjArr, finsArr);
+		spinner3.name='cube3';
+		scene.add(spinner3)
+		objArr.push(spinner3)
+		//objObjArr.push(spinner3.cube)
+		spinner3.position.y = -240;
+
+
+/*		
+		var body = new Spinner(20, 0x000000);
+		scene.add(body)
+//body.setShadow();
+console.log( body );
+*/
+		targSpinner = spinner2;
+	}
+
 	function onWindowResize()
 	{
 		windowHalfX = window.innerWidth / 2;
@@ -333,6 +474,10 @@ console.log( body );
 
         mouse.x = ( x / window.innerWidth ) * 2 - 1;
         mouse.y = - ( y / window.innerHeight ) * 2 + 1;
+
+
+
+		  
 	}
 
 	function onDocumentMouseDown(event)
@@ -361,9 +506,16 @@ console.log( body );
 			targSpinner.rotateStartPoint = targSpinner.rotateEndPoint = targSpinner.projectOnTrackball(0, 0);
 		}
 		checkIntersection()
+		onClick();
 
+		
+	}
+
+
+	function onClick(){
 		if (activeObj!= null){
 
+			//click Cube = expand objects and fade cube
 			if (activeObj.typeObj == 'cube'){
 				 if (!targSpinner.expanded){
 				   targSpinner.expand();
@@ -385,15 +537,45 @@ console.log( body );
 		      			objArr[n].hideAll();
 		          	}
 		      	 }
-		      }else if (activeObj.typeObj == 'sub'){
-		      	
-		      	console.log(activeObj)
-		      	console.log(activeObj.material.color)
+		      }else if (activeObj.typeObj == 'sub-part'){
+		      	//alert('sub')
+		      	//console.log(activeObj)
+		      	//console.log(activeObj.material.color)
+
+		      	//click on obj of model, get color and set cube color
 
 		      	var ncolor = new THREE.MeshBasicMaterial({
 	                color: activeObj.material.color
 	              })
 		      	colorTo(targSpinner.cube, ncolor );
+///selection////
+
+				//... get parent group of clicked object and copy
+				var selection;
+				if(activeObj.parent.typeObj == 'ship-part'){
+					selection = activeObj.parent.clone();
+					//console.log('its a child...!')
+					//console.log(activeObj.parent)
+				}else{
+					selection = activeObj.clone();
+				}
+
+		      //	var selection = activeObj.clone();
+		      	selection.name = 'selectedObj'
+		      	selection.scale.set(10,10,10)
+
+		      	if(targSpinner.selection){
+		      		var old = targSpinner.getObjectByName('selectedObj')
+		      		targSpinner.remove(old)
+		      		targSpinner.add(selection)
+		      		targSpinner.selection = true;
+		      	}else{
+		      		targSpinner.add(selection)
+		      		targSpinner.selection = true;
+		      	}
+		      	selection.position.set(0,0,0)
+//////////////
+		      
 		      }
 	 	 }else{
 	      	retractAll()
@@ -433,6 +615,9 @@ console.log( body );
 	        }
 	    }
 
+
+
+
     }
 
         checkIntersection();
@@ -457,7 +642,7 @@ console.log( body );
 	//	targSpinner.expand();
 
 	}
-
+/*
 	function onClick() {
 
 		  console.log('click')
@@ -475,7 +660,7 @@ console.log( body );
 		
 		}
 
-
+*/
 	function checkIntersection(){
 
 		//console.log('checking')
@@ -494,7 +679,7 @@ console.log( body );
 
          // var idx = objObjArr.findIndex(k => k==intersects[ 0 ].object.parent)
           activeObj = intersects[ 0 ].object;//objArr[idx];
-          targSpinner = intersects[ 0 ].object.parent;
+          targSpinner = intersects[ 0 ].object.parentSpinner;
           
 
           //camera.position.y = intersects[ 0 ].object.parent.position.y;
@@ -557,6 +742,7 @@ console.log( body );
     }
 
     function scaleEffect(targ){
+    	/*
     	TweenMax.to(targ.scale, 1, {
         	x: 1.1,
         	y: 1.1,
@@ -577,9 +763,11 @@ console.log( body );
                 })
           	}
       	}
+      	*/
     }
 
     function removeScaleEffect(){
+    	/*
     	 for (var n=0; n<actionObjArr.length; n++){
 			TweenMax.to(actionObjArr[n].scale, 1, {
             	x: 1,
@@ -589,6 +777,7 @@ console.log( body );
 
             })
           }	
+          */
     }
 
 	
@@ -636,8 +825,13 @@ console.log( body );
 
 			handleBoxes();
 		}
-	
-
+	/*
+		if (targSpinner != null){
+		// camera.position.x += (mouse.x - targSpinner.position.x) * 0.01;
+		    camera.position.y += (mouse.y - camera.position.y) * 0.01;
+		    		 camera.lookAt(targSpinner.position);
+		    		}
+	*/
 		renderer.render(scene, camera);
 	}
 

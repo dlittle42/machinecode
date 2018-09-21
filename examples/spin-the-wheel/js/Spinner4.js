@@ -1,13 +1,16 @@
-var Spinner = function(parent, ledger) {
+var Spinner = function(parent, ledger, subArr) {
 
 	this.curQuaternion;
 	this.rotationSpeed = 2;
 	this.lastMoveTimestamp;
 	this.moveReleaseTimeDelta = 50;
+	this.objArr = subArr;
 	this.typeObj = 'spinner';
+	this.parentSpinner = this;
 	this.disableY = true;
 	this.disableX = false;
 	this.expanded = false;
+	this.selection = false;
 	//this.spinGroup = new THREE.Object3D();//new THREE.Group();
 	//this.spinGroup = new THREE.Group();
 	this.subArr = [];
@@ -82,6 +85,7 @@ var Spinner = function(parent, ledger) {
 
 		this.cube.material.transparent = true;
 		this.cube.typeObj = 'cube'
+		this.cube.parentSpinner = this;
 		//this.cube.position.y = 200;
 		
 		this.add(this.cube);
@@ -96,7 +100,7 @@ var Spinner = function(parent, ledger) {
 		
 		sphere.position.x = 240;
 */
-		this.addSubObjects(10, 240);
+		this.addSubObjects(10, 350);
 
 
 
@@ -119,6 +123,7 @@ var Spinner = function(parent, ledger) {
 
 				//var geometry = new THREE.PlaneGeometry( 10, 10, 5 );
 		//		var geometry = new THREE.SphereGeometry(20,20,20);
+		/*
 				var geometry = this.shapeArr[j%this.shapeArr.length]
 
 				var sphere= new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: this.createRandomColor() }));
@@ -128,13 +133,38 @@ var Spinner = function(parent, ledger) {
 				ledger.push(sphere)
 				this.subArr.push(sphere)
 
-				//sphere.position.x = r * Math.cos(theta- (Math.PI/2)) ;
+		*/
+
+				var sphere = this.objArr[j%this.objArr.length].clone();
+				this.add(sphere);
+				sphere.typeObj = 'ship-part'
+				sphere.parentSpinner = this;
+				//sphere.material.color = this.createRandomColor();
+				var _this = this;
+
+				sphere.traverse( function ( child ) {
+                             if ( child instanceof THREE.Mesh ) {
+                                 // child.material.ambient.setHex(this.createRandomColor());
+                                  child.material.color.setHex(_this.createRandomColor());
+                                  child.parentSpinner = _this;
+                                  child.typeObj = 'sub-part';
+                                 }
+                             } );
+
+				ledger.push(sphere)
+				this.subArr.push(sphere)
+
+				sphere.scale.set(10, 10, 10)
+
+			//	sphere.position.x = r * Math.cos(theta- (Math.PI/2)) ;
+			//	sphere.xpos =0
 				sphere.xpos = r * Math.cos(theta- (Math.PI/2)) ;
 
 				//panel.position.x = r * Math.cos(theta) ;
 			//	sphere.position.y=0;
 				sphere.ypos=0;
 				//sphere.position.z = r * Math.sin(theta- Math.PI/2);
+				//sphere.zpos =0
 				sphere.zpos = r * Math.sin(theta- Math.PI/2);
 			//	sphere.position.z = r * Math.sin(theta);
 
@@ -153,6 +183,14 @@ var Spinner = function(parent, ledger) {
 
 	this.createRandomColor = function() {
 		return Math.floor( Math.random() * ( 1 << 24 ) );
+	}
+
+	this.addSelection = function(){
+
+	}
+
+	this.removeSelection = function(){
+
 	}
 /*
 	var newSphereGeom= new THREE.SphereGeometry(size,20,20);
@@ -293,7 +331,7 @@ Spinner.prototype.expand = function() {
 	        	x: this.subArr[j].xpos,
 	        	y: this.subArr[j].ypos,
 	        	z: this.subArr[j].zpos,
-	        	delay: j/10,
+	        	delay: j/20,
 	        	ease:"Elastic.easeOut"
 
 	        })
@@ -305,10 +343,18 @@ Spinner.prototype.expand = function() {
 
 Spinner.prototype.hideAll = function() {
 		for ( var j = 0; j < this.subArr.length; j ++ ) {
+			//var newPos = new THREE.Vector3( );
+			//var newPos = this.subArr[j].position.clone();
+			var newPos= this.subArr[j].position.set(this.subArr[j].xpos, this.subArr[j].ypos, this.subArr[j].zpos)
+			//console.log(this.subArr[j].position)
+			//console.log(newPos)
+			newPos.multiplyScalar(3);
+			//console.log(newPos)
+			//console.log(newPos.z)
 	    	TweenMax.to(this.subArr[j].position, .5, {
-	        	x: 0,
-	        	y: 0,
-	        	z: 0,
+	        	x: newPos.x,
+	        	y: newPos.y,
+	        	z: newPos.z,
 	        	ease:"Power3.easeOut"
 
 	        })
