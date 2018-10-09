@@ -20,7 +20,7 @@ var TextBitmap = function( config ) {
     uniforms: THREE.UniformsUtils.clone( SDFShader.uniforms ),
     fragmentShader: SDFShader.fragmentShader,
     vertexShader: SDFShader.vertexShader,
-    side: THREE.DoubleSide,
+   // side: THREE.DoubleSide,
     transparent: true,
     depthTest: false
   });

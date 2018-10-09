@@ -1,0 +1,867 @@
+<html lang="en">
+	<head>
+		<title>spin the wheel- tick</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link href="https://fonts.googleapis.com/css?family=Barlow|Kanit:800" rel="stylesheet">
+		<style>
+
+			html {
+			  box-sizing: border-box;
+			}
+			*, *:before, *:after {
+			  box-sizing: inherit;
+			}
+
+			body {
+				color: #ffffff;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+				position: fixed;
+
+				background-color: #bfd1e5;
+				margin: 0px;
+				overflow: hidden;
+			}
+
+			#info {
+				color:#fff;
+				background-color: black;
+				position: absolute;
+				top: 0px; width: 100%;
+				padding: 5px;
+				text-align: right;
+
+			}
+			#inst {
+				color:#333;
+				position: absolute;
+				top: 20px; 
+				width: 100%;
+				padding: 5px;
+
+			}
+
+			#diff{
+
+				color: red;
+				background-color: black;
+				width: auto;
+				height: 40px;
+				position: absolute;
+				left: 10px;
+				top: 10px;
+				padding: 0 4px;
+				font-size: 18px;
+				font-weight: bold;
+				line-height: 40px;
+				opacity: 0;
+				transition: all .3s ease-out;
+				user-select: none;
+
+			}
+
+			h1{
+				font-family: 'Kanit', sans-serif;
+			    letter-spacing: 5px;
+			    font-size: 70px;
+			    margin-bottom: 0;
+			}
+
+			p{
+				
+				
+				font-family: 'Barlow', sans-serif;
+			    font-size: 28px;
+			    margin-top: 0;
+			    letter-spacing: 2px;
+			}
+
+
+
+			a {
+				color: #a06851;
+			}
+
+
+
+		</style>
+	</head>
+	<body>
+
+	<div id="container">
+		<div id="info"></div>
+		<div id="diff">0</div>
+
+	</div>
+
+<!--	<script src="../../bower_components/three.js/build/three.js"></script> -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/95/three.js"></script>
+	<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/controls/OrbitControls.js"></script>
+	<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/loaders/OBJLoader.js"></script>
+
+
+
+<!--	<script src="rotateCam.js"></script> -->
+	<script src="../../bower_components/three.js/examples/js/Detector.js"></script>
+	<script src="../../bower_components/three.js/examples/js/libs/stats.min.js"></script>
+
+	<script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/fastclick/1.0.6/fastclick.js"></script>
+
+	<script type="text/javascript" src="js/Spinner5.js"></script>
+
+
+
+		<script>
+
+		// Detects webgl
+		if ( ! Detector.webgl ) {
+			Detector.addGetWebGLMessage();
+			document.getElementById( 'container' ).innerHTML = "";
+		}
+
+		// - Global variables -
+
+		// Graphics variables
+		var container, stats;
+
+
+	var camera, scene, renderer, controls;
+
+	var cube, plane;
+
+	var mouseDown = false;
+	//var rotateStartPoint = new THREE.Vector3(0, 0, 1);
+	//var rotateEndPoint = new THREE.Vector3(0, 0, 1);
+
+
+	var objArr = [];
+	var actionObjArr = [];
+	var coneArr=[];
+	var bodyArr=[];
+	var finsArr=[];
+	var  modelObjArr =[];
+    var raycaster = new THREE.Raycaster();
+    var activePanel=null;
+    var activeObj=null;
+   // var vector = new THREE.Vector3( 0, 0, -1 );
+    //var scaledVector=new THREE.Vector3( 0, 0, -1 );
+    var activeColor ="#ff0000"
+    var intersection = {
+      intersects: false,
+      point: new THREE.Vector3(),
+      normal: new THREE.Vector3()
+    };
+    var mouse = new THREE.Vector2();
+
+	var curQuaternion;
+	var windowHalfX = window.innerWidth / 2;
+	var windowHalfY = window.innerHeight / 2;
+	var rotationSpeed = 2;
+	var lastMoveTimestamp,
+		moveReleaseTimeDelta = 50;
+
+	var startPoint = {
+		x: 0,
+		y: 0
+	};
+
+	var deltaX = 0,
+		deltaY = 0;
+
+	var spinner, spinner2, spinner3;
+	var targSpinner;
+	var axesHelper = new THREE.AxesHelper( 500 );
+
+	 var color = {
+              "black": new THREE.MeshBasicMaterial({
+                color: 0x222222
+              }),
+              "white": new THREE.MeshBasicMaterial({
+                color: 0xffffff
+              }),
+              "red": new THREE.MeshBasicMaterial({
+                color: 0xf25346
+              }),
+              "blue": new THREE.MeshBasicMaterial({
+                color: 0x68c3c0
+              })
+            }
+
+
+var loadingManager = null;
+var RESOURCES_LOADED = false;
+    //external geometires
+var models = {
+  cone1: {
+    obj: "models/cone01.obj",
+    mtl: "models/cone01.mtl",
+    mesh: null,
+    group: 'coneArr'
+  },
+  cone2: {
+    obj: "models/cone02.obj",
+    mtl: "models/cone02.mtl",
+    mesh: null,
+    group: 'coneArr'
+  },
+  cone3: {
+    obj: "models/cone03.obj",
+    mtl: "models/cone03.mtl",
+    mesh: null,
+    group: 'coneArr'
+  },
+  body1: {
+    obj: "models/body01.obj",
+    mtl: "models/body01.mtl",
+    mesh: null,
+    group: 'bodyArr'
+  },
+  body2: {
+    obj: "models/body02.obj",
+    mtl: "models/body02.mtl",
+    mesh: null,
+    group: 'bodyArr'
+  },
+  body3: {
+    obj: "models/body03.obj",
+    mtl: "models/body03.mtl",
+    mesh: null,
+    group: 'bodyArr'
+  },
+  fins1: {
+    obj: "models/fins01.obj",
+    mtl: "models/fins01.mtl",
+    mesh: null,
+    group: 'finsArr'
+  },
+  fins2: {
+    obj: "models/fins02.obj",
+    mtl: "models/fins02.mtl",
+    mesh: null,
+    group: 'finsArr'
+  },
+  fins3: {
+    obj: "models/fins03.obj",
+    mtl: "models/fins03.mtl",
+    mesh: null,
+    group: 'finsArr'
+  }
+}
+
+	setup();
+
+	function setup()
+	{
+		container = document.createElement('div');
+		document.body.appendChild(container);
+
+
+		camera = new THREE.PerspectiveCamera(
+	      75,
+	      window.innerWidth / window.innerHeight,
+	      0.1,
+	      1000
+	    )
+	    camera.position.y=20;
+    	camera.position.z = 60;
+/*
+
+		camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 1000);
+		camera.position.y = 100;
+		camera.position.z = 600;
+*/
+		scene = new THREE.Scene();
+
+		camera.lookAt(scene.position)
+
+		
+
+/*
+		var newSphereGeom= new THREE.SphereGeometry(20,20,20);
+		var sphere= new THREE.Mesh(newSphereGeom, new THREE.MeshBasicMaterial({ color: 0x2266dd }));
+
+
+		sphere.scale.x = sphere.scale.y = 1;
+		scene.add( sphere );
+		
+		sphere.position.x = -250;
+		objArr.push(sphere)
+		objObjArr.push(sphere)
+*/
+
+		renderer = new THREE.WebGLRenderer({antialias:true, precision: "mediump"});
+		renderer.setClearColor(0xf0f0f0);
+		renderer.setSize(window.innerWidth, window.innerHeight);
+
+		container.appendChild(renderer.domElement);
+
+
+
+		loadingManager = new THREE.LoadingManager();
+
+			loadingManager.onStart = function ( url, itemsLoaded, itemsTotal ) {
+				console.log('**** START ******')
+				console.log( 'Started loading file: ' + url + '.\nLoaded ' + itemsLoaded + ' of ' + itemsTotal + ' files.' );
+
+			};
+		  loadingManager.onProgress = function(item, loaded, total) {
+		  	//convoluted? have objLoader add object to modelObjArr, then find models obj value and associate object
+		  //	var model = models[Object.keys(models)[loaded-1]]
+		  //	eval(model.group).push(modelObjArr[loaded-1])
+
+		    console.log(item, loaded, total);
+		  //  count++;
+		  };
+		  loadingManager.onLoad = function() {
+		    console.log("loaded all resources");
+		    RESOURCES_LOADED = true;
+		    console.log('coneArr is ........')
+		    console.log(coneArr)
+		    console.log('bodyArr is ........')
+		    console.log(bodyArr)
+		    addSpinners();
+		  };
+
+
+		  var objLoader = new THREE.OBJLoader(loadingManager);
+
+		  for (var _key in models) {
+		    console.log('key1', _key);
+		    
+
+		    var groupArr = models[_key].group;
+		    console.log('::::::: group', groupArr);
+		    console.log(eval(groupArr))
+
+		    console.log('~~~~~ NOW LOAD ~~~~~~~~~~~')
+		    var _this = this;
+
+		    objLoader.load(
+		      // resource URL
+		      models[_key].obj,
+		      // called when resource is loaded
+		      function(object) {
+
+		      	//object.scale.set(10, 10, 10);
+		      //	object.key = _key;
+		      	// add to array to pass to spinner
+		      //	_this[groupArr].push(object)
+		      //	console.log(_this[groupArr])
+		       // scene.add(object);
+
+		        modelObjArr.push(object)
+		        console.log('object says.......')
+		        console.log(object);
+
+		        var mtl = object.materialLibraries[0];
+		        var section = mtl.slice(0,4)
+
+		        console.log(object.materialLibraries[0])
+		        console.log(mtl.slice(0,4))
+
+		        eval(section + "Arr").push(object)
+		     
+
+		      }
+		    );
+		}
+/*
+
+		var controls = new THREE.OrbitControls( camera, renderer.domElement );
+		//	controls.minDistance = 50;
+		//	controls.maxDistance = 200;
+	//	controls.rotateSpeed = .07;
+                controls.enableDamping = true;
+                controls.dampingFactor = .05;
+
+*/
+		stats = new Stats();
+		stats.domElement.style.position = 'absolute';
+		stats.domElement.style.top = '0px';
+		container.appendChild( stats.domElement );
+
+		const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
+		ambientLight.color.setHSL(0.1, 1, 0.95);
+		scene.add(ambientLight);
+
+		const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.5);
+		hemisphereLight.color.setHSL(0.6, 1, 0.95);
+		hemisphereLight.groundColor.setHSL(0.095, 1, 0.75);
+		hemisphereLight.position.set(0, 0, 500);
+		scene.add(hemisphereLight);
+
+		const directionalLight = new THREE.DirectionalLight(0xffffff, 0.65);
+		directionalLight.color.setHSL(0.1, 1, 0.95);
+		directionalLight.position.set(-1, 1, 1);
+		directionalLight.position.multiplyScalar(500);
+		directionalLight.castShadow = true;
+		scene.add(directionalLight);
+
+
+		scene.add(axesHelper)
+
+
+
+		document.addEventListener('mousedown', onDocumentMouseDown);
+		document.addEventListener('touchstart', onDocumentMouseDown);
+
+		document.addEventListener('mousemove', onDocumentMouseMove);
+		document.addEventListener('touchmove', onDocumentMouseMove);
+
+		document.addEventListener('mouseup', onDocumentMouseUp);
+		document.addEventListener('touchend', onDocumentMouseUp);
+
+		window.addEventListener('resize', onWindowResize, false);
+
+		animate();
+	};
+
+	function addSpinners(){
+
+
+		spinner = new Spinner(scene, actionObjArr, coneArr);
+		spinner.name='cube1';
+		scene.add(spinner)
+		objArr.push(spinner)
+		//objObjArr.push(spinner.cube)
+		spinner.position.y = 24;
+
+		spinner2 = new Spinner(scene, actionObjArr, bodyArr);
+		spinner2.name='cube2';
+		scene.add(spinner2)
+		objArr.push(spinner2)
+		//objObjArr.push(spinner2.cube)
+		
+
+		spinner3 = new Spinner(scene, actionObjArr, finsArr);
+		spinner3.name='cube3';
+		scene.add(spinner3)
+		objArr.push(spinner3)
+		//objObjArr.push(spinner3.cube)
+		spinner3.position.y = -24;
+
+
+/*		
+		var body = new Spinner(20, 0x000000);
+		scene.add(body)
+//body.setShadow();
+console.log( body );
+*/
+		targSpinner = spinner2;
+	}
+
+	function onWindowResize()
+	{
+		windowHalfX = window.innerWidth / 2;
+		windowHalfY = window.innerHeight / 2;
+
+		camera.aspect = window.innerWidth / window.innerHeight;
+		camera.updateProjectionMatrix();
+
+		renderer.setSize(window.innerWidth, window.innerHeight);
+	}
+
+	function getMousePos(event){
+		var x, y;
+
+
+        if ( event.changedTouches ) {
+
+          x = event.changedTouches[ 0 ].pageX;
+          y = event.changedTouches[ 0 ].pageY;
+
+        } else {
+
+          x = event.clientX;
+          y = event.clientY;
+
+        }
+
+        //console.log(x)
+
+        mouse.x = ( x / window.innerWidth ) * 2 - 1;
+        mouse.y = - ( y / window.innerHeight ) * 2 + 1;
+
+
+
+		  
+	}
+
+	function onDocumentMouseDown(event)
+	{
+		event.preventDefault();
+
+		getMousePos(event);
+
+		mouseDown = true;
+
+		if ( event.changedTouches ) {
+			startPoint = {
+          		x:event.changedTouches[ 0 ].pageX,
+          		y:event.changedTouches[ 0 ].pageY
+          	}
+
+        } else {
+	        startPoint = {
+	          x: event.clientX,
+	          y: event.clientY
+	      	}
+
+        }
+
+        if (targSpinner){
+			targSpinner.rotateStartPoint = targSpinner.rotateEndPoint = targSpinner.projectOnTrackball(0, 0);
+		}
+		checkIntersection()
+		onClick();
+
+		
+	}
+
+
+	function onClick(){
+
+		console.log(targSpinner)
+		if (activeObj!= null){
+
+			//click Cube = expand objects and fade cube
+			if (activeObj.typeObj == 'cube'){
+				 if (!targSpinner.expanded){
+				   targSpinner.expand();
+				   activeObj.material.opacity = .5;
+				   console.log(activeObj)
+
+				   TweenMax.to(camera.position, .5, {
+			        //	x: 1.1,
+			        	y: targSpinner.position.y+10,
+			        	//z: 1.1,
+			        	ease:"Power3.easeOut"
+
+			        })
+
+				 }
+		         for (var n=0; n<objArr.length; n++){
+
+		          	if (objArr[n] != targSpinner ){
+		      			objArr[n].hideAll();
+		          	}
+		      	 }
+		      }else if (activeObj.typeObj == 'sub-part'){
+		      	//alert('sub')
+		      	//console.log(activeObj)
+		      	//console.log(activeObj.material.color)
+
+		      	//click on obj of model, get color and set cube color
+
+		      	var ncolor = new THREE.MeshBasicMaterial({
+	                color: activeObj.material.color
+	              })
+		      	colorTo(targSpinner.cube, ncolor );
+///selection////
+
+				//... get parent group of clicked object and copy
+				var selection;
+				if(activeObj.parent.typeObj == 'ship-part'){
+					selection = activeObj.parent.clone();
+					//console.log('its a child...!')
+					//console.log(activeObj.parent)
+				}else{
+					selection = activeObj.clone();
+				}
+
+		      //	var selection = activeObj.clone();
+		      	selection.name = 'selectedObj'
+		      	//selection.scale.set(10,10,10)
+
+		      	if(targSpinner.selection){
+		      		var old = targSpinner.getObjectByName('selectedObj')
+		      		targSpinner.remove(old)
+		      		targSpinner.add(selection)
+		      		targSpinner.selection = true;
+		      	}else{
+		      		targSpinner.add(selection)
+		      		targSpinner.selection = true;
+		      	}
+		      	selection.position.set(0,0,0)
+//////////////
+		      
+		      }
+	 	 }else{
+	      	retractAll()
+	      }
+	}
+
+	
+
+	function onDocumentMouseMove(event)
+	{
+
+
+		getMousePos(event);
+
+	if (mouseDown){
+		if (targSpinner){
+			if ( event.changedTouches ) {
+
+	          	targSpinner.deltaX = event.changedTouches[ 0 ].pageX - startPoint.x;
+				targSpinner.deltaY = event.changedTouches[ 0 ].pageY - startPoint.y;
+
+				targSpinner.handleRotation();
+
+				startPoint.x = event.changedTouches[ 0 ].pageX;
+				startPoint.y = event.changedTouches[ 0 ].pageY;
+
+	        } else {
+
+		        targSpinner.deltaX = event.x - startPoint.x;
+				targSpinner.deltaY = event.y - startPoint.y;
+
+				targSpinner.handleRotation();
+
+				startPoint.x = event.x;
+				startPoint.y = event.y;
+
+	        }
+	    }
+
+
+
+
+    }
+
+        checkIntersection();
+
+		
+
+		lastMoveTimestamp = new Date();
+	}
+
+
+	function onDocumentMouseUp(event)
+	{
+		if (targSpinner){
+			if (new Date().getTime() - lastMoveTimestamp.getTime() > moveReleaseTimeDelta)
+			{
+				targSpinner.deltaX = event.x - startPoint.x;
+				targSpinner.deltaY = event.y - startPoint.y;
+			}
+		}
+
+		mouseDown = false;
+	//	targSpinner.expand();
+
+	}
+/*
+	function onClick() {
+
+		  console.log('click')
+		  console.log(activeObj)
+		 // objArr[0].setDeltaX(50);
+
+		   event.preventDefault();
+		    console.log('click - color: '+activeColor)
+
+		    if (intersection.intersects){
+
+		      activeObj.cube.material.color.set( activeColor );
+		    } 
+		
+		
+		}
+
+*/
+	function checkIntersection(){
+
+		//console.log('checking')
+
+       // if ( ! mesh ) return;
+
+        raycaster.setFromCamera( mouse, camera );
+
+        var intersects = raycaster.intersectObjects( objArr, true);
+
+
+        if ( intersects.length > 0 ) {
+         // alert('intersect')
+       //   console.log('-----intersect-----')
+       //   console.log(intersects[ 0 ].object)
+
+         // var idx = objObjArr.findIndex(k => k==intersects[ 0 ].object.parent)
+          activeObj = intersects[ 0 ].object;//objArr[idx];
+          targSpinner = intersects[ 0 ].object.parentSpinner;
+          
+
+          //camera.position.y = intersects[ 0 ].object.parent.position.y;
+
+          
+   
+
+
+
+          // change scale or activeObj and revert others
+          scaleEffect(activeObj)
+          
+       //   colorEffect(activeObj)
+   
+       //   console.log(idx)
+        //  activeObj.cube.material.color.set( activeColor );
+
+       //   targSpinner = activeObj;
+
+          intersection.intersects = true;
+
+        } else {
+
+          intersection.intersects = false;
+
+          activeObj = null;
+          targSpinner = null;
+
+
+          removeScaleEffect();
+        //  removeColorEffect();
+
+        }
+
+      //  console.log(intersection.intersects)
+
+      }
+
+    function retractAll(){
+    	for (var n=0; n<objArr.length; n++){
+			objArr[n].hideAll();
+          }	
+    }
+
+    function colorEffect(targ){
+    	colorTo(targ, color['blue']);
+
+    	for (var n=0; n<actionObjArr.length; n++){
+
+          	if (actionObjArr[n] != targ ){
+      			colorTo(actionObjArr[n], color['white']);
+          	}
+      	}
+    }
+
+    function removeColorEffect(){
+    	 for (var n=0; n<actionObjArr.length; n++){
+			colorTo(actionObjArr[n], color['white']);
+          }	
+    }
+
+    function scaleEffect(targ){
+    	/*
+    	TweenMax.to(targ.scale, 1, {
+        	x: 1.1,
+        	y: 1.1,
+        	z: 1.1,
+        	ease:"Power3.easeOut"
+
+        })
+
+        for (var n=0; n<actionObjArr.length; n++){
+
+          	if (actionObjArr[n] != targ ){
+      			TweenMax.to(actionObjArr[n].scale, 1, {
+                	x: 1,
+                	y: 1,
+                	z: 1,
+                	ease:"Power3.easeOut"
+
+                })
+          	}
+      	}
+      	*/
+    }
+
+    function removeScaleEffect(){
+    	/*
+    	 for (var n=0; n<actionObjArr.length; n++){
+			TweenMax.to(actionObjArr[n].scale, 1, {
+            	x: 1,
+            	y: 1,
+            	z: 1,
+            	ease:"Power3.easeOut"
+
+            })
+          }	
+          */
+    }
+
+	
+	
+
+	function colorTo(target, value, speed=.5) {
+      var target = target;
+      var initial = new THREE.Color(target.material.color);//new THREE.Color(target.material.color.getHex());
+      var value = new THREE.Color(value.color.getHex());
+      TweenMax.to(initial, speed, {
+        r: value.r,
+        g: value.g,
+        b: value.b,
+        
+        onUpdate: function () {
+          target.material.color = initial;
+         // uniforms.line_color.value = initial;
+        }
+      });
+    }
+
+	function animate()
+	{
+		requestAnimationFrame(animate);
+	//	if (controls) controls.update();
+		render();
+		
+		stats.update();
+	}
+
+	function render()
+	{
+
+		if (activeObj){
+			info.textContent = "Target Spinner="+targSpinner.name;
+		}else{
+			info.textContent = 'null';
+		}
+
+	//	console.log(objArr[0].deltaX + " --- "+  objArr[1].deltaX)
+
+		// handle inertia after drag
+		if (!mouseDown)
+		{
+
+			handleBoxes();
+		}
+	/*
+		if (targSpinner != null){
+		// camera.position.x += (mouse.x - targSpinner.position.x) * 0.01;
+		    camera.position.y += (mouse.y - camera.position.y) * 0.01;
+		    		 camera.lookAt(targSpinner.position);
+		    		}
+	*/
+		renderer.render(scene, camera);
+	}
+
+	function handleBoxes(){
+
+
+		for (var n=0; n<objArr.length; n++){
+			if (objArr[n].typeObj) {
+				objArr[n].handleInertia();
+				objArr[n].handleRotation();
+			}
+		}
+	}
+
+
+	
+
+		</script>
+
+	</body>
+</html>

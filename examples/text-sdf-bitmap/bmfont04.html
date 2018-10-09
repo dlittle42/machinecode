@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>three bmfont sdf text test</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>html { overflow: hidden; }
+      body {
+        font-family: Monospace;
+        background-color: #333333;
+        margin: 0px;
+        overflow: hidden;
+      }
+      .dg.ac { z-index: 1000 !important; }
+    </style>
+  </head>
+  <body>
+
+    <script src="third-party/three.js"></script>
+    <script src="third-party/OrbitControls.js"></script>
+    <script src="third-party/dat.gui.min.js"></script>
+    <script src="third-party/stats.min.js"></script>
+
+    <script src="three-bmfont-text-bundle.js"></script>
+    <script src="sdf-shader.js"></script>
+    <script src="text-bitmap.js"></script>
+
+    <script type="text/javascript" src="js/TextSpinner.js"></script>
+    <script src="../../bower_components/gsap/src/minified/TweenMax.min.js"></script>
+
+    <script>
+
+      // http://browserify.org/
+      // browserify three-bmfont-text.js -o three-bmfont-text-bundle.js
+
+      // https://www.npmjs.com/package/three-bmfont-text
+
+      //
+
+      var bmtext, stats;
+      var bmtext2;
+
+      var spinner, spinner2, spinner3;
+      var targSpinner;
+      var actionObjArr = [];
+      var wordsArr = [];
+      var objArr = [];
+      var mouseDown = false;
+      var mouse = new THREE.Vector2();
+      var rotationSpeed = 2;
+      var lastMoveTimestamp,
+        moveReleaseTimeDelta = 50;
+
+      var startPoint = {
+        x: 0,
+        y: 0
+      };
+
+       var intersection = {
+      intersects: false,
+      point: new THREE.Vector3(),
+      normal: new THREE.Vector3()
+    };
+
+      var deltaX = 0,
+        deltaY = 0;
+
+      var scene = new THREE.Scene();
+
+      var container = document.createElement( 'div' );
+      document.body.appendChild( container );
+
+      var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true , preserveDrawingBuffer: true  });
+     scene.fog = new THREE.FogExp2(0x999999, 0.02);
+     renderer.setClearColor(scene.fog.color, 0);
+
+
+   //   renderer.setClearColor( 0x27334e, 1 );
+      renderer.setSize( window.innerWidth, window.innerHeight );
+      container.appendChild( renderer.domElement );
+      
+   //   var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, .01, 100000 );
+     // camera.position.set( 0, 1, 2 );
+
+      var camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      )
+   //   camera.position.y=20;
+   //   camera.position.z = 60;
+      camera.position.set( 0, 0, 60 );
+
+ //     var orbitControls = new THREE.OrbitControls( camera, renderer.domElement );
+
+
+      var gridHelper = new THREE.GridHelper( 50, 10, 0xDDDDDD );
+    //  gridHelper.position.y = -1;
+      scene.add( gridHelper );
+
+      var mouse = new THREE.Vector2();
+      mouse.moved = false;
+      var raycaster = new THREE.Raycaster();
+      var hitBoxes = [];
+      var INTERSECTED;
+
+      var folder = 'fonts/';
+
+      var font;
+
+      var names_pt1 = ["Hush","Shush","Quiet","Silent","Bravo","Calm","Rocket","Ānjìng","Blasty","Silencieux","SuperDuper","Incredible","Darting","Automatic","Space","Sound","Flying","Sparkly","Rainbow","Whooshy","Lil","Galaxy","The","Planetburger","USS","Outta this World","World Famous","Tangy","Le","Star","Splendiferous","Spicy","Chocolate","Nacho","Master","Fart","Sports","Funky","Cookie","Boogie","Big","Crunchy","Jumbo","Ninja","Nam Nam","Oodle Doodle","Quick","Jumpy","Planet","Spaz","Fuzzy","My","Brummy","Le","GIANT","Soaring","Pink","Striped","Spotty","Blue","Metal"]
+
+
+      var names_pt2 = ["Rocket","Bucket","Ship","Spacecraft","Booster","Craft","Boomer","Darter","Zoomer","Whirler","Spacecraft","Thing","Flyer","Vessel","Transporter","Tin Can","Ruster","Cruiser","Explorer","Explorator","Whizzer","Zipper","Shusher","Tranquilo","Quieto","Boingo","Shush","Cha Cha","Vaisseau Spatial","Gazer","Booster","Nugget","Hot Dog","Pizza","Horsey","Blaster","Puffer","Princess","Dolphin","Swan","Kettle","Speckle","Shrimp","Jumper","Platypus","Chicken","Planet Racer","Eagle","Fortfly","Rumskib","Astronau","Navicella Spaziale","космический корабль","Fin","Geimskip","Astronave","tàu không gian","Raumschiff","سفينة فضائية","חללית","Roketi meli","Kapal Roket","Bird"]
+      
+      //
+
+      var r = new XMLHttpRequest();
+      r.open('GET', folder + 'Lato-regular.json');
+
+      r.onreadystatechange = function() {
+        if (r.readyState === 4 && r.status === 200) {
+          font = JSON.parse(r.responseText);
+          setup();
+        }
+      };
+
+      r.send();
+
+      //
+
+      function setup(font) {
+/*
+        bmtext = new TextBitmap({
+          imagePath: folder + 'Lato-regular.png',
+          text: 'Test Server',
+          width: 1000,
+          align: 'center',
+          font: font,
+          lineHeight: font.common.lineHeight - 20,
+          letterSpacing: 1,
+          scale: 0.0004,
+          rotate: false,
+          color: "#fff",
+          showHitBox: true // for debugging
+        });
+
+        // wireframe on three-bitmap-text geometry is incorrect
+        // var wireframe = new THREE.WireframeGeometry( bmtext.mesh.geometry );
+        // var line = new THREE.LineSegments( wireframe );
+        // line.material.color.setHex(0x000000);
+        // bmtext.mesh.add( line );
+
+        bmtext.group.position.set( 0, 0, 0 );
+        //orbitControls.target.copy( bmtext.group.position );
+
+        scene.add( bmtext.group );
+        hitBoxes.push( bmtext.hitBox );
+*/
+
+/*
+
+        for (var n=0; n<names_pt1.length; n++){
+          createNameTag(names_pt1[n], n, -.25, font)
+          createNameTag(names_pt2[n], n, .25, font)
+        }
+*/
+        addSpinners();
+
+
+    //    bmtext.group.add( new THREE.AxisHelper(20) );
+
+
+/*
+
+        bmtext2 = new TextBitmap({
+          imagePath: folder + 'Lato-regular.png',
+          text: 'Admin Appliance',
+          width: 1000,
+          align: 'center',
+          font: font,
+          lineHeight: font.common.lineHeight - 20,
+          letterSpacing: 1,
+          scale: 0.0004,
+          rotate: false,
+          color: "#fff",
+          showHitBox: true // for debugging
+        });
+
+        // wireframe on three-bitmap-text geometry is incorrect
+        // var wireframe = new THREE.WireframeGeometry( bmtext.mesh.geometry );
+        // var line = new THREE.LineSegments( wireframe );
+        // line.material.color.setHex(0x000000);
+        // bmtext.mesh.add( line );
+
+        bmtext2.group.position.set( 0, .05, 0);
+        //orbitControls.target.copy( bmtext.group.position );
+
+        scene.add( bmtext2.group );
+        hitBoxes.push( bmtext2.hitBox );
+*/
+    //    bmtext2.group.add( new THREE.AxisHelper(20) );
+/*
+        var gui = new dat.GUI();
+        gui.add( bmtext, 'text' );
+        gui.add( bmtext.config, 'align', ['left', 'center', 'right'] ).onChange(function(){ bmtext.geometry.update( bmtext.config ); });
+        gui.add( bmtext.config, 'width', 200, 1500 ).onChange(function(){ bmtext.update(); });
+        gui.add( bmtext.config, 'letterSpacing', -10, 100 ).step(1).onChange(function(){ bmtext.update(); });
+        gui.add( bmtext.config, 'lineHeight', 0, 500 ).step(1).onChange(function(){ bmtext.update(); });
+        gui.add( bmtext.config, 'scale', 0.0001, 0.0009 ).onChange(function(s){ bmtext.group.scale.set(s,s,s); });
+        gui.add( bmtext.material.uniforms.smoothing, 'value', 0, 0.4 ).name('smoothing');
+        gui.add( bmtext.material.uniforms.threshold, 'value', 0, 2 ).name('threshold');
+        gui.add( bmtext.config, 'rotate' ).onChange(function(val){ if ( !val ) bmtext.group.rotation.set(0,0,0); });
+        gui.add( bmtext.config, 'showHitBox' ).onChange(function(val) { bmtext.hitBox.material.opacity = val ? 1 : 0; });
+        gui.addColor( bmtext.config, 'color' ).onChange(function(val){ bmtext.material.uniforms.color.value.setStyle(val); });
+*/
+        stats = new Stats();
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.top = '0px';
+        document.body.appendChild( stats.domElement );
+
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
+    ambientLight.color.setHSL(0.1, 1, 0.95);
+    scene.add(ambientLight);
+
+    const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.5);
+    hemisphereLight.color.setHSL(0.6, 1, 0.95);
+    hemisphereLight.groundColor.setHSL(0.095, 1, 0.75);
+    hemisphereLight.position.set(0, 0, 500);
+    scene.add(hemisphereLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.65);
+    directionalLight.color.setHSL(0.1, 1, 0.95);
+    directionalLight.position.set(-1, 1, 1);
+    directionalLight.position.multiplyScalar(500);
+    directionalLight.castShadow = true;
+    scene.add(directionalLight);
+
+        renderer.domElement.addEventListener( 'touchstart', mousedown, false );
+        renderer.domElement.addEventListener( 'mousedown', mousedown, false );
+        renderer.domElement.addEventListener( 'touchmove', mousemove, false );
+        renderer.domElement.addEventListener( 'mousemove', mousemove, false );
+        renderer.domElement.addEventListener( 'touchend', mouseup, false );
+        renderer.domElement.addEventListener( 'mouseup', mouseup, false );
+
+        window.addEventListener('resize', resize, false);
+        resize();
+
+        document.body.appendChild( renderer.domElement );
+        loop();
+
+      }
+
+
+      function addSpinners(){
+
+
+        spinner = new TextSpinner(scene, actionObjArr, wordsArr, names_pt1, font, hitBoxes);
+        spinner.name='cube1';
+        scene.add(spinner)
+        objArr.push(spinner)
+        //objObjArr.push(spinner.cube)
+        spinner.position.x = -7;
+
+        spinner2 = new TextSpinner(scene, actionObjArr, wordsArr, names_pt2, font, hitBoxes);
+        spinner2.name='cube2';
+        scene.add(spinner2)
+        objArr.push(spinner2)
+        spinner2.position.x = 7;
+        //objObjArr.push(spinner2.cube)
+        /*
+
+        spinner3 = new TextSpinner(scene, actionObjArr, wordsArr);
+        spinner3.name='cube3';
+        scene.add(spinner3)
+        objArr.push(spinner3)
+        //objObjArr.push(spinner3.cube)
+        spinner3.position.x = 20;
+*/
+
+    /*    
+        var body = new Spinner(20, 0x000000);
+        scene.add(body)
+    //body.setShadow();
+    console.log( body );
+    */
+        targSpinner = spinner;
+      }
+
+
+      function createNameTag(msg, num, xpos, font){
+        var bmtext = new TextBitmap({
+          imagePath: folder + 'Lato-regular.png',
+          text: msg,
+          width: 1000,
+          align: 'center',
+          font: font,
+          lineHeight: font.common.lineHeight - 20,
+          letterSpacing: 1,
+          scale: 0.0004,
+          rotate: false,
+          color: "#fff",
+          showHitBox: true // for debugging
+        });
+
+        // wireframe on three-bitmap-text geometry is incorrect
+        // var wireframe = new THREE.WireframeGeometry( bmtext.mesh.geometry );
+        // var line = new THREE.LineSegments( wireframe );
+        // line.material.color.setHex(0x000000);
+        // bmtext.mesh.add( line );
+
+      //  var idx = (num/100)+2;
+        bmtext.group.position.set( xpos, num/20, 0);
+        //orbitControls.target.copy( bmtext.group.position );
+
+        scene.add( bmtext.group );
+        hitBoxes.push( bmtext.hitBox );
+
+
+      }
+
+      function resize() {
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+
+        
+      }
+
+      function mousemove(event){
+        event.preventDefault();
+        if ( !mouse.moved ) mouse.moved = true;
+        // normalized device coordinates
+        mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+        mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+
+
+
+            getMousePos(event);
+
+          if (mouseDown){
+            if (targSpinner){
+              if ( event.changedTouches ) {
+
+                      targSpinner.deltaX = event.changedTouches[ 0 ].pageX - startPoint.x;
+                targSpinner.deltaY = event.changedTouches[ 0 ].pageY - startPoint.y;
+
+                targSpinner.handleRotation();
+
+                startPoint.x = event.changedTouches[ 0 ].pageX;
+                startPoint.y = event.changedTouches[ 0 ].pageY;
+
+                  } else {
+
+                    targSpinner.deltaX = event.x - startPoint.x;
+                targSpinner.deltaY = event.y - startPoint.y;
+
+                targSpinner.handleRotation();
+
+                startPoint.x = event.x;
+                startPoint.y = event.y;
+
+                  }
+              }
+
+
+
+
+            }
+
+            checkIntersection();
+
+            
+
+            lastMoveTimestamp = new Date();
+
+      }
+
+      function checkIntersection(){
+
+    //console.log('checking')
+
+       // if ( ! mesh ) return;
+/*
+        raycaster.setFromCamera( mouse, camera );
+
+        var intersects = raycaster.intersectObjects( objArr, true);
+
+
+        if ( intersects.length > 0 ) {
+         // alert('intersect')
+       //   console.log('-----intersect-----')
+        //  console.log(intersects[ 0 ].object)
+
+         // var idx = objObjArr.findIndex(k => k==intersects[ 0 ].object.parent)
+          activeObj = intersects[ 0 ].object;//objArr[idx];
+          targSpinner = intersects[ 0 ].object.parentSpinner;
+          console.log(targSpinner)
+          intersection.intersects = true;
+
+        } else {
+
+          intersection.intersects = false;
+          targSpinner = null;
+
+
+        }
+*/
+      }
+
+      function hover() {
+        raycaster.setFromCamera( mouse, camera );
+
+        var intersects = raycaster.intersectObjects( hitBoxes );
+
+        if ( intersects.length > 0 ) {
+
+          if ( INTERSECTED != intersects[ 0 ].object ) {
+
+            if ( INTERSECTED ) {
+              INTERSECTED.mesh.material.uniforms.color.value.setHex( INTERSECTED.currentHex );
+              document.body.style.cursor = 'auto';
+            }
+
+            INTERSECTED = intersects[ 0 ].object;
+            INTERSECTED.currentHex = INTERSECTED.mesh.material.uniforms.color.value.getHex();
+           INTERSECTED.mesh.material.uniforms.color.value.setHex( 0xff0000 );
+          //  INTERSECTED.mesh.material.uniforms.color.value.offsetHSL(0,0,0.25); // lighten
+            document.body.style.cursor = 'pointer';
+
+          }
+
+        } else {
+
+          if ( INTERSECTED ) {
+            INTERSECTED.mesh.material.uniforms.color.value.setHex( INTERSECTED.currentHex );
+            document.body.style.cursor = 'auto';
+          }
+
+          INTERSECTED = null;
+
+        }
+      }
+
+      function mousedown(event) {
+        event.preventDefault();
+
+
+        getMousePos(event);
+
+          mouseDown = true;
+
+          if ( event.changedTouches ) {
+            startPoint = {
+                    x:event.changedTouches[ 0 ].pageX,
+                    y:event.changedTouches[ 0 ].pageY
+                  }
+
+              } else {
+                startPoint = {
+                  x: event.clientX,
+                  y: event.clientY
+                }
+
+              }
+
+              if (targSpinner){
+            targSpinner.rotateStartPoint = targSpinner.rotateEndPoint = targSpinner.projectOnTrackball(0, 0);
+          }
+
+          checkIntersection()
+
+
+        if ( INTERSECTED ) {
+          INTERSECTED.mesh.material.uniforms.color.value.offsetHSL(0,0,-0.35); // darken
+  //        orbitControls.enabled = false;
+        }
+      }
+
+      function mouseup(event) {
+        event.preventDefault();
+        if ( INTERSECTED ) {
+          INTERSECTED.mesh.material.uniforms.color.value.setHex( INTERSECTED.currentHex );
+          INTERSECTED.mesh.material.uniforms.color.value.offsetHSL(0,0,0.25);
+        }
+//        orbitControls.enabled = true;
+
+        if (targSpinner){
+            if (new Date().getTime() - lastMoveTimestamp.getTime() > moveReleaseTimeDelta)
+            {
+              targSpinner.deltaX = event.x - startPoint.x;
+              targSpinner.deltaY = event.y - startPoint.y;
+            }
+          }
+
+          mouseDown = false;
+      }
+
+      function getMousePos(event){
+        var x, y;
+
+
+            if ( event.changedTouches ) {
+
+              x = event.changedTouches[ 0 ].pageX;
+              y = event.changedTouches[ 0 ].pageY;
+
+            } else {
+
+              x = event.clientX;
+              y = event.clientY;
+
+            }
+
+            //console.log(x)
+
+            mouse.x = ( x / window.innerWidth ) * 2 - 1;
+            mouse.y = - ( y / window.innerHeight ) * 2 + 1;
+           // console.log(mouse.y.toFixed(2))
+
+
+
+          
+      }
+
+      function handleBoxes(){
+
+
+        for (var n=0; n<objArr.length; n++){
+          if (objArr[n].typeObj) {
+            objArr[n].handleInertia();
+            objArr[n].handleRotation();
+          }
+        }
+      }
+
+      function loop() {
+
+
+        requestAnimationFrame( loop );
+
+        stats.update();
+/*
+        if ( bmtext.config.rotate ) {
+          bmtext.group.rotation.x += 0.01;
+          bmtext.group.rotation.y += 0.01;
+        }
+*/
+   //     orbitControls.update();
+
+        if ( mouse.moved ) {
+      //    hover();
+        }
+
+        if (!mouseDown)
+        {
+
+          handleBoxes();
+        }
+
+        if (mouse.x<0) {
+          targSpinner = spinner;
+        }else{
+           targSpinner = spinner2;
+        }
+
+
+        renderer.render(scene, camera);
+      }
+
+    </script>
+
+  </body>
+</html>

@@ -8,7 +8,7 @@ var load = require('load-bmfont');
 
 var folder = 'fonts/';
 //var fileName = 'Lato-regular';
-var fileName = 'marshy';
+var fileName = 'Billy2';
 
 load(folder + fileName + '.fnt', function(err, font) {
 
