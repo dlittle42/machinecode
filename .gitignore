@@ -1,8 +1,4 @@
 .DS_Store
 node_modules/
-node_modules/*
-node_modules/**/*.md
 bower_components/
-bower_components/*
-bower_components/**/*.md
 npm-debug.log
