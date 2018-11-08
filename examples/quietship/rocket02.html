@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>rocket</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #000;
+				color: #fff;
+				margin: 0px;
+				overflow: hidden;
+			}
+			#info {
+				color: #fff;
+				position: absolute;
+				top: 10px;
+				width: 100%;
+				text-align: center;
+				z-index: 100;
+				display:block;
+			}
+
+			#readout{
+				width: 300px;
+				height: 300px;
+				position: absolute;
+				top: 30px;
+				left: 10px;
+				border: 1px solid grey;
+				overflow-y: scroll;
+				background-color: black;
+			}
+
+			#info a, .button { color: #f00; font-weight: bold; text-decoration: underline; cursor: pointer }
+		</style>
+	</head>
+
+	<body>
+		<button id="btn">Rocket 2 JSON</button>
+		<button id="btnSphere">Sphere 2 JSON</button>
+		<button id="btnGLTF">Rocket 2 GLTF</button>
+		<button id="btn2">load rocket GLTF</button>
+		<div id="readout">
+			
+		</div>
+		
+
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/master/build/three.min.js"></script>
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/loaders/OBJLoader.js"></script>
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/loaders/MTLLoader.js"></script>
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/loaders/GLTFLoader.js"></script>
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/exporters/GLTFExporter.js"></script>
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/effects/OutlineEffect.js"></script>
+		<script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/controls/TrackballControls.js"></script>
+
+		<script>
+
+			var div = document.getElementById('readout');
+			var btn = document.getElementById('btn');
+			var btnSphere = document.getElementById('btnSphere');
+			var btnGLTF = document.getElementById('btnGLTF');
+			var btn2 = document.getElementById('btn2');
+
+
+			btn.onclick = function() {
+
+			    saveAsJson(rocketGroup);
+			};
+
+			btnSphere.onclick = function() {
+
+			    saveAsJson(sphere);
+			};
+
+			btnGLTF.onclick = function() {
+
+			    saveAsGLTF(rocketGroup);
+			};
+
+
+			btn2.onclick = function() {
+			   // console.log('Click just happened');
+			    loadExported();
+			};
+
+			var container;
+
+			var camera, scene, renderer;
+			var effect;
+			var objArr =[];
+			var rocketGroup;
+
+			var mouseX = 0, mouseY = 0;
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+			var axesHelper = new THREE.AxesHelper( 500 );
+
+			var count = 0;
+			var loadingManager = null;
+			var isLoaded = false;
+
+
+
+
+		      var RESOURCES_LOADED = false;
+		          //external geometires
+		      var models = {
+		        cone1: {
+		          obj: "cone01c",
+		        },
+		    
+		        body1: {
+		          obj: "body01c",
+		        },
+		        fins1: {
+		          obj: "thruster01d",
+		        },
+		       
+		      }
+
+
+
+			init();
+			animate();
+
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				//camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 2000 );
+				camera = new THREE.PerspectiveCamera(
+			      75,
+			      window.innerWidth / window.innerHeight,
+			      0.1,
+			      1000
+			    )
+				camera.position.z = 10;
+
+				// scene
+
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0xf0f0f0 );
+
+				var light = new THREE.HemisphereLight( 0xbbbbff, 0x444422 );
+				light.position.set( 0, 1, 0 );
+				scene.add( light );
+
+				var ambientLight = new THREE.AmbientLight( 0xcccccc, 0.4 );
+				scene.add( ambientLight );
+
+				var pointLight = new THREE.PointLight( 0xffffff, 0.8 );
+				camera.add( pointLight );
+				scene.add( camera );
+
+
+				rocketGroup = new THREE.Object3D();
+    			scene.add(rocketGroup);
+    			rocketGroup.name="myrocket";
+
+
+				var loader = new THREE.GLTFLoader();
+
+				for (var _key in models) {
+
+					console.log(_key)
+					//var label = models[_key].name;
+					loader.load( 'assets/'+models[_key].obj+'.gltf', function ( gltf ) {
+					
+						gltf.scene.traverse( function ( child ) {
+
+							if ( child.isMesh ) {
+							//	console.log(child)
+							//	child.position.x = Math.random()*2;
+								//child.material.envMap = envMap;
+								child.material.color.set(randomHexColor())
+
+							}
+
+						} );
+					
+						var model = gltf.scene;
+
+						objArr.push(model)
+						rocketGroup.add(model)
+
+
+						if (model.children[0].name.toLowerCase().includes('cone') ) model.position.y = 2;
+						if (model.children[0].name.toLowerCase().includes('thruster') ) model.position.y = -5;
+						
+
+		
+						//gltf.scene.position.x = count - 5;
+
+					}, undefined, function ( e ) {
+
+						console.error( e );
+
+					} );
+
+				
+				}
+
+
+
+				// Sphere
+				material = new THREE.MeshStandardMaterial( {
+					color: 0xffff00,
+					metalness: 0.5,
+					roughness: 1.0,
+					flatShading: true
+				} );
+				sphere = new THREE.Mesh( new THREE.SphereBufferGeometry( 2, 10, 10 ), material );
+				sphere.position.set( 3, 3, 0 );
+				sphere.name = "Sphere";
+				scene.add( sphere );
+
+
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+
+
+				controls = new THREE.TrackballControls(camera, renderer.domElement);
+			    //issue with overlaying div
+			   // controls = new TrackballControls(camera, mount);
+			    controls.rotateSpeed = 1;
+			    controls.zoomSpeed = .7;
+			    controls.panSpeed = .25;
+			    controls.noZoom = false;
+			    controls.noPan = false;
+			    controls.staticMoving = false;
+			    controls.dynamicDampingFactor = 0.1;
+			    controls.minDistance = 0;
+			    controls.maxDistance = 200;
+
+
+			    scene.add( axesHelper );
+
+
+			    window.scene = scene;
+			    window.THREE = THREE;
+
+			//	effect = new THREE.OutlineEffect( renderer );
+
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function finishedLoad(){
+
+				console.log(rocketGroup)
+				console.log(objArr)
+
+			}
+
+			function randomHexColor(){
+			  var n = 6, s = '#';
+			  while(n--){
+			    s += (Math.random() * 16 | 0).toString(16);    // random char from 0 to f
+			  }
+			  return s;
+			}
+
+			function saveAsJson(targ){
+
+				
+				// save object to json
+
+				var json = targ.toJSON();
+				loadJson(json)
+				
+
+				div.innerHTML = JSON.stringify(json) ;
+			}
+
+
+			function loadJson(data){
+				console.log('<<<<<<<<< LOAD JSON >>>>>>>>>>>>>')
+				var loader = new THREE.ObjectLoader();
+
+				var model = loader.parse( data );
+				console.log(model)
+
+				scene.add( model );
+				model.position.set( -3, 3, 0 );
+
+
+			}
+
+
+			function saveAsGLTF(targ){
+				var exporter = new THREE.GLTFExporter();
+				console.log(targ)
+
+				// Parse the input and generate the glTF output
+				exporter.parse( targ, function ( gltf ) {
+					console.log( gltf );
+
+
+					var output = JSON.stringify( gltf, null, 2 );
+						console.log( output );
+						saveString( output, 'ship.gltf' );
+
+				},  );
+
+			}
+
+			function loadExported(model){
+
+
+				//scene.add( model );
+				//model.position.x = 4;
+			
+				var loader = new THREE.GLTFLoader();
+
+				    loader.load('assets/ship.gltf',
+				        function ( gltf ) {
+
+				            model = gltf.scene;
+				            scene.add( model );
+				            model.position.x = 4;
+
+				       
+
+				        },
+				        function ( xhr ) {
+				            //console.log( ( xhr.loaded / xhr.total * 100 ) + '% loaded' );
+				        },
+				        function ( error ) {
+				            //console.log( 'An error happened' );
+				        }
+				    );
+
+				
+			}
+
+			var link = document.createElement( 'a' );
+			link.style.display = 'none';
+			document.body.appendChild( link ); // Firefox workaround, see #6594
+
+			function save( blob, filename ) {
+
+				link.href = URL.createObjectURL( blob );
+				link.download = filename;
+				link.click();
+
+				// URL.revokeObjectURL( url ); breaks Firefox...
+
+			}
+
+
+			function saveString( text, filename ) {
+
+				save( new Blob( [ text ], { type: 'text/plain' } ), filename );
+
+			}
+
+			function onWindowResize() {
+
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function onDocumentMouseMove( event ) {
+
+				mouseX = ( event.clientX - windowHalfX ) / 2;
+				mouseY = ( event.clientY - windowHalfY ) / 2;
+
+			}
+
+			
+
+
+			function addCube(){
+				 const geometry = new THREE.BoxGeometry(1, 1, 1)
+			    const material = new THREE.MeshBasicMaterial({ color: '#433F81'     })
+			    var cube = new THREE.Mesh(geometry, material)
+			    cube.position.x = (Math.random()*10) - 5;
+			    cube.position.y = (Math.random()*10) - 5;
+			    cube.position.z = -(Math.random()*10);
+			    scene.add(cube)
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+				render();
+
+			}
+
+			function render() {
+
+			// gotta loop-test the loading of gltf assets cause loadingmanager doesn't ever complete: BUG
+				if( !isLoaded && objArr.length>=2){
+
+					isLoaded = true;
+					console.log('loaded')
+					finishedLoad();
+				}
+
+
+
+				controls.update();
+
+				renderer.render( scene, camera );
+				//effect.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>
